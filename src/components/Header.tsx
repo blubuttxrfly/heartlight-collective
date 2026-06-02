@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Heart } from 'lucide-react'
 
 const navItems = [
   { path: '/exchange', label: 'Exchange', emoji: '💱' },
@@ -14,7 +13,7 @@ export default function Header() {
     <header className="relative z-50">
       {/* Top bar with sigil + title */}
       <div className="pt-8 pb-4 px-4 text-center">
-        {/* Sigil → AtlasIsland.co */}
+        {/* Atlas Island Logo → AtlasIsland.co */}
         <a
           href="https://atlasisland.co"
           target="_blank"
@@ -22,8 +21,12 @@ export default function Header() {
           className="inline-block mb-4 group"
           aria-label="Return to Atlas Island"
         >
-          <div className="sacred-ring w-20 h-20 mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-            <Heart className="w-10 h-10 text-gold-400 fill-gold-400/20 breathing-glow" />
+          <div className="sacred-ring w-24 h-24 mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-110 overflow-hidden">
+            <img
+              src="/logo-transparent.png"
+              alt="Atlas Island"
+              className="w-20 h-20 object-contain breathing-glow"
+            />
           </div>
         </a>
 
