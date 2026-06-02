@@ -4,13 +4,20 @@ export default function Footer() {
   return (
     <footer className="relative z-10 py-8 px-4 text-center">
       <div className="max-w-2xl mx-auto">
-        {/* Atlas Island Logo */}
+        {/* Atlas Island Logo → AtlasIsland.co */}
         <div className="mb-4">
-          <img
-            src="/logo-transparent.png"
-            alt="Atlas Island"
-            className="w-16 h-16 mx-auto object-contain opacity-60 hover:opacity-100 transition-opacity"
-          />
+          <a
+            href="https://atlasisland.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Atlas Island"
+          >
+            <img
+              src="/logo-atlas-island.png"
+              alt="Atlas Island"
+              className="w-16 h-16 mx-auto object-contain opacity-60 hover:opacity-100 transition-opacity"
+            />
+          </a>
         </div>
 
         {/* Page Links */}

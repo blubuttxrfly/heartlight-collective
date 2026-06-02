@@ -13,22 +13,21 @@ export default function Header() {
     <header className="relative z-50">
       {/* Top bar with sigil + title */}
       <div className="pt-8 pb-4 px-4 text-center">
-        {/* Atlas Island Logo → AtlasIsland.co */}
-        <a
-          href="https://atlasisland.co"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* Heartlight Collective Logo → Home */}
+        <Link
+          to="/"
           className="inline-block mb-4 group"
-          aria-label="Return to Atlas Island"
+          aria-label="Heartlight Collective Home"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
-          <div className="sacred-ring w-24 h-24 mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-110 overflow-hidden">
+          <div className="w-32 h-32 mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
             <img
               src="/logo-transparent.png"
-              alt="Atlas Island"
-              className="w-20 h-20 object-contain breathing-glow"
+              alt="Heartlight Collective"
+              className="w-28 h-28 object-contain breathing-glow"
             />
           </div>
-        </a>
+        </Link>
 
         {/* Title → Home */}
         <Link
