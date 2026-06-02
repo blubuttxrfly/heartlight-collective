@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  /* Heartlight Collective Palette */
+  --color-void-950: #05030a;
+  --color-void-900: #0a0515;
+  --color-void-800: #1a081f;
+  --color-void-700: #2a0a2f;
+  --color-magenta-500: #ff0099;
+  --color-magenta-400: #e01a8b;
+  --color-magenta-300: #cf48ff;
+  --color-magenta-200: #b421ef;
+  --color-gold-400: #fad144;
+  --color-gold-300: #ffe9a8;
+  --color-orichalcum: #c8922b;
+  --color-lavender: #d4b8ff;
+  --color-cream: #f5f0ff;
+
+  /* Typography */
+  --font-serif: 'Alice', 'Georgia', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  /* Animations */
+  --animate-pulse-slow: pulse 4s ease-in-out infinite;
+  --animate-gradient-shift: gradient-shift 18s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Global gradient background */
+.bg-heartlight-gradient {
+  background: linear-gradient(180deg, #1a0a2f 0%, #2a0a2f 20%, #1a081f 44%, #0a0515 70%, #06050f 88%, #05030a 100%);
+  background-size: 100% 200%;
+}
+
+/* Gold shimmer text effect */
+.text-gold-shimmer {
+  background: linear-gradient(90deg, #fad144 0%, #ffe9a8 50%, #fad144 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 8s linear infinite;
+}
+
+/* Sacred geometry decorative ring */
+.sacred-ring {
+  border: 1px solid rgba(250, 209, 68, 0.15);
+  border-radius: 50%;
+  position: relative;
+}
+
+.sacred-ring::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(250, 209, 68, 0.08);
+  border-radius: 50%;
+}
+
+/* Breathing glow animation */
+.breathing-glow {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0515;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a0a2f;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff0099;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(255, 0, 153, 0.3);
+  color: #f5f0ff;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid #fad144;
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Base body styles */
+body {
+  background-color: #05030a;
+  color: #f5f0ff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
