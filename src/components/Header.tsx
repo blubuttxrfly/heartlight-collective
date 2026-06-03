@@ -1,9 +1,15 @@
 import { Link, useLocation } from 'react-router-dom'
 
-const navItems = [
+const primaryNav = [
   { path: '/exchange', label: 'Exchange', emoji: '💱' },
   { path: '/', label: 'Collective', emoji: '🌐' },
   { path: '/flow', label: 'Flow', emoji: '♾️' },
+]
+
+const secondaryNav = [
+  { path: '/charter', label: 'Charter' },
+  { path: '/codes', label: 'Codes' },
+  { path: '/privacy', label: 'Privacy' },
 ]
 
 export default function Header() {
@@ -13,7 +19,6 @@ export default function Header() {
     <header className="relative z-50">
       {/* Top bar with sigil + title */}
       <div className="pt-8 pb-4 px-4 text-center">
-        {/* Heartlight Collective Logo → Home */}
         <Link
           to="/"
           className="inline-block mb-4 group"
@@ -29,7 +34,6 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Title → Home */}
         <Link
           to="/"
           className="block"
@@ -46,9 +50,9 @@ export default function Header() {
       </div>
 
       {/* Primary Nav: Exchange / Collective / Flow */}
-      <nav className="px-4 pb-6">
+      <nav className="px-4 pb-2">
         <div className="max-w-2xl mx-auto flex justify-center gap-3">
-          {navItems.map((item) => {
+          {primaryNav.map((item) => {
             const isActive = location.pathname === item.path
             return (
               <Link
@@ -65,6 +69,32 @@ export default function Header() {
                 `}
               >
                 {item.label} {item.emoji}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* Secondary Nav: Charter / Codes / Privacy */}
+      <nav className="px-4 pb-4">
+        <div className="max-w-2xl mx-auto flex justify-center gap-2">
+          {secondaryNav.map((item) => {
+            const isActive = location.pathname === item.path
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`
+                  px-3 py-1.5 rounded-full text-xs tracking-wide
+                  transition-all duration-300 border
+                  ${
+                    isActive
+                      ? 'border-gold-400/40 bg-gold-400/10 text-gold-300'
+                      : 'border-white/8 text-lavender/40 hover:border-white/15 hover:text-lavender/60 hover:bg-white/3'
+                  }
+                `}
+              >
+                {item.label}
               </Link>
             )
           })}
