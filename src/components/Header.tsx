@@ -141,7 +141,7 @@ export default function Header() {
         </Link>
 
         <p className="mt-2 text-lavender/80 text-sm md:text-base italic font-serif">
-          Where resonant beings co-create across the Heartlines
+          Co-creator community with mutual aid & aligned exchanges
         </p>
       </div>
 

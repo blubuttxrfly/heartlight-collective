@@ -80,7 +80,7 @@ const pillars = [
   {
     icon: Heart,
     title: 'Exchange',
-    description: 'Co-creator community with mutual aid \u0026 aligned exchanges',
+    description: 'Exchange gifts, offerings, services, and resources through aligned exchanges.',
     href: '/exchange',
     hue: {
       text: 'text-gold-400',
