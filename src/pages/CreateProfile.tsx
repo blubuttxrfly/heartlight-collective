@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
-import { generateCESNumberValue, cesEncrypt } from '../lib/ces';
+import { generateCESNumberValue } from '../lib/ces';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
 import {
   ACCESSIBILITY_PRESETS,
@@ -70,7 +70,8 @@ export default function CreateProfile() {
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
-  const [oathSigned, setOathSigned] = useState(false);
+  const [agreeCodes, setAgreeCodes] = useState(false);
+  const [agreeCharter, setAgreeCharter] = useState(false);
 
   // ── Helpers ──
   const toggleAccessibility = useCallback((a: string) => {
@@ -93,11 +94,11 @@ export default function CreateProfile() {
       case 2:
         return true; // all optional
       case 3:
-        return passphrase.length >= 6 && oathSigned;
+        return passphrase.length >= 6 && agreeCodes && agreeCharter;
       default:
         return false;
     }
-  }, [step, name, passphrase, oathSigned]);
+  }, [step, name, passphrase, agreeCodes, agreeCharter]);
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
@@ -328,19 +329,16 @@ export default function CreateProfile() {
             {generatedCES || '··· ··· ···'}
           </div>
           {generatedCES && (
-            <>
-              <p className="text-xs text-lavender/40 mt-1">Hidden: {cesEncrypt(generatedCES)}</p>
-              <button
-                onClick={() => {
-                  const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
-                  if (generatedCES) used.add(generatedCES);
-                  setGeneratedCES(generateCESNumberValue(used));
-                }}
-                className="text-xs text-gold-400/60 hover:text-gold-400 mt-2 underline"
-              >
-                Regenerate C.E.S.
-              </button>
-            </>
+            <button
+              onClick={() => {
+                const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
+                if (generatedCES) used.add(generatedCES);
+                setGeneratedCES(generateCESNumberValue(used));
+              }}
+              className="text-xs text-gold-400/60 hover:text-gold-400 mt-2 underline"
+            >
+              Regenerate C.E.S.
+            </button>
           )}
           {!generatedCES && (
             <button
@@ -407,26 +405,52 @@ export default function CreateProfile() {
           </p>
         </div>
 
-        {/* Oath */}
-        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
-          <p className="text-sm text-lavender/70 leading-relaxed mb-4">
-            I enter the Heartlight Exchange as a sovereign being. I carry the 12 Codes of ALL
-            in every offering, every wish, and every co-creation. I agree to exchange with care,
-            truth, and full consent. I honor the seasonal rhythms of my own capacity and the
-            capacity of others.
-          </p>
+        {/* Agreement Checkboxes */}
+        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 space-y-4">
+          {/* Checkbox 1 — Codes of ALL */}
           <label className="flex items-start gap-3 cursor-pointer">
             <div
-              onClick={() => setOathSigned(!oathSigned)}
+              onClick={() => setAgreeCodes(!agreeCodes)}
               className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                oathSigned
+                agreeCodes
                   ? 'border-gold-400 bg-gold-400/20'
                   : 'border-lavender/30 hover:border-lavender/50'
               }`}
             >
-              {oathSigned && <Check className="w-3.5 h-3.5 text-gold-400" />}
+              {agreeCodes && <Check className="w-3.5 h-3.5 text-gold-400" />}
             </div>
-            <span className="text-sm text-cream/80">I sign this oath with my full resonance ✦</span>
+            <div className="text-sm text-cream/80 leading-relaxed">
+              I have read the{' '}
+              <Link to="/codes" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
+                Codes of ALL
+              </Link>
+              {' '}and agree to uphold consent, sovereignty, kindness, and the Codes in all exchanges.
+            </div>
+          </label>
+
+          {/* Checkbox 2 — Privacy + Charter */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div
+              onClick={() => setAgreeCharter(!agreeCharter)}
+              className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                agreeCharter
+                  ? 'border-gold-400 bg-gold-400/20'
+                  : 'border-lavender/30 hover:border-lavender/50'
+              }`}
+            >
+              {agreeCharter && <Check className="w-3.5 h-3.5 text-gold-400" />}
+            </div>
+            <div className="text-sm text-cream/80 leading-relaxed">
+              I have read the{' '}
+              <Link to="/privacy" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
+                Privacy Assurance
+              </Link>
+              {' '}and{' '}
+              <Link to="/charter" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
+                Charter
+              </Link>
+              , and offer my Core Energetic Signature in full resonance with the Heartlight Exchange.
+            </div>
           </label>
         </div>
       </div>
