@@ -112,7 +112,7 @@ const pillars = [
   {
     icon: Infinity,
     title: 'Flow',
-    description: 'Resource Stewards guide treasury distribution.',
+    description: 'Personal flow dashboard for aligned exchanges of gifts, resources, and opportunities.',
     href: '/flow',
     hue: {
       text: 'text-lavender',
