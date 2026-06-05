@@ -1,19 +1,35 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Search, Filter, Sparkles, MapPin, Heart, X, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Sparkles, MapPin, Heart, X, ChevronRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
 import { RAY_DATA } from '../lib/constants';
 import type { CreatorRecord } from '../types/ces';
 
+/* ─── Helper: find user's profile and its queue ─── */
+function getMyProfileStatus(): { profile: CreatorRecord; queue: 'pending' | 'approved' | 'returned' } | null {
+  try {
+    const queues: ('pending' | 'approved' | 'returned')[] = ['pending', 'approved', 'returned'];
+    for (const q of queues) {
+      const list = JSON.parse(localStorage.getItem(`hlc_${q}`) || '[]') as CreatorRecord[];
+      if (list.length > 0) return { profile: list[0], queue: q };
+    }
+  } catch { /* silent */ }
+  return null;
+}
+
 /* ─── Exchange Directory ─── */
 export default function Exchange() {
-  const { getApproved } = useStorage();
+  const { getApproved, getPending, getReturned } = useStorage();
   const approved = getApproved();
+  const pending = getPending();
+  const returned = getReturned();
 
   const [search, setSearch] = useState('');
   const [filterRay, setFilterRay] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<CreatorRecord | null>(null);
+
+  const myProfile = getMyProfileStatus();
 
   const filtered = useMemo(() => {
     let list = [...approved];
@@ -44,24 +60,22 @@ export default function Exchange() {
         </Link>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
-        <Sparkles className="w-10 h-10 text-magenta-400 mx-auto mb-4" />
-        <h1 className="font-serif text-3xl md:text-4xl text-cream mb-3">Heartlight Exchange</h1>
-        <p className="text-lavender/70 max-w-xl mx-auto mb-6">
-          Where resonant beings find each other across the Heartlines.
-          Browse offerings, cast wishes, and co-create in sacred reciprocity.
-        </p>
-        <Link
-          to="/create-profile"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all text-sm"
-        >
-          <Heart className="w-4 h-4" />
-          Create Your Profile
-        </Link>
-      </motion.div>
+      {/* ── My Profile Status Banner ── */}
+      {myProfile && (
+        <ProfileStatusBanner status={myProfile} />
+      )}
+
+      {/* ── Queue Summary ── */}
+      <div className="flex items-center justify-center gap-4 mb-6 text-xs text-lavender/40">
+        <span>{approved.length} approved</span>
+        <span className="w-1 h-1 rounded-full bg-lavender/20" />
+        <span>{pending.length} pending</span>
+        <span className="w-1 h-1 rounded-full bg-lavender/20" />
+        <span>{returned.length} returned</span>
+      </div>
 
       {approved.length === 0 ? (
-        <EmptyState />
+        <EmptyState hasProfile={!!myProfile} />
       ) : (
         <>
           {/* Search + Filter Bar */}
@@ -91,7 +105,6 @@ export default function Exchange() {
             </div>
           </div>
 
-          {/* Results count */}
           <p className="text-xs text-lavender/40 mb-4">
             {filtered.length} resonant {filtered.length === 1 ? 'being' : 'beings'} in the field
             {filterRay && ` • filtered by ${filterRay} Ray`}
@@ -188,8 +201,63 @@ export default function Exchange() {
   );
 }
 
+/* ─── Profile Status Banner ─── */
+function ProfileStatusBanner({ status }: { status: { profile: CreatorRecord; queue: string } }) {
+  const { profile, queue } = status;
+
+  const config = {
+    pending: {
+      icon: Clock,
+      border: 'border-gold-400/20',
+      bg: 'bg-gold-400/5',
+      text: 'text-gold-300',
+      subtext: 'text-lavender/50',
+      message: `Your profile (C.E.S. ${profile.cesNumber}) is awaiting steward review. You will appear here once approved.`,
+    },
+    approved: {
+      icon: CheckCircle,
+      border: 'border-green-400/20',
+      bg: 'bg-green-400/5',
+      text: 'text-green-300',
+      subtext: 'text-lavender/50',
+      message: `Your profile is live in the Exchange! C.E.S. ${profile.cesNumber}`,
+    },
+    returned: {
+      icon: AlertCircle,
+      border: 'border-orange-400/20',
+      bg: 'bg-orange-400/5',
+      text: 'text-orange-300',
+      subtext: 'text-lavender/50',
+      message: `Your profile was returned for revision. Update it and resubmit. C.E.S. ${profile.cesNumber}`,
+    },
+  };
+
+  const c = config[queue as keyof typeof config] || config.pending;
+  const Icon = c.icon;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`rounded-xl border ${c.border} ${c.bg} p-4 mb-6`}
+    >
+      <div className="flex items-start gap-3">
+        <Icon className={`w-5 h-5 ${c.text} mt-0.5 flex-shrink-0`} />
+        <div>
+          <p className={`text-sm ${c.text}`}>{c.message}</p>
+          <p className={`text-xs ${c.subtext} mt-1`}>
+            {queue === 'pending' && 'A Steward will review your resonance for alignment with the 12 Codes of ALL.'}
+            {queue === 'approved' && 'You are now visible to all resonant beings in the field.'}
+            {queue === 'returned' && 'Sign in to edit your profile and resubmit for review.'}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ─── Empty State ─── */
-function EmptyState() {
+function EmptyState({ hasProfile }: { hasProfile: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -199,16 +267,35 @@ function EmptyState() {
       <Sparkles className="w-12 h-12 text-lavender/30 mx-auto mb-4" />
       <h2 className="font-serif text-2xl text-cream mb-3">The Exchange Awaits</h2>
       <p className="text-lavender/60 mb-6">
-        No resonant beings have entered the field yet. 
-        You can be the first to plant your heartlight here.
+        {hasProfile
+          ? 'Your profile is in review. Once a Steward approves it, you will appear here. In the meantime, explore the Charter and Codes.'
+          : 'No resonant beings have entered the field yet. You can be the first to plant your heartlight here.'}
       </p>
-      <Link
-        to="/create-profile"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
-      >
-        <Heart className="w-4 h-4" />
-        Create Your Profile
-      </Link>
+      {!hasProfile && (
+        <Link
+          to="/create-profile"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+        >
+          <Heart className="w-4 h-4" />
+          Create Your Profile
+        </Link>
+      )}
+      {hasProfile && (
+        <div className="flex gap-3 justify-center">
+          <Link
+            to="/charter"
+            className="px-4 py-2 rounded-full border border-lavender/20 text-lavender/60 text-sm hover:border-lavender/40 transition-all"
+          >
+            Read the Charter
+          </Link>
+          <Link
+            to="/codes"
+            className="px-4 py-2 rounded-full border border-lavender/20 text-lavender/60 text-sm hover:border-lavender/40 transition-all"
+          >
+            12 Codes of ALL
+          </Link>
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -307,6 +394,14 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
             </div>
           </div>
 
+          {/* Consent */}
+          {profile.consent && (
+            <div className="rounded-xl border border-magenta-500/10 bg-magenta-500/5 p-4">
+              <label className="block text-xs text-magenta-400/60 mb-1.5 uppercase tracking-wider">Consent & Boundaries</label>
+              <p className="text-sm text-lavender/70">{profile.consent}</p>
+            </div>
+          )}
+
           {/* Seasons */}
           {profile.seasons && Object.values(profile.seasons).some(Boolean) && (
             <div>
@@ -328,6 +423,21 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
             <div>
               <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Typical Timeline</label>
               <p className="text-sm text-lavender/60">{profile.timeline}</p>
+            </div>
+          )}
+
+          {/* Portfolio */}
+          {profile.portfolioLink && (
+            <div>
+              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Portfolio</label>
+              <a
+                href={profile.portfolioLink.startsWith('http') ? profile.portfolioLink : `https://${profile.portfolioLink}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gold-400 hover:text-gold-300 underline break-all"
+              >
+                {profile.portfolioLink}
+              </a>
             </div>
           )}
 

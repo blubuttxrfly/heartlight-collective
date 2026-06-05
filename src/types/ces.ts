@@ -18,7 +18,7 @@ export type RayKey =
   | 'Elemental'
   | 'ALL';
 
-export type WishAvailability = 'accepting' | 'full';
+export type WishAvailability = 'accepting' | 'closed';
 
 export type SeasonKey = 'Winter' | 'Spring' | 'Summer' | 'Fall';
 

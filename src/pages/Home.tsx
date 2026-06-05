@@ -136,6 +136,74 @@ function PathwayCard({ pathway, index }: { pathway: typeof pathways[0]; index: n
   )
 }
 
+/* ─── Profile Status Banner ─── */
+function ProfileStatusBanner() {
+  const { getPending, getApproved, getReturned } = useStorage();
+
+  // Find user's profile in any queue
+  const queues = [
+    { list: getPending(), label: 'pending' as const },
+    { list: getApproved(), label: 'approved' as const },
+    { list: getReturned(), label: 'returned' as const },
+  ];
+
+  const myQueue = queues.find((q) => q.list.length > 0);
+  if (!myQueue) return null;
+
+  const profile = myQueue.list[0];
+  const queue = myQueue.label;
+
+  const config = {
+    pending: {
+      border: 'border-gold-400/20',
+      bg: 'bg-gold-400/5',
+      text: 'text-gold-300',
+      subtext: 'text-lavender/50',
+      title: 'Profile Awaiting Review',
+      message: `Your profile (C.E.S. ${profile.cesNumber}) is in the pending queue. A Steward will review it for alignment with the 12 Codes of ALL.`,
+      icon: '🌱',
+    },
+    approved: {
+      border: 'border-green-400/20',
+      bg: 'bg-green-400/5',
+      text: 'text-green-300',
+      subtext: 'text-lavender/50',
+      title: 'Profile Live',
+      message: `Your profile is now visible in the Exchange! C.E.S. ${profile.cesNumber}`,
+      icon: '✦',
+    },
+    returned: {
+      border: 'border-orange-400/20',
+      bg: 'bg-orange-400/5',
+      text: 'text-orange-300',
+      subtext: 'text-lavender/50',
+      title: 'Profile Returned',
+      message: `Your profile was returned for revision. Sign in to update and resubmit. C.E.S. ${profile.cesNumber}`,
+      icon: '🍂',
+    },
+  };
+
+  const c = config[queue];
+
+  return (
+    <section className="mb-8">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`rounded-xl border ${c.border} ${c.bg} p-4`}
+      >
+        <div className="flex items-start gap-3">
+          <span className="text-xl">{c.icon}</span>
+          <div>
+            <p className={`text-sm font-medium ${c.text}`}>{c.title}</p>
+            <p className={`text-xs ${c.subtext} mt-1`}>{c.message}</p>
+          </div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
 /* ─── Live Directory Preview ─── */
 function LiveDirectorySection() {
   const { getApproved } = useStorage();
@@ -226,6 +294,8 @@ export default function Home() {
           </p>
         </motion.div>
       </section>
+
+      <ProfileStatusBanner />
 
       {/* Treasury Stats */}
       <section className="mb-12">

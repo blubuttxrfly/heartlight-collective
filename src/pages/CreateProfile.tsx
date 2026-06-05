@@ -70,6 +70,10 @@ export default function CreateProfile() {
   const [timeline, setTimeline] = useState('');
   const [numerology, setNumerology] = useState<string[]>([]);
   const [accessibility, setAccessibility] = useState<string[]>([]);
+  const [consent, setConsent] = useState('');
+  const [portfolioLink, setPortfolioLink] = useState('');
+  const [seasonCurrent, setSeasonCurrent] = useState('');
+  const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
   const [portfolioItems, _setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [contactMethods, setContactMethods] = useState<ContactMethods>(emptyContact());
   const [contactVisibility, setContactVisibility] = useState<ContactVisibility>(emptyContactVisibility());
@@ -167,25 +171,25 @@ export default function CreateProfile() {
       timeline: timeline.trim(),
       numerology,
       accessibility,
-      consent: '',
-      portfolioLink: '',
+      consent: consent.trim(),
+      portfolioLink: portfolioLink.trim(),
       portfolioItems,
       contactMethods,
       contactVisibility,
       publicContactVisibility: false,
       contactMethod: '',
-      season_current: '',
+      season_current: seasonCurrent.trim(),
       cesNumber: ces,
       passphrase,
-      wishAvailability: 'accepting',
-      directoryWishStatus: 'accepting',
+      wishAvailability,
+      directoryWishStatus: wishAvailability,
       stewardship: 'active',
       stewardshipNote: '',
     };
 
     addProfile(record, 'pending');
     setSubmitted(true);
-  }, [name, pronouns, title, location, sun, moon, avatarMark, selectedRays, heartlight, offerings, exchanges, seasons, timeline, numerology, accessibility, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
+  }, [name, pronouns, title, location, sun, moon, avatarMark, selectedRays, heartlight, offerings, exchanges, seasons, timeline, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -403,7 +407,61 @@ export default function CreateProfile() {
           </div>
         </div>
 
-        {/* Portfolio (simplified — file upload can be Phase 2C) */}
+        {/* Portfolio Link */}
+        <div>
+          <label className="block text-sm text-lavender/70 mb-1">Portfolio Link <span className="text-lavender/40">(optional)</span></label>
+          <input
+            type="text"
+            value={portfolioLink}
+            onChange={(e) => setPortfolioLink(e.target.value)}
+            placeholder="Website, Instagram, SoundCloud, or portfolio URL"
+            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+          />
+        </div>
+
+        {/* Current Season Emoji */}
+        <div>
+          <label className="block text-sm text-lavender/70 mb-1">Current Season Symbol <span className="text-lavender/40">(optional)</span></label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={seasonCurrent}
+              onChange={(e) => setSeasonCurrent(e.target.value.slice(0, 2))}
+              placeholder="e.g. 🌱 or ❄️"
+              className="w-24 px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-center text-lg placeholder:text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+            />
+            <div className="flex-1 flex items-center gap-1.5">
+              {['🌱','🌞','🍂','❄️','🌀','✨','🔭'].map((em) => (
+                <button
+                  key={em}
+                  onClick={() => setSeasonCurrent(em)}
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg transition-all ${
+                    seasonCurrent === em
+                      ? 'border-gold-400/40 bg-gold-400/10'
+                      : 'border-lavender/10 hover:border-lavender/20'
+                  }`}
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="text-xs text-lavender/40 mt-1">This appears next to your name in the directory.</p>
+        </div>
+
+        {/* Consent Statement */}
+        <div>
+          <label className="block text-sm text-lavender/70 mb-1">Consent & Boundaries <span className="text-lavender/40">(optional)</span></label>
+          <textarea
+            value={consent}
+            onChange={(e) => setConsent(e.target.value)}
+            placeholder="Describe your consent practices, boundaries, or anything participants should know before engaging with you."
+            rows={3}
+            className="w-full px-4 py-3 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+          />
+        </div>
+
+        {/* Portfolio Upload (Phase 2C placeholder) */}
         <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
           <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
           <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
@@ -500,6 +558,36 @@ export default function CreateProfile() {
             </button>
           </div>
           <p className="text-xs text-lavender/40 mt-1">This is your sovereign key. You will need it to sign in and edit your profile.</p>
+        </div>
+
+        {/* Wish Availability Toggle */}
+        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
+          <label className="block text-sm text-lavender/70 mb-3">Wish Availability</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setWishAvailability('accepting')}
+              className={`flex-1 py-2.5 rounded-xl text-sm border transition-all ${
+                wishAvailability === 'accepting'
+                  ? 'border-green-400/30 bg-green-400/10 text-green-300'
+                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/20'
+              }`}
+            >
+              🌱 Currently Accepting Wishes
+            </button>
+            <button
+              onClick={() => setWishAvailability('closed')}
+              className={`flex-1 py-2.5 rounded-xl text-sm border transition-all ${
+                wishAvailability === 'closed'
+                  ? 'border-orange-400/30 bg-orange-400/10 text-orange-300'
+                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/20'
+              }`}
+            >
+              🍂 Not Currently Accepting
+            </button>
+          </div>
+          <p className="text-xs text-lavender/40 mt-2">
+            This controls whether other beings can cast wishes to you through the Exchange.
+          </p>
         </div>
 
         {/* Oath */}

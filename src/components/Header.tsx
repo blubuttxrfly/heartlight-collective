@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogIn, LogOut } from 'lucide-react';
+import { LogOut, Shield, ChevronDown } from 'lucide-react';
 import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
@@ -8,7 +8,6 @@ const primaryNav = [
   { path: '/exchange', label: 'Exchange', emoji: '💱' },
   { path: '/', label: 'Collective', emoji: '🌐' },
   { path: '/flow', label: 'Flow', emoji: '♾️' },
-  { path: '/create-profile', label: 'Join', emoji: '✦' },
 ];
 
 const secondaryNav = [
@@ -17,45 +16,105 @@ const secondaryNav = [
   { path: '/privacy', label: 'Privacy' },
 ];
 
+/** Detect if this browser has created a profile (any queue) */
+function getLocalProfile(): any | null {
+  try {
+    const all = [
+      ...(JSON.parse(localStorage.getItem('hlc_pending') || '[]')),
+      ...(JSON.parse(localStorage.getItem('hlc_approved') || '[]')),
+      ...(JSON.parse(localStorage.getItem('hlc_returned') || '[]')),
+    ];
+    return all.length > 0 ? all[0] : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Header() {
   const location = useLocation();
   const { user, signedIn, signOut } = useSession();
   const [showSignIn, setShowSignIn] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const localProfile = getLocalProfile();
+  const hasProfile = !!localProfile;
+  const isSteward = signedIn && user?.cesNumber === '111111111';
 
   return (
     <header className="relative z-50">
-      {/* Session bar — profile corner */}
-      <div className="absolute top-3 right-4 flex items-center gap-2 z-[60]">
+      {/* ── Upper Right: Profile / Join / Sign In ── */}
+      <div className="absolute top-3 right-4 z-[60]">
         {signedIn ? (
-          <div className="flex items-center gap-2">
-            <Link
-              to="/profile"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
-            >
-              <span className="text-sm text-gold-300">{user?.emoji || '✦'}</span>
-              <span className="text-xs text-lavender/80 hidden sm:inline">{user?.name}</span>
-            </Link>
+          <div className="relative">
             <button
-              onClick={signOut}
-              className="p-1.5 rounded-full border border-lavender/10 text-lavender/40 hover:text-lavender/70 hover:border-lavender/20 transition-all"
-              title="Sign out"
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
             >
-              <LogOut className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-sm">
+                {user?.emoji || '✦'}
+              </span>
+              <span className="text-xs text-lavender/80 hidden sm:inline max-w-[100px] truncate">{user?.name}</span>
+              <ChevronDown className="w-3 h-3 text-lavender/40" />
+              {isSteward && <Shield className="w-3 h-3 text-gold-400" />}
             </button>
+
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-lavender/10 bg-void-900 shadow-xl overflow-hidden"
+                onMouseLeave={() => setShowDropdown(false)}
+              >
+                <div className="px-4 py-3 border-b border-lavender/5">
+                  <p className="text-xs text-lavender/50">C.E.S.</p>
+                  <p className="text-sm text-gold-300 font-mono">{user?.cesNumber}</p>
+                </div>
+                <Link
+                  to="/profile"
+                  className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  My Profile
+                </Link>
+                {isSteward && (
+                  <Link
+                    to="/steward"
+                    className="block px-4 py-2 text-sm text-gold-400 hover:text-gold-300 hover:bg-gold-400/5 transition-colors"
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    <Shield className="w-3 h-3 inline mr-1" /> Steward Portal
+                  </Link>
+                )}
+                <button
+                  onClick={() => { signOut(); setShowDropdown(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-lavender/50 hover:text-lavender/80 hover:bg-white/5 transition-colors border-t border-lavender/5"
+                >
+                  <LogOut className="w-3 h-3 inline mr-1" /> Sign Out
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
+        ) : hasProfile ? (
           <button
             onClick={() => setShowSignIn(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-lavender/10 text-lavender/60 hover:text-lavender hover:border-lavender/30 transition-all text-sm"
+            className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
+            title="Sign in to your profile"
           >
-            <LogIn className="w-4 h-4" />
-            <span className="hidden sm:inline">Sign In</span>
+            <span className="w-7 h-7 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-sm">
+              {localProfile?.emoji || '✦'}
+            </span>
+            <span className="text-xs text-lavender/60 hidden sm:inline">{localProfile?.name || 'Profile'}</span>
           </button>
+        ) : (
+          <Link
+            to="/create-profile"
+            className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/30 bg-gold-400/10 text-gold-300 hover:bg-gold-400/20 transition-all"
+          >
+            <span className="w-7 h-7 rounded-full bg-void-900 border border-gold-400/20 flex items-center justify-center text-sm">✦</span>
+            <span className="text-xs hidden sm:inline">Join</span>
+          </Link>
         )}
       </div>
 
-      {/* Top bar with sigil + title */}
-      <div className="pt-8 pb-4 px-4 text-center">
+      {/* ── Top bar with sigil + title ── */}
+      <div className="pt-10 pb-4 px-4 text-center">
         <Link
           to="/"
           className="inline-block mb-4 group"
@@ -86,7 +145,7 @@ export default function Header() {
         </p>
       </div>
 
-      {/* Primary Nav: Exchange / Collective / Flow */}
+      {/* ── Primary Nav: 3 pillars only ── */}
       <nav className="px-4 pb-2">
         <div className="max-w-2xl mx-auto flex justify-center gap-3">
           {primaryNav.map((item) => {
@@ -112,7 +171,7 @@ export default function Header() {
         </div>
       </nav>
 
-      {/* Secondary Nav: Charter / Codes / Privacy */}
+      {/* ── Secondary Nav ── */}
       <nav className="px-4 pb-4">
         <div className="max-w-2xl mx-auto flex justify-center gap-2">
           {secondaryNav.map((item) => {
