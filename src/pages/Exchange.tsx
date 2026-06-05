@@ -185,7 +185,7 @@ export default function Exchange() {
                 to="/create-profile"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gold-400/30 text-gold-300 text-sm hover:bg-gold-400/10 transition-all"
               >
-                <Heart className="w-4 h-4" /> Create Your Profile
+                Create Your Profile <Heart className="w-4 h-4" />
               </Link>
             </div>
           )}
@@ -276,8 +276,7 @@ function EmptyState({ hasProfile }: { hasProfile: boolean }) {
           to="/create-profile"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
         >
-          <Heart className="w-4 h-4" />
-          Create Your Profile
+          Create Your Profile <Heart className="w-4 h-4" />
         </Link>
       )}
       {hasProfile && (

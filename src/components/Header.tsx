@@ -178,8 +178,8 @@ export default function Header() {
                   ${isActive ? hue.active : hue.inactive}
                 `}
               >
-                <Icon className="w-4 h-4" strokeWidth={2} />
                 {item.label}
+                <Icon className="w-4 h-4" strokeWidth={2} />
               </Link>
             );
           })}
