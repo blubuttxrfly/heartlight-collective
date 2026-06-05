@@ -393,10 +393,9 @@ function ProfileReviewCard({
             {profile.pronouns && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Pronouns: </span>{profile.pronouns}</p>}
             {profile.sunPlacement && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Sun: </span>{profile.sunPlacement}</p>}
             {profile.moonPlacement && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Moon: </span>{profile.moonPlacement}</p>}
-            {profile.season_current && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Season: </span>{profile.season_current}</p>}
             {profile.consent && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Consent: </span>{profile.consent}</p>}
             {profile.accessibility?.length > 0 && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Accessibility: </span>{profile.accessibility.join(', ')}</p>}
-            {profile.numerology?.length > 0 && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Numerology: </span>{profile.numerology.join(', ')}</p>}
+            {profile.numerology?.length > 0 && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Life Path Number: </span>{profile.numerology.join(', ')}</p>}
             {profile.portfolioLink && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Portfolio: </span>{profile.portfolioLink}</p>}
           </motion.div>
         )}

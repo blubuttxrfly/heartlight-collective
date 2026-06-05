@@ -64,8 +64,8 @@ export interface CreatorRecord {
   pronouns: string;
   title: string;
   location: string;
-  sunPlacement: string;
-  moonPlacement: string;
+  sunPlacement?: string;
+  moonPlacement?: string;
   emoji: string;
   photo: string | null;
 
@@ -84,6 +84,7 @@ export interface CreatorRecord {
   seasons?: SeasonState;
   timeline?: string;
 
+  // Life Path Number (single free-text value, stored as first item)
   numerology: string[];
   accessibility: string[];
   consent: string;
@@ -93,7 +94,8 @@ export interface CreatorRecord {
   contactVisibility: ContactVisibility;
   publicContactVisibility: boolean;
   contactMethod: string;
-  season_current: string;
+  // DEPRECATED — season symbol removed from profile creation
+  season_current?: string;
   cesNumber: string | null;
   passphrase: string;
   wishAvailability: WishAvailability;

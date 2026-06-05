@@ -6,7 +6,6 @@ import { useStorage } from '../lib/storage';
 import { generateCESNumberValue, cesEncrypt } from '../lib/ces';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
 import {
-  NUMEROLOGY_PRESETS,
   ACCESSIBILITY_PRESETS,
   ASTROLOGY_SIGNS,
   CONTACT_FIELDS,
@@ -65,7 +64,6 @@ export default function CreateProfile() {
   const [contactVisibility, setContactVisibility] = useState<ContactVisibility>(emptyContactVisibility());
   const [numerology, setNumerology] = useState<string[]>([]);
   const [accessibility, setAccessibility] = useState<string[]>([]);
-  const [seasonCurrent, setSeasonCurrent] = useState('');
   const [consent, setConsent] = useState('');
 
   // Step 3
@@ -75,10 +73,6 @@ export default function CreateProfile() {
   const [oathSigned, setOathSigned] = useState(false);
 
   // ── Helpers ──
-  const toggleNumerology = useCallback((n: string) => {
-    setNumerology((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
-  }, []);
-
   const toggleAccessibility = useCallback((a: string) => {
     setAccessibility((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
   }, []);
@@ -132,7 +126,7 @@ export default function CreateProfile() {
       contactVisibility,
       publicContactVisibility: false,
       contactMethod: '',
-      season_current: seasonCurrent.trim(),
+      season_current: '',
       cesNumber: ces,
       passphrase,
       wishAvailability,
@@ -143,7 +137,7 @@ export default function CreateProfile() {
 
     addProfile(record, 'pending');
     setSubmitted(true);
-  }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
+  }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -209,11 +203,6 @@ export default function CreateProfile() {
         <Field label="Pronouns" value={pronouns} onChange={setPronouns} placeholder="e.g. they/them, she/her" />
         <Field label="Title / Role" value={title} onChange={setTitle} placeholder="e.g. Astrologer, Web Developer" />
         <Field label="Location" value={location} onChange={setLocation} placeholder="City, Region, or Earth" />
-
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
-          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
-        </div>
       </div>
     </motion.div>,
 
@@ -237,6 +226,12 @@ export default function CreateProfile() {
 
         {/* Portfolio Link */}
         <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
+
+        {/* Sun & Moon Placements */}
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
+          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
+        </div>
 
         {/* Portfolio Upload (Phase 2C placeholder) */}
         <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
@@ -274,24 +269,17 @@ export default function CreateProfile() {
           </div>
         </div>
 
-        {/* Numerology */}
+        {/* Life Path Number */}
         <div>
-          <label className="block text-sm text-lavender/70 mb-2">Numerology <span className="text-lavender/40">(optional)</span></label>
-          <div className="flex flex-wrap gap-2">
-            {NUMEROLOGY_PRESETS.map((n) => (
-              <button
-                key={n}
-                onClick={() => toggleNumerology(n)}
-                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                  numerology.includes(n)
-                    ? 'border-violet-400/40 bg-violet-400/10 text-violet-300'
-                    : 'border-white/10 text-lavender/60 hover:border-white/20'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
+          <label className="block text-sm text-lavender/70 mb-1">Life Path Number <span className="text-lavender/40">(optional)</span></label>
+          <input
+            type="text"
+            value={numerology[0] || ''}
+            onChange={(e) => setNumerology(e.target.value.trim() ? [e.target.value.trim()] : [])}
+            placeholder="e.g. 7, 11, 22..."
+            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+          />
+          <p className="text-xs text-lavender/40 mt-1">Your numerological life path, if you resonate with sharing it.</p>
         </div>
 
         {/* Accessibility */}
@@ -312,36 +300,6 @@ export default function CreateProfile() {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Current Season Symbol */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Current Season Symbol <span className="text-lavender/40">(optional)</span></label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={seasonCurrent}
-              onChange={(e) => setSeasonCurrent(e.target.value.slice(0, 2))}
-              placeholder="e.g. 🌱 or ❄️"
-              className="w-24 px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-center text-lg placeholder:text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-            />
-            <div className="flex-1 flex items-center gap-1.5">
-              {['🌱','🌞','🍂','❄️','🌀','✨','🔭'].map((em) => (
-                <button
-                  key={em}
-                  onClick={() => setSeasonCurrent(em)}
-                  className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg transition-all ${
-                    seasonCurrent === em
-                      ? 'border-gold-400/40 bg-gold-400/10'
-                      : 'border-lavender/10 hover:border-lavender/20'
-                  }`}
-                >
-                  {em}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-xs text-lavender/40 mt-1">This appears next to your name in the directory.</p>
         </div>
 
         {/* Consent Statement */}

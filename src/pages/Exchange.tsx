@@ -347,10 +347,10 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
             </div>
           )}
 
-          {/* Numerology */}
+          {/* Life Path Number */}
           {profile.numerology?.length > 0 && (
             <div>
-              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Numerology</label>
+              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Life Path Number</label>
               <div className="flex flex-wrap gap-2">
                 {profile.numerology.map((n) => (
                   <span key={n} className="px-2 py-0.5 rounded-full bg-violet-400/10 border border-violet-400/20 text-violet-300 text-xs">
