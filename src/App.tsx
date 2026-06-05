@@ -8,6 +8,7 @@ import Charter from './pages/Charter'
 import Codes from './pages/Codes'
 import Privacy from './pages/Privacy'
 import CreateProfile from './pages/CreateProfile'
+import StewardGate from './pages/StewardGate'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/codes" element={<Codes />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/create-profile" element={<CreateProfile />} />
+          <Route path="/steward" element={<StewardGate />} />
         </Routes>
       </main>
       <Footer />

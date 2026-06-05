@@ -70,14 +70,31 @@ interface StorageContextValue {
 const StorageContext = createContext<StorageContextValue | null>(null);
 
 export function StorageProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<StorageState>(() => ({
-    pending: readStorageKey('pending'),
-    approved: readStorageKey('approved'),
-    returned: readStorageKey('returned'),
-    authorizedCES: readStorageKey('authorizedCES'),
-    securityLog: readStorageKey('securityLog'),
-    agreements: readStorageKey('agreements'),
-  }));
+  const [state, setState] = useState<StorageState>(() => {
+    const initial: StorageState = {
+      pending: readStorageKey('pending'),
+      approved: readStorageKey('approved'),
+      returned: readStorageKey('returned'),
+      authorizedCES: readStorageKey('authorizedCES'),
+      securityLog: readStorageKey('securityLog'),
+      agreements: readStorageKey('agreements'),
+    };
+    // Seed Atlas as founding steward if no stewards exist
+    if (initial.authorizedCES.length === 0) {
+      initial.authorizedCES = [
+        {
+          id: 'steward_atlas',
+          name: 'Atlas Morphoenix',
+          ces: '111111111',
+          passphrase: 'sovereign42',
+          role: 'Founding Steward',
+          createdAt: new Date().toISOString(),
+          status: 'active',
+        },
+      ];
+    }
+    return initial;
+  });
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -88,13 +105,6 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       writeStorageKey(key, state[key]);
     });
   }, [state]);
-
-  const setQueue = useCallback(
-    <K extends 'pending' | 'approved' | 'returned'>(key: K, value: StorageState[K]) => {
-      setState((prev) => ({ ...prev, [key]: value }));
-    },
-    []
-  );
 
   const getProfiles = useCallback(() => {
     return [...stateRef.current.pending, ...stateRef.current.approved, ...stateRef.current.returned];
