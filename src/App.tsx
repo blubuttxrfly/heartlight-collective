@@ -7,6 +7,7 @@ import Flow from './pages/Flow'
 import Charter from './pages/Charter'
 import Codes from './pages/Codes'
 import Privacy from './pages/Privacy'
+import CreateProfile from './pages/CreateProfile'
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/charter" element={<Charter />} />
           <Route path="/codes" element={<Codes />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/create-profile" element={<CreateProfile />} />
         </Routes>
       </main>
       <Footer />
