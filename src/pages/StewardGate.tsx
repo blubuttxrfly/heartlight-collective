@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Eye, EyeOff, Check, X, ArrowLeft, LogOut, AlertTriangle, UserCheck, UserX, RotateCcw } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
 import { cesEncrypt } from '../lib/ces';
 import type { CreatorRecord, SecurityLogEntry } from '../types/ces';
@@ -9,7 +9,6 @@ import type { CreatorRecord, SecurityLogEntry } from '../types/ces';
 /* ─── Steward Gate ─── */
 export default function StewardGate() {
   const { getStewards, getPending, getApproved, getReturned, getSecurityLog, moveProfile, addSecurityLog } = useStorage();
-  const navigate = useNavigate();
 
   const [authorized, setAuthorized] = useState(false);
   const [ces, setCes] = useState('');

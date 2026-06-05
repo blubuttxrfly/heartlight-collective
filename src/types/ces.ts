@@ -96,11 +96,15 @@ export interface CreatorRecord {
 }
 
 export interface AuthorizedStewardEntry {
-  cesPlain: string;
-  cesEncrypted: string;
+  id?: string;
+  ces: string;
+  cesEncrypted?: string;
   name: string;
   passphrase: string;
-  registeredAt: string;
+  role?: string;
+  registeredAt?: string;
+  createdAt?: string;
+  status?: string;
 }
 
 export interface SecurityLogEntry {

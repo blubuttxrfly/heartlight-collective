@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Heart, Globe, Infinity, Users, TrendingUp, ArrowRight, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useStorage } from '../lib/storage'
 
 /* ─── Mock Data ─── */
 const treasuryStats = {
@@ -9,10 +10,10 @@ const treasuryStats = {
   activeContributors: 12,
   sovereignSupporters: 7,
   recentTransactions: [
-    { id: 1, type: 'inflow', amount: 500.00, from: 'Sovereign Supporter', date: '2026-05-28' },
-    { id: 2, type: 'inflow', amount: 250.00, from: 'Heartlight Exchange', date: '2026-05-25' },
-    { id: 3, type: 'allocation', amount: 800.00, to: 'Sanctuary Operations', date: '2026-05-20' },
-    { id: 4, type: 'inflow', amount: 120.00, from: 'Community Offering', date: '2026-05-18' },
+    { id: 1, type: 'inflow' as const, amount: 500.00, from: 'Sovereign Supporter', date: '2026-05-28' },
+    { id: 2, type: 'inflow' as const, amount: 250.00, from: 'Heartlight Exchange', date: '2026-05-25' },
+    { id: 3, type: 'allocation' as const, amount: 800.00, to: 'Sanctuary Operations', date: '2026-05-20' },
+    { id: 4, type: 'inflow' as const, amount: 120.00, from: 'Community Offering', date: '2026-05-18' },
   ],
 }
 
@@ -135,6 +136,71 @@ function PathwayCard({ pathway, index }: { pathway: typeof pathways[0]; index: n
   )
 }
 
+/* ─── Live Directory Preview ─── */
+function LiveDirectorySection() {
+  const { getApproved } = useStorage();
+  const approved = getApproved();
+
+  if (approved.length === 0) return null;
+
+  return (
+    <section className="mb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="font-serif text-2xl text-cream">Resonant Beings in the Field</h3>
+            <p className="text-sm text-lavender/50">{approved.length} {approved.length === 1 ? 'being' : 'beings'} ready for exchange</p>
+          </div>
+          <Link
+            to="/exchange"
+            className="px-4 py-2 rounded-full border border-magenta-500/20 text-magenta-300 text-sm hover:bg-magenta-500/10 transition-all"
+          >
+            Enter Exchange <ArrowRight className="w-4 h-4 inline" />
+          </Link>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {approved.slice(0, 6).map((profile) => (
+            <Link
+              key={profile.id}
+              to="/exchange"
+              className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 hover:border-lavender/20 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-lg">
+                  {profile.emoji || '✦'}
+                </div>
+                <div>
+                  <div className="text-cream text-sm font-medium">{profile.name}</div>
+                  {profile.title && <div className="text-xs text-lavender/50">{profile.title}</div>}
+                </div>
+              </div>
+              <p className="text-xs text-lavender/60 line-clamp-2">{profile.heartlight}</p>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {profile.offerings.slice(0, 3).map((o) => (
+                  <span key={o} className="px-2 py-0.5 rounded-full bg-void-900/60 border border-lavender/10 text-lavender/50 text-xs">
+                    {o}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {approved.length > 6 && (
+          <p className="text-center mt-4 text-sm text-lavender/40">
+            +{approved.length - 6} more in the Exchange →
+          </p>
+        )}
+      </motion.div>
+    </section>
+  );
+}
+
 /* ─── Main Page ─── */
 export default function Home() {
   return (
@@ -178,6 +244,8 @@ export default function Home() {
         </div>
       </section>
 
+      <LiveDirectorySection />
+
       {/* Charter Teaser */}
       <section className="text-center py-8">
         <motion.div
@@ -192,12 +260,12 @@ export default function Home() {
             A living vow for Atlas Island's seasonal co-creation economy. 
             Grounded in sacred reciprocity, radical transparency, and the Heartlight of ALL that IS.
           </p>
-          <button
-            className="px-6 py-3 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all"
-            onClick={() => alert('Full Charter coming in Phase 2 — governance, agreements, and seasonal cycles.')}
+          <Link
+            to="/charter"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all"
           >
-            Read the Charter 📜
-          </button>
+            Read the Charter <ArrowRight className="w-4 h-4" />
+          </Link>
         </motion.div>
       </section>
     </div>

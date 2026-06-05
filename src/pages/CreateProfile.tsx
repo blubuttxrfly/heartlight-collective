@@ -70,7 +70,7 @@ export default function CreateProfile() {
   const [timeline, setTimeline] = useState('');
   const [numerology, setNumerology] = useState<string[]>([]);
   const [accessibility, setAccessibility] = useState<string[]>([]);
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [portfolioItems, _setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [contactMethods, setContactMethods] = useState<ContactMethods>(emptyContact());
   const [contactVisibility, setContactVisibility] = useState<ContactVisibility>(emptyContactVisibility());
 

@@ -338,7 +338,7 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
               <label className="block text-xs text-gold-400/60 mb-2 uppercase tracking-wider">Visible Contact Methods</label>
               <div className="space-y-1">
                 {visibleContacts.map((key) => {
-                  const val = profile.contactMethods?.[key];
+                  const val = ((profile.contactMethods as unknown) as Record<string, string>)[key];
                   if (!val) return null;
                   return (
                     <div key={key} className="flex items-center gap-2 text-sm">

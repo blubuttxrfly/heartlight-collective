@@ -11,7 +11,7 @@ interface SignInOverlayProps {
 }
 
 export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
-  const { findProfileByCES, getStewards, addSecurityLog } = useStorage();
+  const { findProfileByCES, addSecurityLog } = useStorage();
   const { signIn } = useSession();
   const [step, setStep] = useState<'ces' | 'passphrase' | 'success' | 'error'>('ces');
   const [ces, setCes] = useState('');

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, LogIn, LogOut } from 'lucide-react';
+import { LogIn, LogOut } from 'lucide-react';
 import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
@@ -23,7 +23,7 @@ export default function Header() {
 
   return (
     <header className="relative z-50">
-      <{/* Session bar — profile corner */}
+      {/* Session bar — profile corner */}
       <div className="absolute top-3 right-4 flex items-center gap-2 z-[60]">
         {signedIn ? (
           <div className="flex items-center gap-2">
