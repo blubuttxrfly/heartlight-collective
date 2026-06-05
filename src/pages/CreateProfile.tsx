@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
 import { generateCESNumberValue, cesEncrypt } from '../lib/ces';
@@ -58,7 +58,8 @@ export default function CreateProfile() {
   const [location, setLocation] = useState('');
   const [sun, setSun] = useState('');
   const [moon, setMoon] = useState('');
-  const [avatarMark, setAvatarMark] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedRays, setSelectedRays] = useState<string[]>([]);
   const [offerings, setOfferings] = useState<string[]>([]);
@@ -131,7 +132,7 @@ export default function CreateProfile() {
   const canProceed = useCallback(() => {
     switch (step) {
       case 1:
-        return name.trim().length >= 2 && avatarMark.trim().length > 0;
+        return name.trim().length >= 2;
       case 2:
         return selectedRays.length > 0 && offerings.length > 0 && exchanges.length > 0 && heartlight.trim().length >= 10;
       case 3:
@@ -141,7 +142,7 @@ export default function CreateProfile() {
       default:
         return false;
     }
-  }, [step, name, avatarMark, selectedRays, offerings, exchanges, heartlight, seasons, timeline, passphrase, oathSigned]);
+  }, [step, name, selectedRays, offerings, exchanges, heartlight, seasons, timeline, passphrase, oathSigned]);
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
@@ -150,6 +151,7 @@ export default function CreateProfile() {
     if (!generatedCES) setGeneratedCES(ces);
 
     const primaryRay = selectedRays[0] || '';
+    const initials = getInitials(name.trim());
     const record: CreatorRecord = {
       id: `profile_${Date.now()}`,
       name: name.trim(),
@@ -158,8 +160,8 @@ export default function CreateProfile() {
       location: location.trim(),
       sunPlacement: sun,
       moonPlacement: moon,
-      emoji: avatarMark.slice(0, 3),
-      photo: null,
+      emoji: initials,
+      photo: photo,
       ray: primaryRay,
       primaryRay: `${primaryRay} Ray`,
       primaryRayKey: primaryRay,
@@ -189,7 +191,7 @@ export default function CreateProfile() {
 
     addProfile(record, 'pending');
     setSubmitted(true);
-  }, [name, pronouns, title, location, sun, moon, avatarMark, selectedRays, heartlight, offerings, exchanges, seasons, timeline, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
+  }, [name, pronouns, title, location, sun, moon, photo, selectedRays, heartlight, offerings, exchanges, seasons, timeline, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -208,16 +210,59 @@ export default function CreateProfile() {
           <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
         </div>
 
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Avatar Mark *</label>
+        {/* Profile Picture */}
+        <div className="flex flex-col items-center gap-3">
+          <label className="block text-sm text-lavender/70">Profile Picture</label>
+
+          {/* Avatar preview */}
+          <div className="relative w-24 h-24 rounded-full border-2 border-lavender/20 overflow-hidden bg-void-800 flex items-center justify-center">
+            {photo ? (
+              <img src={photo} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-2xl font-serif text-cream/80">
+                {getInitials(name)}
+              </span>
+            )}
+
+            {/* Hover overlay with remove button when photo exists */}
+            {photo && (
+              <button
+                onClick={() => setPhoto(null)}
+                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                title="Remove photo"
+              >
+                <X className="w-5 h-5 text-cream" />
+              </button>
+            )}
+          </div>
+
+          {/* Upload / Camera button */}
           <input
-            type="text"
-            value={avatarMark}
-            onChange={(e) => setAvatarMark(e.target.value.slice(0, 3))}
-            placeholder="Up to 3 letters, symbols, or emoji"
-            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => setPhoto(ev.target?.result as string);
+              reader.readAsDataURL(file);
+            }}
           />
-          <p className="text-xs text-lavender/40 mt-1">This appears when no photo is uploaded. {avatarMark ? `${avatarMark} will be your mark.` : ''}</p>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-void-800 border border-lavender/10 text-lavender/70 hover:text-cream text-sm transition-all"
+          >
+            <Camera className="w-4 h-4" />
+            {photo ? 'Change Picture' : 'Upload Picture'}
+          </button>
+
+          <p className="text-xs text-lavender/40 text-center">
+            {photo
+              ? 'Your picture will appear in the directory.'
+              : `Without a photo, your initials (${getInitials(name)}) will be your avatar.`}
+          </p>
         </div>
       </div>
     </motion.div>,
@@ -739,4 +784,12 @@ function Select({ label, value, onChange, options }: {
       </select>
     </div>
   );
+}
+
+/* ─── Avatar helpers ─── */
+function getInitials(name: string): string {
+  if (!name.trim()) return '?';
+  const parts = name.trim().split(/\s+/);
+  const chars = parts.map((p) => p[0].toUpperCase());
+  return chars.slice(0, 3).join('');
 }
