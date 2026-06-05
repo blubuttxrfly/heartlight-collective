@@ -1,22 +1,58 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { User, LogIn, LogOut } from 'lucide-react';
+import { useSession } from '../lib/session';
+import SignInOverlay from './SignInOverlay';
 
 const primaryNav = [
   { path: '/exchange', label: 'Exchange', emoji: '💱' },
   { path: '/', label: 'Collective', emoji: '🌐' },
   { path: '/flow', label: 'Flow', emoji: '♾️' },
-]
+];
 
 const secondaryNav = [
   { path: '/charter', label: 'Charter' },
   { path: '/codes', label: 'Codes' },
   { path: '/privacy', label: 'Privacy' },
-]
+];
 
 export default function Header() {
-  const location = useLocation()
+  const location = useLocation();
+  const { user, signedIn, signOut } = useSession();
+  const [showSignIn, setShowSignIn] = useState(false);
 
   return (
     <header className="relative z-50">
+      <{/* Session bar — profile corner */}
+      <div className="absolute top-3 right-4 flex items-center gap-2 z-[60]">
+        {signedIn ? (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
+            >
+              <span className="text-sm text-gold-300">{user?.emoji || '✦'}</span>
+              <span className="text-xs text-lavender/80 hidden sm:inline">{user?.name}</span>
+            </Link>
+            <button
+              onClick={signOut}
+              className="p-1.5 rounded-full border border-lavender/10 text-lavender/40 hover:text-lavender/70 hover:border-lavender/20 transition-all"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowSignIn(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-lavender/10 text-lavender/60 hover:text-lavender hover:border-lavender/30 transition-all text-sm"
+          >
+            <LogIn className="w-4 h-4" />
+            <span className="hidden sm:inline">Sign In</span>
+          </button>
+        )}
+      </div>
+
       {/* Top bar with sigil + title */}
       <div className="pt-8 pb-4 px-4 text-center">
         <Link
@@ -53,7 +89,7 @@ export default function Header() {
       <nav className="px-4 pb-2">
         <div className="max-w-2xl mx-auto flex justify-center gap-3">
           {primaryNav.map((item) => {
-            const isActive = location.pathname === item.path
+            const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
@@ -70,7 +106,7 @@ export default function Header() {
               >
                 {item.label} {item.emoji}
               </Link>
-            )
+            );
           })}
         </div>
       </nav>
@@ -79,7 +115,7 @@ export default function Header() {
       <nav className="px-4 pb-4">
         <div className="max-w-2xl mx-auto flex justify-center gap-2">
           {secondaryNav.map((item) => {
-            const isActive = location.pathname === item.path
+            const isActive = location.pathname === item.path;
             return (
               <Link
                 key={item.path}
@@ -96,10 +132,12 @@ export default function Header() {
               >
                 {item.label}
               </Link>
-            )
+            );
           })}
         </div>
       </nav>
+
+      <SignInOverlay open={showSignIn} onClose={() => setShowSignIn(false)} />
     </header>
-  )
+  );
 }
