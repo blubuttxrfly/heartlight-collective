@@ -8,6 +8,7 @@ const primaryNav = [
   { path: '/exchange', label: 'Exchange', emoji: '💱' },
   { path: '/', label: 'Collective', emoji: '🌐' },
   { path: '/flow', label: 'Flow', emoji: '♾️' },
+  { path: '/create-profile', label: 'Join', emoji: '✦' },
 ];
 
 const secondaryNav = [

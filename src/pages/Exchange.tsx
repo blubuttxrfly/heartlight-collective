@@ -47,10 +47,17 @@ export default function Exchange() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8">
         <Sparkles className="w-10 h-10 text-magenta-400 mx-auto mb-4" />
         <h1 className="font-serif text-3xl md:text-4xl text-cream mb-3">Heartlight Exchange</h1>
-        <p className="text-lavender/70 max-w-xl mx-auto">
+        <p className="text-lavender/70 max-w-xl mx-auto mb-6">
           Where resonant beings find each other across the Heartlines.
           Browse offerings, cast wishes, and co-create in sacred reciprocity.
         </p>
+        <Link
+          to="/create-profile"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all text-sm"
+        >
+          <Heart className="w-4 h-4" />
+          Create Your Profile
+        </Link>
       </motion.div>
 
       {approved.length === 0 ? (
@@ -160,7 +167,13 @@ export default function Exchange() {
           {filtered.length === 0 && (
             <div className="text-center py-12">
               <Sparkles className="w-8 h-8 text-lavender/30 mx-auto mb-3" />
-              <p className="text-lavender/50">No beings match your search. Try a different resonance.</p>
+              <p className="text-lavender/50 mb-4">No beings match your search. Try a different resonance.</p>
+              <Link
+                to="/create-profile"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-gold-400/30 text-gold-300 text-sm hover:bg-gold-400/10 transition-all"
+              >
+                <Heart className="w-4 h-4" /> Create Your Profile
+              </Link>
             </div>
           )}
         </>

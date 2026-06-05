@@ -30,8 +30,8 @@ const pathways = [
     icon: Users,
     title: 'Co-Creator',
     description: 'Offer skills, time, or resources through the Exchange. Find aligned collaborators.',
-    cta: 'Enter the Exchange',
-    href: '/exchange',
+    cta: 'Create Your Profile',
+    href: '/create-profile',
     color: 'magenta',
   },
   {
