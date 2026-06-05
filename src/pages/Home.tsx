@@ -80,16 +80,17 @@ const pillars = [
   {
     icon: Heart,
     title: 'Exchange',
-    description: 'Offer skills, time, or resources. Find aligned collaborators across the Heartlines.',
+    description: 'Co-creator community with mutual aid & aligned exchanges',
     href: '/exchange',
     hue: {
       text: 'text-gold-400',
       textLight: 'text-gold-300',
-      border: 'border-gold-400/25',
-      borderHover: 'hover:border-gold-400/50',
+      border: 'border-gold-400/30',
+      borderHover: 'hover:border-gold-400/60',
       bg: 'bg-gold-400/5',
       bgHover: 'hover:bg-gold-400/10',
-      ring: 'group-hover:ring-gold-400/20',
+      shadow: 'shadow-gold-400/10',
+      shadowHover: 'hover:shadow-gold-400/20',
     },
   },
   {
@@ -100,11 +101,12 @@ const pillars = [
     hue: {
       text: 'text-magenta-400',
       textLight: 'text-magenta-300',
-      border: 'border-magenta-400/25',
-      borderHover: 'hover:border-magenta-400/50',
+      border: 'border-magenta-400/30',
+      borderHover: 'hover:border-magenta-400/60',
       bg: 'bg-magenta-400/5',
       bgHover: 'hover:bg-magenta-400/10',
-      ring: 'group-hover:ring-magenta-400/20',
+      shadow: 'shadow-magenta-400/10',
+      shadowHover: 'hover:shadow-magenta-400/20',
     },
   },
   {
@@ -115,11 +117,12 @@ const pillars = [
     hue: {
       text: 'text-lavender',
       textLight: 'text-lavender',
-      border: 'border-lavender/25',
-      borderHover: 'hover:border-lavender/50',
+      border: 'border-lavender/30',
+      borderHover: 'hover:border-lavender/60',
       bg: 'bg-lavender/5',
       bgHover: 'hover:bg-lavender/10',
-      ring: 'group-hover:ring-lavender/20',
+      shadow: 'shadow-lavender/10',
+      shadowHover: 'hover:shadow-lavender/20',
     },
   },
 ]
@@ -127,26 +130,52 @@ const pillars = [
 function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: number }) {
   const Icon = pillar.icon
   return (
-    <Link
-      to={pillar.href}
-      className={`group block rounded-2xl border ${pillar.hue.border} ${pillar.hue.borderHover} ${pillar.hue.bg} ${pillar.hue.bgHover} transition-all duration-300 p-6`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
+      <Link
+        to={pillar.href}
+        className={`
+          group flex flex-col items-center text-center
+          rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
+          ${pillar.hue.bg} ${pillar.hue.bgHover}
+          shadow-lg ${pillar.hue.shadow} ${pillar.hue.shadowHover}
+          transition-all duration-300
+          p-8
+        `}
       >
-        <div className={`w-14 h-14 rounded-full border-2 ${pillar.hue.border} ${pillar.hue.ring} ring-4 ring-transparent flex items-center justify-center mb-5 transition-all duration-300`}>
-          <Icon className={`w-7 h-7 ${pillar.hue.text}`} />
+        {/* Icon inside a prominent circular button */}
+        <div
+          className={`
+            w-20 h-20 rounded-full border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
+            flex items-center justify-center mb-5
+            ${pillar.hue.bg} ${pillar.hue.bgHover}
+            transition-all duration-300
+            group-hover:scale-110
+          `}
+        >
+          <Icon className={`w-10 h-10 ${pillar.hue.text} transition-transform duration-300 group-hover:scale-110`} />
         </div>
-        <h3 className={`font-serif text-2xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
-        <p className="text-lavender/70 text-sm leading-relaxed mb-4">{pillar.description}</p>
-        <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${pillar.hue.textLight} opacity-80 group-hover:opacity-100 transition-opacity`}>
-          Enter {pillar.title}
+
+        {/* Title in matching hue */}
+        <h3 className={`font-serif text-3xl ${pillar.hue.textLight} mb-3`}>{pillar.title}</h3>
+
+        {/* Description */}
+        <p className="text-lavender/60 text-sm leading-relaxed max-w-[240px]">{pillar.description}</p>
+
+        {/* CTA arrow */}
+        <span className={`
+          mt-5 inline-flex items-center gap-1.5 text-sm font-medium
+          ${pillar.hue.textLight} opacity-70
+          group-hover:opacity-100 transition-opacity
+        `}>
+          <span className="border-b border-current">Enter {pillar.title}</span>
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </span>
-      </motion.div>
-    </Link>
+      </Link>
+    </motion.div>
   )
 }
 
@@ -287,17 +316,12 @@ export default function Home() {
   return (
     <div className="px-4 pb-12 max-w-5xl mx-auto">
       {/* Hero Section */}
-      <section className="text-center py-12">
+      <section className="text-center py-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="flex justify-center gap-8 mb-8">
-            <Heart className="w-10 h-10 text-gold-400 fill-gold-400/20" />
-            <Globe className="w-10 h-10 text-magenta-400" />
-            <Infinity className="w-10 h-10 text-lavender" />
-          </div>
           <h2 className="font-serif text-3xl md:text-5xl text-cream mb-2">
             Three Pillars of Heartlight
           </h2>
@@ -306,18 +330,18 @@ export default function Home() {
 
       <ProfileStatusBanner />
 
-      {/* Treasury Stats */}
+      {/* Sacred Pillars — the three main navigation buttons */}
       <section className="mb-12">
-        <TreasuryCard />
-      </section>
-
-      {/* Sacred Pillars */}
-      <section className="mb-12">
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-5">
           {pillars.map((pillar, i) => (
             <PillarCard key={pillar.title} pillar={pillar} index={i} />
           ))}
         </div>
+      </section>
+
+      {/* Treasury Stats */}
+      <section className="mb-12">
+        <TreasuryCard />
       </section>
 
       <LiveDirectorySection />
