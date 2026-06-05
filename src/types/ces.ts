@@ -37,12 +37,15 @@ export type ExchangePathway =
   | 'Scholarship';
 
 export interface ContactMethods {
-  instagram: string;
   email: string;
   phone: string;
+  instagram: string;
+  youtube: string;
+  threads: string;
+  spotify: string;
   discord: string;
+  telegram: string;
   signal: string;
-  whatsapp: string;
 }
 
 export type ContactVisibility = Record<keyof ContactMethods, boolean>;

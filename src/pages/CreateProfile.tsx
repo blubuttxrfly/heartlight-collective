@@ -2,6 +2,12 @@ import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {
+  FaEnvelope, FaPhone, FaInstagram, FaYoutube,
+  FaSpotify, FaDiscord, FaTelegram,
+} from 'react-icons/fa6';
+import { FaThreads } from 'react-icons/fa6';
+import { SiSignal } from 'react-icons/si';
 import { useStorage } from '../lib/storage';
 import { generateCESNumberValue } from '../lib/ces';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
@@ -33,11 +39,24 @@ function StepDots({ step, total }: { step: number; total: number }) {
 
 /* ─── Empty contact methods ─── */
 function emptyContact(): ContactMethods {
-  return { instagram: '', email: '', phone: '', discord: '', signal: '', whatsapp: '' };
+  return { email: '', phone: '', instagram: '', youtube: '', threads: '', spotify: '', discord: '', telegram: '', signal: '' };
 }
 function emptyContactVisibility(): ContactVisibility {
-  return { instagram: false, email: false, phone: false, discord: false, signal: false, whatsapp: false };
+  return { email: false, phone: false, instagram: false, youtube: false, threads: false, spotify: false, discord: false, telegram: false, signal: false };
 }
+
+/* ─── Icon map for contact methods ─── */
+const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  email:     FaEnvelope,
+  phone:     FaPhone,
+  instagram: FaInstagram,
+  youtube:   FaYoutube,
+  threads:   FaThreads,
+  spotify:   FaSpotify,
+  discord:   FaDiscord,
+  telegram:  FaTelegram,
+  signal:    SiSignal,
+};
 
 /* ─── Main wizard ─── */
 export default function CreateProfile() {
@@ -241,32 +260,49 @@ export default function CreateProfile() {
           <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your work.</p>
         </div>
 
-        {/* Contact Methods */}
+        {/* Contact Methods — Icon Grid */}
         <div>
-          <label className="block text-sm text-lavender/70 mb-2">Contact Methods <span className="text-lavender/40">(optional, toggle visibility for each)</span></label>
-          <div className="space-y-2">
-            {CONTACT_FIELDS.map((cf) => (
-              <div key={cf.key} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={contactMethods[cf.key]}
-                  onChange={(e) => updateContact(cf.key, e.target.value)}
-                  placeholder={cf.placeholder}
-                  className="flex-1 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                />
-                <button
-                  onClick={() => toggleContactVisibility(cf.key)}
-                  className={`p-2 rounded-xl border transition-all ${
-                    contactVisibility[cf.key]
-                      ? 'border-gold-400/30 text-gold-400'
-                      : 'border-white/10 text-lavender/30'
+          <label className="block text-sm text-lavender/70 mb-3">Connect & Contact <span className="text-lavender/40">(optional — toggle 👁 to show on profile)</span></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {CONTACT_FIELDS.map((cf) => {
+              const Icon = CONTACT_ICON_MAP[cf.icon];
+              const hasValue = !!contactMethods[cf.key]?.trim();
+              const isVisible = contactVisibility[cf.key];
+              return (
+                <div
+                  key={cf.key}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
+                    hasValue
+                      ? isVisible
+                        ? 'border-gold-400/20 bg-gold-400/5'
+                        : 'border-lavender/10 bg-void-800/40'
+                      : 'border-lavender/5 bg-void-800/30'
                   }`}
-                  title={contactVisibility[cf.key] ? 'Visible in directory' : 'Hidden'}
                 >
-                  {contactVisibility[cf.key] ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                </button>
-              </div>
-            ))}
+                  <div className={`flex-shrink-0 ${hasValue ? 'text-cream/80' : 'text-lavender/20'}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={contactMethods[cf.key]}
+                    onChange={(e) => updateContact(cf.key as keyof ContactMethods, e.target.value)}
+                    placeholder={cf.placeholder}
+                    className="flex-1 min-w-0 bg-transparent text-cream text-sm placeholder:text-lavender/25 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => toggleContactVisibility(cf.key as keyof ContactVisibility)}
+                    className={`flex-shrink-0 p-1.5 rounded-lg transition-all ${
+                      isVisible
+                        ? 'text-gold-400 bg-gold-400/10'
+                        : 'text-lavender/20 hover:text-lavender/50'
+                    }`}
+                    title={isVisible ? 'Visible on profile' : 'Hidden'}
+                  >
+                    {isVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 

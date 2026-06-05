@@ -93,10 +93,13 @@ export const ASTROLOGY_SIGNS = [
 ];
 
 export const CONTACT_FIELDS = [
-  { key: 'instagram', label: 'Instagram', placeholder: '@handle' },
-  { key: 'email',     label: 'Email',     placeholder: 'you@example.com' },
-  { key: 'phone',     label: 'Phone',     placeholder: '+1 (000) 000-0000' },
-  { key: 'discord',   label: 'Discord',   placeholder: 'username#0000' },
-  { key: 'signal',    label: 'Signal',    placeholder: '+1 (000) 000-0000' },
-  { key: 'whatsapp',  label: 'WhatsApp',  placeholder: '+1 (000) 000-0000' },
+  { key: 'email',     label: 'Email',     placeholder: 'you@example.com',           icon: 'email' },
+  { key: 'phone',     label: 'Phone',     placeholder: '+1 (000) 000-0000',       icon: 'phone' },
+  { key: 'instagram', label: 'Instagram', placeholder: '@handle',                 icon: 'instagram' },
+  { key: 'youtube',   label: 'YouTube',   placeholder: 'channel or @handle',      icon: 'youtube' },
+  { key: 'threads',   label: 'Threads',   placeholder: '@handle',                 icon: 'threads' },
+  { key: 'spotify',   label: 'Spotify',   placeholder: 'Artist or profile URL',   icon: 'spotify' },
+  { key: 'discord',   label: 'Discord',   placeholder: 'username',                icon: 'discord' },
+  { key: 'telegram',  label: 'Telegram',  placeholder: '@handle or +number',    icon: 'telegram' },
+  { key: 'signal',    label: 'Signal',    placeholder: '+1 (000) 000-0000',       icon: 'signal' },
 ] as const;

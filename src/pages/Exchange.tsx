@@ -2,6 +2,12 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, Sparkles, MapPin, Heart, X, ChevronRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {
+  FaEnvelope, FaPhone, FaInstagram, FaYoutube,
+  FaSpotify, FaDiscord, FaTelegram,
+} from 'react-icons/fa6';
+import { FaThreads } from 'react-icons/fa6';
+import { SiSignal } from 'react-icons/si';
 import { useStorage } from '../lib/storage';
 import type { CreatorRecord } from '../types/ces';
 
@@ -15,6 +21,36 @@ function getMyProfileStatus(): { profile: CreatorRecord; queue: 'pending' | 'app
     }
   } catch { /* silent */ }
   return null;
+}
+
+/* ─── Contact icon map ─── */
+const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  email:     FaEnvelope,
+  phone:     FaPhone,
+  instagram: FaInstagram,
+  youtube:   FaYoutube,
+  threads:   FaThreads,
+  spotify:   FaSpotify,
+  discord:   FaDiscord,
+  telegram:  FaTelegram,
+  signal:    SiSignal,
+};
+
+function contactUrl(key: string, val: string): string {
+  const v = val.trim();
+  if (!v) return '#';
+  switch (key) {
+    case 'email':     return `mailto:${v}`;
+    case 'phone':     return `tel:${v.replace(/\D/g, '')}`;
+    case 'instagram': return `https://instagram.com/${v.replace(/^@/, '')}`;
+    case 'youtube':   return v.startsWith('http') ? v : `https://youtube.com/@${v.replace(/^@/, '')}`;
+    case 'threads':   return `https://threads.net/@${v.replace(/^@/, '')}`;
+    case 'spotify':   return v.startsWith('http') ? v : `https://open.spotify.com/search/${encodeURIComponent(v)}`;
+    case 'discord':   return '#'; // Discord uses username-only; no direct link
+    case 'telegram':  return `https://t.me/${v.replace(/^@/, '')}`;
+    case 'signal':    return `tel:${v.replace(/\D/g, '')}`;
+    default:          return '#';
+  }
 }
 
 /* ─── Exchange Directory ─── */
@@ -130,6 +166,29 @@ export default function Exchange() {
                   <span className="text-gold-400 text-xs flex items-center gap-1">
                     View <ChevronRight className="w-3 h-3" />
                   </span>
+                </div>
+
+                {/* Visible contact icons on card */}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-lavender/5">
+                  {Object.entries(profile.contactMethods || {})
+                    .filter(([key, val]) => profile.contactVisibility?.[key as keyof ContactVisibility] && val?.trim())
+                    .map(([key, val]) => {
+                      const Icon = CONTACT_ICON_MAP[key];
+                      if (!Icon) return null;
+                      return (
+                        <a
+                          key={key}
+                          href={contactUrl(key, val as string)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 h-7 rounded-full bg-void-900/60 border border-lavender/10 flex items-center justify-center text-lavender/60 hover:text-gold-400 hover:border-gold-400/30 transition-all"
+                          title={val as string}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                        </a>
+                      );
+                    })}
                 </div>
               </motion.div>
             ))}
@@ -361,19 +420,28 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
             </div>
           )}
 
-          {/* Contact (visible only) */}
+          {/* Contact — clickable brand icons */}
           {visibleContacts.length > 0 && (
             <div className="rounded-xl border border-gold-400/10 bg-gold-400/5 p-4">
-              <label className="block text-xs text-gold-400/60 mb-2 uppercase tracking-wider">Visible Contact Methods</label>
-              <div className="space-y-1">
+              <label className="block text-xs text-gold-400/60 mb-3 uppercase tracking-wider">Connect</label>
+              <div className="flex flex-wrap gap-3">
                 {visibleContacts.map((key) => {
                   const val = ((profile.contactMethods as unknown) as Record<string, string>)[key];
                   if (!val) return null;
+                  const Icon = CONTACT_ICON_MAP[key];
+                  if (!Icon) return null;
+                  const url = contactUrl(key, val);
                   return (
-                    <div key={key} className="flex items-center gap-2 text-sm">
-                      <span className="text-lavender/40 capitalize w-20">{key}:</span>
-                      <span className="text-cream">{val}</span>
-                    </div>
+                    <a
+                      key={key}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-void-900/60 border border-lavender/10 text-cream hover:border-gold-400/30 hover:text-gold-300 transition-all text-sm"
+                    >
+                      <Icon className="w-4 h-4 text-lavender/60" />
+                      <span>{val}</span>
+                    </a>
                   );
                 })}
               </div>
