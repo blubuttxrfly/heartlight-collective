@@ -96,7 +96,7 @@ const pillars = [
   {
     icon: Globe,
     title: 'Collective',
-    description: 'Sovereign Supporters sustain us. Join the living treasury.',
+    description: 'Resources, grants, scholarships, and opportunity mutual aid collective.',
     href: '/',
     hue: {
       text: 'text-magenta-400',
