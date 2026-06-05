@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Search, Filter, Sparkles, MapPin, Heart, X, ChevronRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Search, Sparkles, MapPin, Heart, X, ChevronRight, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
-import { RAY_DATA } from '../lib/constants';
 import type { CreatorRecord } from '../types/ces';
 
 /* ─── Helper: find user's profile and its queue ─── */
@@ -26,31 +25,24 @@ export default function Exchange() {
   const returned = getReturned();
 
   const [search, setSearch] = useState('');
-  const [filterRay, setFilterRay] = useState<string | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<CreatorRecord | null>(null);
 
   const myProfile = getMyProfileStatus();
 
   const filtered = useMemo(() => {
     let list = [...approved];
-    if (filterRay) {
-      list = list.filter((p) => p.rays?.includes(filterRay) || p.ray === filterRay);
-    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          p.offerings.some((o) => o.toLowerCase().includes(q)) ||
-          p.location?.toLowerCase().includes(q) ||
-          p.heartlight?.toLowerCase().includes(q)
+          p.bio?.toLowerCase().includes(q) ||
+          p.title?.toLowerCase().includes(q) ||
+          p.location?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [approved, search, filterRay]);
-
-  const rayColors: Record<string, string> = {};
-  RAY_DATA.forEach((r) => (rayColors[r.key] = r.color));
+  }, [approved, search]);
 
   return (
     <div className="px-4 pb-12 max-w-5xl mx-auto">
@@ -78,39 +70,25 @@ export default function Exchange() {
         <EmptyState hasProfile={!!myProfile} />
       ) : (
         <>
-          {/* Search + Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          {/* Search Bar */}
+          <div className="flex gap-3 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-lavender/40" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, offering, location…"
+                placeholder="Search by name, bio, title, location…"
                 className="w-full pl-10 pr-4 py-2.5 rounded-full bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none transition-colors"
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-lavender/40" />
-              <select
-                value={filterRay || ''}
-                onChange={(e) => setFilterRay(e.target.value || null)}
-                className="px-3 py-2.5 rounded-full bg-void-800/50 border border-lavender/10 text-cream text-sm focus:border-gold-400/40 focus:outline-none cursor-pointer"
-              >
-                <option value="">All Rays</option>
-                {RAY_DATA.map((r) => (
-                  <option key={r.key} value={r.key}>{r.key} Ray</option>
-                ))}
-              </select>
             </div>
           </div>
 
           <p className="text-xs text-lavender/40 mb-4">
             {filtered.length} resonant {filtered.length === 1 ? 'being' : 'beings'} in the field
-            {filterRay && ` • filtered by ${filterRay} Ray`}
           </p>
 
-          {/* Offerings Grid */}
+          {/* Directory Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((profile, i) => (
               <motion.div
@@ -122,29 +100,18 @@ export default function Exchange() {
                 onClick={() => setSelectedProfile(profile)}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {(profile.rays?.length ? profile.rays : [profile.ray]).filter(Boolean).map((r) => (
-                      <span
-                        key={r}
-                        className="px-2 py-1 rounded-full text-xs border"
-                        style={{
-                          borderColor: `${rayColors[r] || '#a5f3fc'}40`,
-                          backgroundColor: `${rayColors[r] || '#a5f3fc'}15`,
-                          color: rayColors[r] || '#a5f3fc',
-                        }}
-                      >
-                        {r}
-                      </span>
-                    ))}
-                  </div>
                   <span className="px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">
                     {profile.directoryWishStatus === 'accepting' ? 'open' : 'full'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-lg">
-                    {profile.emoji || '✦'}
+                  <div className="w-10 h-10 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-lg overflow-hidden">
+                    {profile.photo ? (
+                      <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{profile.emoji || '✦'}</span>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-serif text-lg text-cream">{profile.name}</h3>
@@ -152,18 +119,9 @@ export default function Exchange() {
                   </div>
                 </div>
 
-                <p className="text-lavender/60 text-sm mb-3 line-clamp-2">{profile.heartlight}</p>
-
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {profile.offerings.slice(0, 3).map((o) => (
-                    <span key={o} className="px-2 py-0.5 rounded-full bg-void-900/60 border border-lavender/10 text-lavender/50 text-xs">
-                      {o}
-                    </span>
-                  ))}
-                  {profile.offerings.length > 3 && (
-                    <span className="px-2 py-0.5 rounded-full text-lavender/30 text-xs">+{profile.offerings.length - 3}</span>
-                  )}
-                </div>
+                <p className="text-lavender/60 text-sm mb-3 line-clamp-2">
+                  {profile.bio || profile.consent || 'A sovereign being of the Heartlight Collective.'}
+                </p>
 
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-lavender/40 flex items-center gap-1">
@@ -301,9 +259,6 @@ function EmptyState({ hasProfile }: { hasProfile: boolean }) {
 
 /* ─── Profile Detail Modal ─── */
 function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onClose: () => void }) {
-  const rayColors: Record<string, string> = {};
-  RAY_DATA.forEach((r) => (rayColors[r.key] = r.color));
-
   const visibleContacts = Object.entries(profile.contactVisibility || {})
     .filter(([_, visible]) => visible)
     .map(([key]) => key);
@@ -330,8 +285,12 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
         </button>
 
         <div className="text-center mb-6">
-          <div className="w-16 h-16 rounded-full bg-void-800 border border-gold-400/20 flex items-center justify-center text-2xl mx-auto mb-3">
-            {profile.emoji || '✦'}
+          <div className="w-16 h-16 rounded-full bg-void-800 border border-gold-400/20 flex items-center justify-center text-2xl mx-auto mb-3 overflow-hidden">
+            {profile.photo ? (
+              <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+            ) : (
+              <span>{profile.emoji || '✦'}</span>
+            )}
           </div>
           <h2 className="font-serif text-2xl text-cream">{profile.name}</h2>
           {profile.title && <p className="text-lavender/60 text-sm">{profile.title}</p>}
@@ -343,85 +302,19 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
         </div>
 
         <div className="space-y-5">
-          {/* Rays */}
-          <div>
-            <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Ray Frequencies</label>
-            <div className="flex flex-wrap gap-2">
-              {(profile.rays?.length ? profile.rays : [profile.ray]).filter(Boolean).map((r) => (
-                <span
-                  key={r}
-                  className="px-3 py-1 rounded-full text-xs border"
-                  style={{
-                    borderColor: `${rayColors[r] || '#a5f3fc'}40`,
-                    backgroundColor: `${rayColors[r] || '#a5f3fc'}15`,
-                    color: rayColors[r] || '#a5f3fc',
-                  }}
-                >
-                  {r} Ray
-                </span>
-              ))}
+          {/* Bio */}
+          {profile.bio && (
+            <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
+              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Bio</label>
+              <p className="text-sm text-lavender/70">{profile.bio}</p>
             </div>
-          </div>
-
-          {/* Heartlight */}
-          <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
-            <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Heartlight</label>
-            <p className="text-sm text-lavender/70 italic">"{profile.heartlight}"</p>
-          </div>
-
-          {/* Offerings */}
-          <div>
-            <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Offerings</label>
-            <div className="flex flex-wrap gap-2">
-              {profile.offerings.map((o) => (
-                <span key={o} className="px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-cream text-xs">
-                  {o}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Exchanges */}
-          <div>
-            <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Exchange Pathways</label>
-            <div className="flex flex-wrap gap-2">
-              {profile.exchanges?.map((e) => (
-                <span key={e} className="px-3 py-1 rounded-full bg-gold-400/10 border border-gold-400/20 text-gold-300 text-xs">
-                  {e}
-                </span>
-              )) || <span className="text-xs text-lavender/30">Not specified</span>}
-            </div>
-          </div>
+          )}
 
           {/* Consent */}
           {profile.consent && (
             <div className="rounded-xl border border-magenta-500/10 bg-magenta-500/5 p-4">
               <label className="block text-xs text-magenta-400/60 mb-1.5 uppercase tracking-wider">Consent & Boundaries</label>
               <p className="text-sm text-lavender/70">{profile.consent}</p>
-            </div>
-          )}
-
-          {/* Seasons */}
-          {profile.seasons && Object.values(profile.seasons).some(Boolean) && (
-            <div>
-              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Seasonal Availability</label>
-              <div className="flex gap-2">
-                {Object.entries(profile.seasons)
-                  .filter(([_, active]) => active)
-                  .map(([season]) => (
-                    <span key={season} className="px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60 text-xs">
-                      {season}
-                    </span>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Timeline */}
-          {profile.timeline && (
-            <div>
-              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Typical Timeline</label>
-              <p className="text-sm text-lavender/60">{profile.timeline}</p>
             </div>
           )}
 
@@ -448,6 +341,20 @@ function ProfileDetailModal({ profile, onClose }: { profile: CreatorRecord; onCl
                 {profile.accessibility.map((a) => (
                   <span key={a} className="px-2 py-0.5 rounded-full bg-turquoise-400/10 border border-turquoise-400/20 text-turquoise-300 text-xs">
                     {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Numerology */}
+          {profile.numerology?.length > 0 && (
+            <div>
+              <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Numerology</label>
+              <div className="flex flex-wrap gap-2">
+                {profile.numerology.map((n) => (
+                  <span key={n} className="px-2 py-0.5 rounded-full bg-violet-400/10 border border-violet-400/20 text-violet-300 text-xs">
+                    {n}
                   </span>
                 ))}
               </div>

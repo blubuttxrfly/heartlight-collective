@@ -376,13 +376,10 @@ function ProfileReviewCard({
 
       <div className="space-y-2">
         <p className="text-sm text-lavender/70">
-          <span className="text-lavender/40">Heartlight: </span>{profile.heartlight}
+          <span className="text-lavender/40">Bio: </span>{profile.bio || 'No bio provided'}
         </p>
         <p className="text-sm text-lavender/60">
-          <span className="text-lavender/40">Offerings: </span>{profile.offerings.join(', ')}
-        </p>
-        <p className="text-sm text-lavender/60">
-          <span className="text-lavender/40">Exchanges: </span>{profile.exchanges?.join(', ') || 'Not specified'}
+          <span className="text-lavender/40">Location: </span>{profile.location || 'Not specified'}
         </p>
         <button
           onClick={() => setExpanded(!expanded)}
@@ -393,15 +390,14 @@ function ProfileReviewCard({
 
         {expanded && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2 pt-2">
-            <p className="text-sm text-lavender/60">
-              <span className="text-lavender/40">Rays: </span>{(profile.rays || [profile.ray]).filter(Boolean).join(', ')}
-            </p>
-            {profile.location && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Location: </span>{profile.location}</p>}
             {profile.pronouns && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Pronouns: </span>{profile.pronouns}</p>}
             {profile.sunPlacement && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Sun: </span>{profile.sunPlacement}</p>}
             {profile.moonPlacement && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Moon: </span>{profile.moonPlacement}</p>}
-            {profile.timeline && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Timeline: </span>{profile.timeline}</p>}
+            {profile.season_current && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Season: </span>{profile.season_current}</p>}
+            {profile.consent && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Consent: </span>{profile.consent}</p>}
             {profile.accessibility?.length > 0 && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Accessibility: </span>{profile.accessibility.join(', ')}</p>}
+            {profile.numerology?.length > 0 && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Numerology: </span>{profile.numerology.join(', ')}</p>}
+            {profile.portfolioLink && <p className="text-sm text-lavender/60"><span className="text-lavender/40">Portfolio: </span>{profile.portfolioLink}</p>}
           </motion.div>
         )}
       </div>
