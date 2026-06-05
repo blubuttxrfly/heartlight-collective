@@ -80,49 +80,49 @@ const pillars = [
   {
     icon: Heart,
     title: 'Exchange',
-    description: 'Co-creator community with mutual aid & aligned exchanges',
+    description: 'Co-creator community with mutual aid \u0026 aligned exchanges',
     href: '/exchange',
     hue: {
       text: 'text-gold-400',
       textLight: 'text-gold-300',
+      textDark: 'text-gold-500',
       border: 'border-gold-400/30',
-      borderHover: 'hover:border-gold-400/60',
+      borderHover: 'hover:border-gold-400/70',
       bg: 'bg-gold-400/5',
       bgHover: 'hover:bg-gold-400/10',
-      shadow: 'shadow-gold-400/10',
-      shadowHover: 'hover:shadow-gold-400/20',
+      glow: 'group-hover:shadow-gold-400/15',
     },
   },
   {
     icon: Globe,
     title: 'Collective',
-    description: 'Sovereign Supporters sustain us. Join the living treasury of shared resources.',
+    description: 'Sovereign Supporters sustain us. Join the living treasury.',
     href: '/',
     hue: {
       text: 'text-magenta-400',
       textLight: 'text-magenta-300',
+      textDark: 'text-magenta-500',
       border: 'border-magenta-400/30',
-      borderHover: 'hover:border-magenta-400/60',
+      borderHover: 'hover:border-magenta-400/70',
       bg: 'bg-magenta-400/5',
       bgHover: 'hover:bg-magenta-400/10',
-      shadow: 'shadow-magenta-400/10',
-      shadowHover: 'hover:shadow-magenta-400/20',
+      glow: 'group-hover:shadow-magenta-400/15',
     },
   },
   {
     icon: Infinity,
     title: 'Flow',
-    description: 'Resource Stewards guide treasury distribution. Review proposals and align allocations.',
+    description: 'Resource Stewards guide treasury distribution.',
     href: '/flow',
     hue: {
       text: 'text-lavender',
       textLight: 'text-lavender',
+      textDark: 'text-lavender/70',
       border: 'border-lavender/30',
-      borderHover: 'hover:border-lavender/60',
+      borderHover: 'hover:border-lavender/70',
       bg: 'bg-lavender/5',
       bgHover: 'hover:bg-lavender/10',
-      shadow: 'shadow-lavender/10',
-      shadowHover: 'hover:shadow-lavender/20',
+      glow: 'group-hover:shadow-lavender/15',
     },
   },
 ]
@@ -138,42 +138,27 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
       <Link
         to={pillar.href}
         className={`
-          group flex flex-col items-center text-center
-          rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
+          group block rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
           ${pillar.hue.bg} ${pillar.hue.bgHover}
-          shadow-lg ${pillar.hue.shadow} ${pillar.hue.shadowHover}
           transition-all duration-300
-          p-8
+          p-7 text-center
         `}
       >
-        {/* Icon inside a prominent circular button */}
-        <div
+        {/* Big icon — the visual heart of the button */}
+        <Icon
           className={`
-            w-20 h-20 rounded-full border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
-            flex items-center justify-center mb-5
-            ${pillar.hue.bg} ${pillar.hue.bgHover}
-            transition-all duration-300
-            group-hover:scale-110
+            w-16 h-16 mx-auto mb-4 ${pillar.hue.text}
+            transition-transform duration-300
+            group-hover:scale-110 group-hover:drop-shadow-lg
           `}
-        >
-          <Icon className={`w-10 h-10 ${pillar.hue.text} transition-transform duration-300 group-hover:scale-110`} />
-        </div>
+          strokeWidth={1.5}
+        />
 
         {/* Title in matching hue */}
-        <h3 className={`font-serif text-3xl ${pillar.hue.textLight} mb-3`}>{pillar.title}</h3>
+        <h3 className={`font-serif text-2xl md:text-3xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
 
         {/* Description */}
-        <p className="text-lavender/60 text-sm leading-relaxed max-w-[240px]">{pillar.description}</p>
-
-        {/* CTA arrow */}
-        <span className={`
-          mt-5 inline-flex items-center gap-1.5 text-sm font-medium
-          ${pillar.hue.textLight} opacity-70
-          group-hover:opacity-100 transition-opacity
-        `}>
-          <span className="border-b border-current">Enter {pillar.title}</span>
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </span>
+        <p className="text-lavender/60 text-sm leading-relaxed">{pillar.description}</p>
       </Link>
     </motion.div>
   )
