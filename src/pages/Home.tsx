@@ -17,33 +17,6 @@ const treasuryStats = {
   ],
 }
 
-const pathways = [
-  {
-    icon: Sparkles,
-    title: 'Sovereign Supporter',
-    description: 'Recurring contribution sustaining the Heartlight infrastructure and collective operations.',
-    cta: 'Join as Supporter',
-    href: '/exchange',
-    color: 'gold',
-  },
-  {
-    icon: Users,
-    title: 'Co-Creator',
-    description: 'Offer skills, time, or resources through the Exchange. Find aligned collaborators.',
-    cta: 'Create Your Profile',
-    href: '/create-profile',
-    color: 'magenta',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Resource Steward',
-    description: 'Help steward Flow allocations. Review proposals and guide treasury distribution.',
-    cta: 'Explore Flow',
-    href: '/flow',
-    color: 'lavender',
-  },
-]
-
 /* ─── Components ─── */
 function TreasuryCard() {
   return (
@@ -102,37 +75,78 @@ function TreasuryCard() {
   )
 }
 
-function PathwayCard({ pathway, index }: { pathway: typeof pathways[0]; index: number }) {
-  const Icon = pathway.icon
-  const colorMap = {
-    gold: 'border-gold-400/20 hover:border-gold-400/40 bg-gold-400/5',
-    magenta: 'border-magenta-500/20 hover:border-magenta-500/40 bg-magenta-500/5',
-    lavender: 'border-lavender/20 hover:border-lavender/40 bg-lavender/5',
-  }
-  const iconColorMap = {
-    gold: 'text-gold-400',
-    magenta: 'text-magenta-400',
-    lavender: 'text-lavender',
-  }
+/* ─── Sacred Pillars: Heart → Globe → Infinity ─── */
+const pillars = [
+  {
+    icon: Heart,
+    title: 'Exchange',
+    description: 'Offer skills, time, or resources. Find aligned collaborators across the Heartlines.',
+    href: '/exchange',
+    hue: {
+      text: 'text-gold-400',
+      textLight: 'text-gold-300',
+      border: 'border-gold-400/25',
+      borderHover: 'hover:border-gold-400/50',
+      bg: 'bg-gold-400/5',
+      bgHover: 'hover:bg-gold-400/10',
+      ring: 'group-hover:ring-gold-400/20',
+    },
+  },
+  {
+    icon: Globe,
+    title: 'Collective',
+    description: 'Sovereign Supporters sustain us. Join the living treasury of shared resources.',
+    href: '/',
+    hue: {
+      text: 'text-magenta-400',
+      textLight: 'text-magenta-300',
+      border: 'border-magenta-400/25',
+      borderHover: 'hover:border-magenta-400/50',
+      bg: 'bg-magenta-400/5',
+      bgHover: 'hover:bg-magenta-400/10',
+      ring: 'group-hover:ring-magenta-400/20',
+    },
+  },
+  {
+    icon: Infinity,
+    title: 'Flow',
+    description: 'Resource Stewards guide treasury distribution. Review proposals and align allocations.',
+    href: '/flow',
+    hue: {
+      text: 'text-lavender',
+      textLight: 'text-lavender',
+      border: 'border-lavender/25',
+      borderHover: 'hover:border-lavender/50',
+      bg: 'bg-lavender/5',
+      bgHover: 'hover:bg-lavender/10',
+      ring: 'group-hover:ring-lavender/20',
+    },
+  },
+]
 
+function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: number }) {
+  const Icon = pillar.icon
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-      className={`rounded-2xl border p-6 transition-all duration-300 ${colorMap[pathway.color as keyof typeof colorMap]}`}
+    <Link
+      to={pillar.href}
+      className={`group block rounded-2xl border ${pillar.hue.border} ${pillar.hue.borderHover} ${pillar.hue.bg} ${pillar.hue.bgHover} transition-all duration-300 p-6`}
     >
-      <Icon className={`w-8 h-8 mb-4 ${iconColorMap[pathway.color as keyof typeof iconColorMap]}`} />
-      <h3 className="font-serif text-xl text-cream mb-2">{pathway.title}</h3>
-      <p className="text-lavender/70 text-sm leading-relaxed mb-4">{pathway.description}</p>
-      <Link
-        to={pathway.href}
-        className="inline-flex items-center gap-2 text-sm font-medium text-gold-400 hover:text-gold-300 transition-colors"
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
       >
-        {pathway.cta}
-        <ArrowRight className="w-4 h-4" />
-      </Link>
-    </motion.div>
+        <div className={`w-14 h-14 rounded-full border-2 ${pillar.hue.border} ${pillar.hue.ring} ring-4 ring-transparent flex items-center justify-center mb-5 transition-all duration-300`}>
+          <Icon className={`w-7 h-7 ${pillar.hue.text}`} />
+        </div>
+        <h3 className={`font-serif text-2xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
+        <p className="text-lavender/70 text-sm leading-relaxed mb-4">{pillar.description}</p>
+        <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${pillar.hue.textLight} opacity-80 group-hover:opacity-100 transition-opacity`}>
+          Enter {pillar.title}
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </span>
+      </motion.div>
+    </Link>
   )
 }
 
@@ -140,7 +154,6 @@ function PathwayCard({ pathway, index }: { pathway: typeof pathways[0]; index: n
 function ProfileStatusBanner() {
   const { getPending, getApproved, getReturned } = useStorage();
 
-  // Find user's profile in any queue
   const queues = [
     { list: getPending(), label: 'pending' as const },
     { list: getApproved(), label: 'approved' as const },
@@ -280,18 +293,14 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="flex justify-center gap-6 mb-6">
-            <Globe className="w-8 h-8 text-magenta-400" />
-            <Heart className="w-8 h-8 text-gold-400 fill-gold-400/20" />
-            <Infinity className="w-8 h-8 text-lavender" />
+          <div className="flex justify-center gap-8 mb-8">
+            <Heart className="w-10 h-10 text-gold-400 fill-gold-400/20" />
+            <Globe className="w-10 h-10 text-magenta-400" />
+            <Infinity className="w-10 h-10 text-lavender" />
           </div>
-          <h2 className="font-serif text-3xl md:text-5xl text-cream mb-4">
+          <h2 className="font-serif text-3xl md:text-5xl text-cream mb-2">
             Three Pillars of Heartlight
           </h2>
-          <p className="text-lavender/70 text-lg max-w-2xl mx-auto leading-relaxed">
-            The Heartlight Collective unites resonant beings through Exchange, governance, and Flow. 
-            Sovereign Supporters sustain us. Co-creators build with us. Resource Stewards guide us.
-          </p>
         </motion.div>
       </section>
 
@@ -302,14 +311,11 @@ export default function Home() {
         <TreasuryCard />
       </section>
 
-      {/* Pathways */}
+      {/* Sacred Pillars */}
       <section className="mb-12">
-        <h3 className="font-serif text-2xl text-cream text-center mb-8">
-          How Will You Co-Create?
-        </h3>
         <div className="grid md:grid-cols-3 gap-4">
-          {pathways.map((pathway, i) => (
-            <PathwayCard key={pathway.title} pathway={pathway} index={i} />
+          {pillars.map((pillar, i) => (
+            <PillarCard key={pillar.title} pillar={pillar} index={i} />
           ))}
         </div>
       </section>
@@ -327,7 +333,7 @@ export default function Home() {
           <Sparkles className="w-6 h-6 text-gold-400 mx-auto mb-4" />
           <h3 className="font-serif text-2xl text-cream mb-3">The Heartlight Collective Charter</h3>
           <p className="text-lavender/70 max-w-xl mx-auto mb-6">
-            A living vow for Atlas Island's seasonal co-creation economy. 
+            A living vow for Atlas Island's seasonal co-creation economy.
             Grounded in sacred reciprocity, radical transparency, and the Heartlight of ALL that IS.
           </p>
           <Link
