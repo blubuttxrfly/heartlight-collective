@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Shield, ChevronDown } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity } from 'lucide-react';
 import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
 const primaryNav = [
-  { path: '/exchange', label: 'Exchange', emoji: '💱' },
-  { path: '/', label: 'Collective', emoji: '🌐' },
-  { path: '/flow', label: 'Flow', emoji: '♾️' },
+  { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'gold' },
+  { path: '/', label: 'Collective', icon: Globe, hue: 'magenta' },
+  { path: '/flow', label: 'Flow', icon: Infinity, hue: 'lavender' },
 ];
 
 const secondaryNav = [
@@ -150,21 +150,36 @@ export default function Header() {
         <div className="max-w-2xl mx-auto flex justify-center gap-3">
           {primaryNav.map((item) => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+
+            const hueStyles = {
+              gold: {
+                active: 'border-gold-400/60 bg-gold-400/10 text-gold-300',
+                inactive: 'border-gold-400/20 text-gold-400/80 hover:border-gold-400/40 hover:text-gold-300 hover:bg-gold-400/5',
+              },
+              magenta: {
+                active: 'border-magenta-400/60 bg-magenta-400/10 text-magenta-300',
+                inactive: 'border-magenta-400/20 text-magenta-400/80 hover:border-magenta-400/40 hover:text-magenta-300 hover:bg-magenta-400/5',
+              },
+              lavender: {
+                active: 'border-lavender/60 bg-lavender/10 text-lavender',
+                inactive: 'border-lavender/20 text-lavender/70 hover:border-lavender/40 hover:text-lavender hover:bg-lavender/5',
+              },
+            };
+            const hue = hueStyles[item.hue as keyof typeof hueStyles];
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`
-                  px-5 py-2.5 rounded-full text-sm font-medium tracking-wide
+                  inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium tracking-wide
                   transition-all duration-300 border
-                  ${
-                    isActive
-                      ? 'border-gold-400/60 bg-gold-400/10 text-gold-300'
-                      : 'border-magenta-500/20 text-lavender/70 hover:border-magenta-500/40 hover:text-lavender hover:bg-magenta-500/5'
-                  }
+                  ${isActive ? hue.active : hue.inactive}
                 `}
               >
-                {item.label} {item.emoji}
+                <Icon className="w-4 h-4" strokeWidth={2} />
+                {item.label}
               </Link>
             );
           })}
