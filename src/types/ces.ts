@@ -68,15 +68,22 @@ export interface CreatorRecord {
   moonPlacement: string;
   emoji: string;
   photo: string | null;
-  ray: string;
-  primaryRay: string;
-  primaryRayKey: string;
-  rays: string[];
-  heartlight: string;
-  offerings: string[];
-  exchanges: string[];
-  seasons: SeasonState;
-  timeline: string;
+
+  // NEW — personal bio, separate from marketplace
+  bio: string;
+
+  // DEPRECATED — kept for backward compat with old profiles.
+  // These now live on VendorRecord.
+  ray?: string;
+  primaryRay?: string;
+  primaryRayKey?: string;
+  rays?: string[];
+  heartlight?: string;
+  offerings?: string[];
+  exchanges?: string[];
+  seasons?: SeasonState;
+  timeline?: string;
+
   numerology: string[];
   accessibility: string[];
   consent: string;

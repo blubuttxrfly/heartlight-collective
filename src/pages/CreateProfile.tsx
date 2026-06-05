@@ -4,12 +4,8 @@ import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Cam
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
 import { generateCESNumberValue, cesEncrypt } from '../lib/ces';
-import type { CreatorRecord, SeasonState, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
+import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
 import {
-  RAY_DATA,
-  OFFERING_PRESETS,
-  EXCHANGE_PATHWAYS,
-  SEASONS,
   NUMEROLOGY_PRESETS,
   ACCESSIBILITY_PRESETS,
   ASTROLOGY_SIGNS,
@@ -61,57 +57,24 @@ export default function CreateProfile() {
   const [photo, setPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [selectedRays, setSelectedRays] = useState<string[]>([]);
-  const [offerings, setOfferings] = useState<string[]>([]);
-  const [customOffering, setCustomOffering] = useState('');
-  const [exchanges, setExchanges] = useState<string[]>([]);
-  const [heartlight, setHeartlight] = useState('');
-
-  const [seasons, setSeasons] = useState<SeasonState>({ Winter: false, Spring: false, Summer: false, Fall: false });
-  const [timeline, setTimeline] = useState('');
-  const [numerology, setNumerology] = useState<string[]>([]);
-  const [accessibility, setAccessibility] = useState<string[]>([]);
-  const [consent, setConsent] = useState('');
+  // Step 2
+  const [bio, setBio] = useState('');
   const [portfolioLink, setPortfolioLink] = useState('');
-  const [seasonCurrent, setSeasonCurrent] = useState('');
-  const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
   const [portfolioItems, _setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [contactMethods, setContactMethods] = useState<ContactMethods>(emptyContact());
   const [contactVisibility, setContactVisibility] = useState<ContactVisibility>(emptyContactVisibility());
+  const [numerology, setNumerology] = useState<string[]>([]);
+  const [accessibility, setAccessibility] = useState<string[]>([]);
+  const [seasonCurrent, setSeasonCurrent] = useState('');
+  const [consent, setConsent] = useState('');
 
+  // Step 3
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
+  const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
   const [oathSigned, setOathSigned] = useState(false);
 
   // ── Helpers ──
-  const toggleRay = useCallback((key: string) => {
-    setSelectedRays((prev) => {
-      const idx = prev.indexOf(key);
-      if (idx > -1) return prev.filter((_, i) => i !== idx);
-      if (prev.length >= 3) return prev;
-      return [...prev, key];
-    });
-  }, []);
-
-  const toggleOffering = useCallback((o: string) => {
-    setOfferings((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
-  }, []);
-
-  const addCustomOffering = useCallback(() => {
-    const val = customOffering.trim();
-    if (!val || offerings.includes(val)) return;
-    setOfferings((prev) => [...prev, val]);
-    setCustomOffering('');
-  }, [customOffering, offerings]);
-
-  const toggleExchange = useCallback((label: string) => {
-    setExchanges((prev) => (prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]));
-  }, []);
-
-  const toggleSeason = useCallback((key: keyof SeasonState) => {
-    setSeasons((prev) => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
   const toggleNumerology = useCallback((n: string) => {
     setNumerology((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
   }, []);
@@ -134,15 +97,13 @@ export default function CreateProfile() {
       case 1:
         return name.trim().length >= 2;
       case 2:
-        return selectedRays.length > 0 && offerings.length > 0 && exchanges.length > 0 && heartlight.trim().length >= 10;
+        return true; // all optional
       case 3:
-        return Object.values(seasons).some(Boolean) && timeline.trim().length > 0;
-      case 4:
         return passphrase.length >= 6 && oathSigned;
       default:
         return false;
     }
-  }, [step, name, selectedRays, offerings, exchanges, heartlight, seasons, timeline, passphrase, oathSigned]);
+  }, [step, name, passphrase, oathSigned]);
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
@@ -150,7 +111,6 @@ export default function CreateProfile() {
     const ces = generatedCES || generateCESNumberValue(used);
     if (!generatedCES) setGeneratedCES(ces);
 
-    const primaryRay = selectedRays[0] || '';
     const initials = getInitials(name.trim());
     const record: CreatorRecord = {
       id: `profile_${Date.now()}`,
@@ -162,15 +122,7 @@ export default function CreateProfile() {
       moonPlacement: moon,
       emoji: initials,
       photo: photo,
-      ray: primaryRay,
-      primaryRay: `${primaryRay} Ray`,
-      primaryRayKey: primaryRay,
-      rays: selectedRays,
-      heartlight: heartlight.trim(),
-      offerings,
-      exchanges,
-      seasons,
-      timeline: timeline.trim(),
+      bio: bio.trim(),
       numerology,
       accessibility,
       consent: consent.trim(),
@@ -191,7 +143,7 @@ export default function CreateProfile() {
 
     addProfile(record, 'pending');
     setSubmitted(true);
-  }, [name, pronouns, title, location, sun, moon, photo, selectedRays, heartlight, offerings, exchanges, seasons, timeline, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
+  }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, seasonCurrent, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -200,16 +152,6 @@ export default function CreateProfile() {
       <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 1 — Your Resonance</h2>
 
       <div className="space-y-4 max-w-md mx-auto">
-        <Field label="Name *" value={name} onChange={setName} placeholder="Your name as you wish it to appear" />
-        <Field label="Pronouns" value={pronouns} onChange={setPronouns} placeholder="e.g. they/them, she/her" />
-        <Field label="Title / Role" value={title} onChange={setTitle} placeholder="e.g. Astrologer, Web Developer" />
-        <Field label="Location" value={location} onChange={setLocation} placeholder="City, Region, or Earth" />
-
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
-          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
-        </div>
-
         {/* Profile Picture */}
         <div className="flex flex-col items-center gap-3">
           <label className="block text-sm text-lavender/70">Profile Picture</label>
@@ -223,8 +165,6 @@ export default function CreateProfile() {
                 {getInitials(name)}
               </span>
             )}
-
-            {/* Hover overlay with remove button when photo exists */}
             {photo && (
               <button
                 onClick={() => setPhoto(null)}
@@ -236,7 +176,7 @@ export default function CreateProfile() {
             )}
           </div>
 
-          {/* Upload / Camera button */}
+          {/* Upload button */}
           <input
             ref={fileInputRef}
             type="file"
@@ -264,152 +204,74 @@ export default function CreateProfile() {
               : `Without a photo, your initials (${getInitials(name)}) will be your avatar.`}
           </p>
         </div>
+
+        <Field label="Name *" value={name} onChange={setName} placeholder="Your name as you wish it to appear" />
+        <Field label="Pronouns" value={pronouns} onChange={setPronouns} placeholder="e.g. they/them, she/her" />
+        <Field label="Title / Role" value={title} onChange={setTitle} placeholder="e.g. Astrologer, Web Developer" />
+        <Field label="Location" value={location} onChange={setLocation} placeholder="City, Region, or Earth" />
+
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
+          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
+        </div>
       </div>
     </motion.div>,
 
-    /* Step 2: Ray & Offerings */
+    /* Step 2: Portfolio & Presence */
     <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 2 — Ray & Offerings</h2>
+      <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 2 — Your Presence</h2>
 
       <div className="space-y-6 max-w-lg mx-auto">
-        {/* Ray Selector */}
+        {/* Bio */}
         <div>
-          <label className="block text-sm text-lavender/70 mb-2">Ray Frequencies * <span className="text-lavender/40">(select up to 3, first is primary)</span></label>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {RAY_DATA.map((r) => {
-              const idx = selectedRays.indexOf(r.key);
-              const selected = idx > -1;
-              const isPrimary = idx === 0;
-              return (
-                <button
-                  key={r.key}
-                  onClick={() => toggleRay(r.key)}
-                  className={`relative rounded-xl border p-3 text-center transition-all ${
-                    selected
-                      ? 'border-gold-400/50 bg-gold-400/10'
-                      : 'border-white/5 hover:border-white/15 bg-void-800/40'
-                  }`}
-                >
-                  {selected && (
-                    <span className={`absolute top-1 right-1 text-xs ${isPrimary ? 'text-gold-400' : 'text-lavender/60'}`}>
-                      {isPrimary ? '★' : idx + 1}
-                    </span>
-                  )}
-                  <div className="w-4 h-4 rounded-full mx-auto mb-1" style={{ backgroundColor: r.color }} />
-                  <div className="text-xs text-cream/80">{r.key}</div>
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-lavender/40 mt-2">
-            {selectedRays.length === 0 && 'Select up to 3 Ray frequencies'}
-            {selectedRays.length > 0 && selectedRays.length < 3 && `${3 - selectedRays.length} more available`}
-            {selectedRays.length === 3 && '✓ Three Rays selected — your full resonance field is set'}
-          </p>
-        </div>
-
-        {/* Heartlight Statement */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Heartlight Statement *</label>
+          <label className="block text-sm text-lavender/70 mb-1">Bio</label>
           <textarea
-            value={heartlight}
-            onChange={(e) => setHeartlight(e.target.value)}
-            placeholder="A single sentence that captures why you are here and what you bring to the Heartlight Exchange."
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="A brief statement about who you are as a being."
             rows={3}
             className="w-full px-4 py-3 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
           />
+          <p className="text-xs text-lavender/40 mt-1">This appears on your directory profile.</p>
         </div>
 
-        {/* Offerings */}
+        {/* Portfolio Link */}
+        <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
+
+        {/* Portfolio Upload (Phase 2C placeholder) */}
+        <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
+          <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
+          <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
+          <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your work.</p>
+        </div>
+
+        {/* Contact Methods */}
         <div>
-          <label className="block text-sm text-lavender/70 mb-2">Offerings * <span className="text-lavender/40">(select all that apply)</span></label>
-          <div className="flex flex-wrap gap-2">
-            {OFFERING_PRESETS.map((o) => (
-              <button
-                key={o}
-                onClick={() => toggleOffering(o)}
-                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                  offerings.includes(o)
-                    ? 'border-magenta-500/40 bg-magenta-500/10 text-magenta-300'
-                    : 'border-white/10 text-lavender/60 hover:border-white/20'
-                }`}
-              >
-                {o}
-              </button>
+          <label className="block text-sm text-lavender/70 mb-2">Contact Methods <span className="text-lavender/40">(optional, toggle visibility for each)</span></label>
+          <div className="space-y-2">
+            {CONTACT_FIELDS.map((cf) => (
+              <div key={cf.key} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={contactMethods[cf.key]}
+                  onChange={(e) => updateContact(cf.key, e.target.value)}
+                  placeholder={cf.placeholder}
+                  className="flex-1 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                />
+                <button
+                  onClick={() => toggleContactVisibility(cf.key)}
+                  className={`p-2 rounded-xl border transition-all ${
+                    contactVisibility[cf.key]
+                      ? 'border-gold-400/30 text-gold-400'
+                      : 'border-white/10 text-lavender/30'
+                  }`}
+                  title={contactVisibility[cf.key] ? 'Visible in directory' : 'Hidden'}
+                >
+                  {contactVisibility[cf.key] ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </button>
+              </div>
             ))}
           </div>
-          <div className="flex gap-2 mt-3">
-            <input
-              type="text"
-              value={customOffering}
-              onChange={(e) => setCustomOffering(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addCustomOffering()}
-              placeholder="Add custom offering..."
-              className="flex-1 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-            />
-            <button onClick={addCustomOffering} className="px-4 py-2 rounded-xl bg-void-800 border border-lavender/10 text-lavender/70 hover:text-cream text-sm">Add</button>
-          </div>
-        </div>
-
-        {/* Exchange Pathways */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-2">Exchange Pathways * <span className="text-lavender/40">(how you welcome reciprocity)</span></label>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {EXCHANGE_PATHWAYS.map((ep) => (
-              <button
-                key={ep.label}
-                onClick={() => toggleExchange(ep.label)}
-                className={`text-left rounded-xl border p-3 transition-all ${
-                  exchanges.includes(ep.label)
-                    ? 'border-gold-400/40 bg-gold-400/10'
-                    : 'border-white/5 hover:border-white/15 bg-void-800/40'
-                }`}
-              >
-                <div className="text-sm text-cream mb-1">{ep.label}</div>
-                <div className="text-xs text-lavender/50">{ep.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </motion.div>,
-
-    /* Step 3: Seasonal & Portfolio */
-    <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 3 — Seasonal & Portfolio</h2>
-
-      <div className="space-y-6 max-w-lg mx-auto">
-        {/* Seasons */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-2">Seasonal Availability * <span className="text-lavender/40">(when you are open to exchange)</span></label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {SEASONS.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => toggleSeason(s.key)}
-                className={`rounded-xl border p-3 text-center transition-all ${
-                  seasons[s.key]
-                    ? 'border-gold-400/40 bg-gold-400/10'
-                    : 'border-white/5 hover:border-white/15 bg-void-800/40'
-                }`}
-              >
-                <div className="text-lg mb-1">{s.emoji}</div>
-                <div className="text-xs text-cream/80">{s.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Typical Timeline *</label>
-          <input
-            type="text"
-            value={timeline}
-            onChange={(e) => setTimeline(e.target.value)}
-            placeholder="e.g. 2–3 days for readings, 1–2 weeks for custom art"
-            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-          />
         </div>
 
         {/* Numerology */}
@@ -452,19 +314,7 @@ export default function CreateProfile() {
           </div>
         </div>
 
-        {/* Portfolio Link */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Portfolio Link <span className="text-lavender/40">(optional)</span></label>
-          <input
-            type="text"
-            value={portfolioLink}
-            onChange={(e) => setPortfolioLink(e.target.value)}
-            placeholder="Website, Instagram, SoundCloud, or portfolio URL"
-            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-          />
-        </div>
-
-        {/* Current Season Emoji */}
+        {/* Current Season Symbol */}
         <div>
           <label className="block text-sm text-lavender/70 mb-1">Current Season Symbol <span className="text-lavender/40">(optional)</span></label>
           <div className="flex gap-2">
@@ -505,48 +355,12 @@ export default function CreateProfile() {
             className="w-full px-4 py-3 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
           />
         </div>
-
-        {/* Portfolio Upload (Phase 2C placeholder) */}
-        <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
-          <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
-          <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
-          <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your offerings.</p>
-        </div>
-
-        {/* Contact Methods */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-2">Contact Methods <span className="text-lavender/40">(optional, toggle visibility for each)</span></label>
-          <div className="space-y-2">
-            {CONTACT_FIELDS.map((cf) => (
-              <div key={cf.key} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={contactMethods[cf.key]}
-                  onChange={(e) => updateContact(cf.key, e.target.value)}
-                  placeholder={cf.placeholder}
-                  className="flex-1 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10 text-cream text-sm placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                />
-                <button
-                  onClick={() => toggleContactVisibility(cf.key)}
-                  className={`p-2 rounded-xl border transition-all ${
-                    contactVisibility[cf.key]
-                      ? 'border-gold-400/30 text-gold-400'
-                      : 'border-white/10 text-lavender/30'
-                  }`}
-                  title={contactVisibility[cf.key] ? 'Visible in directory' : 'Hidden'}
-                >
-                  {contactVisibility[cf.key] ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </motion.div>,
 
-    /* Step 4: Oath & Submit */
-    <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-      <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 4 — Oath & Signature</h2>
+    /* Step 3: Oath & Submit */
+    <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 3 — Oath & Signature</h2>
 
       <div className="space-y-6 max-w-md mx-auto">
         {/* C.E.S. Display */}
@@ -638,9 +452,9 @@ export default function CreateProfile() {
         {/* Oath */}
         <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
           <p className="text-sm text-lavender/70 leading-relaxed mb-4">
-            I enter the Heartlight Exchange as a sovereign being. I carry the 12 Codes of ALL 
-            in every offering, every wish, and every co-creation. I agree to exchange with care, 
-            truth, and full consent. I honor the seasonal rhythms of my own capacity and the 
+            I enter the Heartlight Exchange as a sovereign being. I carry the 12 Codes of ALL
+            in every offering, every wish, and every co-creation. I agree to exchange with care,
+            truth, and full consent. I honor the seasonal rhythms of my own capacity and the
             capacity of others.
           </p>
           <label className="flex items-start gap-3 cursor-pointer">
@@ -691,7 +505,7 @@ export default function CreateProfile() {
         </Link>
       </div>
 
-      <StepDots step={step} total={4} />
+      <StepDots step={step} total={3} />
 
       <AnimatePresence mode="wait">
         {steps[step - 1]}
@@ -711,9 +525,9 @@ export default function CreateProfile() {
           <ChevronLeft className="w-4 h-4 inline mr-1" /> Back
         </button>
 
-        {step < 4 ? (
+        {step < 3 ? (
           <button
-            onClick={() => setStep((s) => Math.min(4, s + 1))}
+            onClick={() => setStep((s) => Math.min(3, s + 1))}
             disabled={!canProceed()}
             className={`px-5 py-2.5 rounded-full text-sm transition-all ${
               canProceed()

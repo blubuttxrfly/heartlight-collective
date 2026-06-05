@@ -274,13 +274,10 @@ function LiveDirectorySection() {
                   {profile.title && <div className="text-xs text-lavender/50">{profile.title}</div>}
                 </div>
               </div>
-              <p className="text-xs text-lavender/60 line-clamp-2">{profile.heartlight}</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {profile.offerings.slice(0, 3).map((o) => (
-                  <span key={o} className="px-2 py-0.5 rounded-full bg-void-900/60 border border-lavender/10 text-lavender/50 text-xs">
-                    {o}
-                  </span>
-                ))}
+              <p className="text-xs text-lavender/60 line-clamp-2">{profile.bio || 'A sovereign being of the Heartlight Collective.'}</p>
+              <div className="flex items-center gap-1 mt-2 text-xs text-lavender/40">
+                <span>{profile.location || 'Earth'}</span>
+                {profile.wishAvailability === 'accepting' && <span className="text-green-400"> • Open to wishes</span>}
               </div>
             </Link>
           ))}
