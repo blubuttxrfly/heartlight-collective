@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Heart, Globe, Infinity, Users, TrendingUp, ArrowRight, Sparkles } from 'lucide-react'
+import { Heart, Globe, Infinity, TrendingUp, ArrowRight, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage'
 
