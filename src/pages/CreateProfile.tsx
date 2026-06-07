@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -63,7 +63,9 @@ export default function CreateProfile() {
   const { addProfile, getProfiles } = useStorage();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
-  const [generatedCES, setGeneratedCES] = useState('');
+  const [cesDigits, setCesDigits] = useState<string[]>(Array(9).fill(''));
+  const [cesSuggestions, setCesSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // ── Form state ──
   const [name, setName] = useState('');
@@ -137,6 +139,39 @@ export default function CreateProfile() {
     );
   }, []);
 
+  /* ─── C.E.S. helpers ─── */
+  const cesValue = useMemo(() => cesDigits.join(''), [cesDigits]);
+  const isCesComplete = useMemo(() => cesValue.length === 9 && /^\d{9}$/.test(cesValue), [cesValue]);
+
+  const usedCesNumbers = useMemo(() => {
+    return new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
+  }, [getProfiles]);
+
+  const generateSuggestions = useCallback(() => {
+    const used = new Set(usedCesNumbers);
+    if (isCesComplete) used.add(cesValue);
+    const suggestions: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      suggestions.push(generateCESNumberValue(used));
+    }
+    setCesSuggestions(suggestions);
+    setShowSuggestions(true);
+  }, [usedCesNumbers, isCesComplete, cesValue]);
+
+  const applySuggestion = useCallback((suggestion: string) => {
+    setCesDigits(suggestion.split(''));
+    setShowSuggestions(false);
+  }, []);
+
+  const updateCesDigit = useCallback((index: number, digit: string) => {
+    const d = digit.replace(/\D/g, '').slice(0, 1);
+    setCesDigits((prev) => {
+      const next = [...prev];
+      next[index] = d;
+      return next;
+    });
+  }, []);
+
   // ── Validation per step ──
   const canProceed = useCallback(() => {
     switch (step) {
@@ -145,17 +180,23 @@ export default function CreateProfile() {
       case 2:
         return true; // all optional
       case 3:
-        return passphrase.length >= 6 && agreeTerms;
+        return passphrase.length >= 6 && agreeTerms && isCesComplete;
       default:
         return false;
     }
-  }, [step, name, passphrase, agreeTerms]);
+  }, [step, name, passphrase, agreeTerms, isCesComplete]);
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
     const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
-    const ces = generatedCES || generateCESNumberValue(used);
-    if (!generatedCES) setGeneratedCES(ces);
+    // Validate CES is not already taken
+    const ces = cesValue;
+    if (!isCesComplete || used.has(ces)) {
+      // Should not happen due to canProceed, but guard anyway
+      const fallback = generateCESNumberValue(used);
+      setCesDigits(fallback.split(''));
+      return;
+    }
 
     const initials = getInitials(name.trim());
     const record: CreatorRecord = {
@@ -189,7 +230,7 @@ export default function CreateProfile() {
 
     addProfile(record, 'pending');
     setSubmitted(true);
-  }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, generatedCES, getProfiles, addProfile]);
+  }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -459,35 +500,86 @@ export default function CreateProfile() {
       <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 3 — Oath & Signature</h2>
 
       <div className="space-y-6 max-w-md mx-auto">
-        {/* C.E.S. Display */}
-        <div className="rounded-xl border border-gold-400/20 bg-gold-400/5 p-4 text-center">
-          <p className="text-xs text-lavender/60 mb-1">Your Core Energetic Signature</p>
-          <div className="font-serif text-3xl text-gold-300 tracking-widest">
-            {generatedCES || '··· ··· ···'}
+        {/* C.E.S. — 9-Block Authenticator-Style Input */}
+        <div className="rounded-xl border border-gold-400/20 bg-gold-400/5 p-4">
+          <p className="text-xs text-lavender/60 mb-3 text-center">Your Core Energetic Signature</p>
+
+          {/* 9 digit blocks */}
+          <div className="flex justify-center gap-2 mb-4">
+            {cesDigits.map((digit, i) => (
+              <input
+                key={i}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => {
+                  updateCesDigit(i, e.target.value);
+                  // Auto-focus next block
+                  if (e.target.value && i < 8) {
+                    const next = e.target.parentElement?.parentElement?.querySelectorAll('input')[i + 1] as HTMLInputElement | null;
+                    next?.focus();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && !digit && i > 0) {
+                    const prev = e.currentTarget.parentElement?.parentElement?.querySelectorAll('input')[i - 1] as HTMLInputElement | null;
+                    prev?.focus();
+                  }
+                }}
+                className={`w-9 h-12 text-center text-xl font-serif rounded-lg border bg-void-900/60 text-cream placeholder:text-lavender/20 focus:outline-none transition-all ${
+                  digit
+                    ? 'border-gold-400/40 text-gold-300'
+                    : 'border-lavender/10'
+                }`}
+                placeholder={(i + 1).toString()}
+              />
+            ))}
           </div>
-          {generatedCES && (
-            <button
-              onClick={() => {
-                const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
-                if (generatedCES) used.add(generatedCES);
-                setGeneratedCES(generateCESNumberValue(used));
-              }}
-              className="text-xs text-gold-400/60 hover:text-gold-400 mt-2 underline"
-            >
-              Regenerate C.E.S.
-            </button>
+
+          {/* Collision warning */}
+          {isCesComplete && usedCesNumbers.has(cesValue) && (
+            <p className="text-xs text-magenta-400 text-center mb-3">This C.E.S. is already claimed. Please choose another.</p>
           )}
-          {!generatedCES && (
+
+          {/* Controls */}
+          <div className="flex justify-center gap-3">
             <button
-              onClick={() => {
-                const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
-                setGeneratedCES(generateCESNumberValue(used));
-              }}
-              className="mt-2 px-4 py-2 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 text-sm hover:bg-gold-400/20 transition-all"
+              onClick={() => setCesDigits(Array(9).fill(''))}
+              className="text-xs text-lavender/50 hover:text-lavender/80 underline"
             >
-              <Sparkles className="w-4 h-4 inline mr-2" />
-              Generate C.E.S.
+              Clear
             </button>
+            <button
+              onClick={generateSuggestions}
+              className="text-xs text-gold-400/60 hover:text-gold-400 underline flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" /> Generate Available C.E.S.
+            </button>
+          </div>
+
+          {/* Suggestions */}
+          {showSuggestions && cesSuggestions.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs text-lavender/40 text-center">Available C.E.S. numbers:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {cesSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => applySuggestion(suggestion)}
+                    className="px-3 py-1.5 rounded-lg bg-void-800/60 border border-lavender/10 text-sm text-cream hover:border-gold-400/30 hover:text-gold-300 transition-all"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="block mx-auto text-xs text-lavender/40 hover:text-lavender/60 mt-1"
+              >
+                Dismiss
+              </button>
+            </div>
           )}
         </div>
 
@@ -583,7 +675,7 @@ export default function CreateProfile() {
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}>
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
           <h2 className="font-serif text-3xl text-cream mb-3">Profile Submitted</h2>
-          <p className="text-lavender/70 mb-2">Your C.E.S. is <span className="text-gold-300 font-serif">{generatedCES}</span></p>
+          <p className="text-lavender/70 mb-2">Your C.E.S. is <span className="text-gold-300 font-serif">{cesValue}</span></p>
           <p className="text-lavender/50 text-sm mb-6">
             Your profile is now in the pending queue. A Steward will review it for alignment with the 12 Codes of ALL.
           </p>
