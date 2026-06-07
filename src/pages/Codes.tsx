@@ -16,12 +16,12 @@ const CODES = [
   /* ═══ Code 3 ═══ */
   { number: 3, name: 'Sovereignty', ray: 'Yellow Ray', color: '#eab308',
     mantra: 'I choose with discerning authorship.',
-    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure. Sovereignty means each being authors their own participation — their capacity, their timing, their terms. What is offered is offered freely. What is received is received freely. The Yellow Ray honors that no being is above or below another in the sacred field of exchange.' },
+    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure. Sovereignty means each being authors their own participation, their capacity, their timing, their terms. What is offered is offered freely. What is received is received freely. The Yellow Ray honors that no being is above or below another in the sacred field of exchange.' },
 
   /* ═══ Code 4 ═══ */
   { number: 4, name: 'Thrival', ray: 'Green Ray', color: '#22c55e',
     mantra: 'I nourish life and life nourishes me.',
-    exchange: 'The Green Ray holds the sacred truth that co-creation flows from a place of thrival. Co-Creators are transparent about where they are in life — their capacity, their needs, their circumstances — so that every exchange is built on a foundation of compassion and trust. Living essentials — food, water, housing, and community — are honored as the sacred ground of all creative life.' },
+    exchange: 'The Green Ray holds the sacred truth that co-creation flows from a place of thrival. Co-Creators are transparent about where they are in life, their capacity, their needs, their circumstances, so that every exchange is built on a foundation of compassion and trust. Living essentials, food, water, housing, and community, are honored as the sacred ground of all creative life.' },
 
   /* ═══ Code 5 ═══ */
   { number: 5, name: 'Discernment & Repair', ray: 'Turquoise Ray', color: '#2dd4bf',
