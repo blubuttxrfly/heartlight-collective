@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, KeyRound, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useSession } from '../lib/session'
-import { useStorage } from '../lib/storage'
+import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 
 export default function SignIn() {
   const navigate = useNavigate()
   const { signIn } = useSession()
-  const { findProfileByCES } = useStorage()
+  const unified = useUnifiedStorage()
   const [ces, setCes] = useState('')
   const [passphrase, setPassphrase] = useState('')
   const [error, setError] = useState('')
@@ -33,23 +33,17 @@ export default function SignIn() {
     setLoading(true)
 
     try {
-      // Look up the profile
-      const profile = findProfileByCES(normalized)
+      // Try Supabase first, then localStorage
+      const profile = await unified.validateSignIn(normalized, passphrase)
       if (!profile) {
-        setError('C.E.S. not found in the directory. Please check your digits or create a profile.')
-        setLoading(false)
-        return
-      }
-
-      // Validate passphrase
-      if (profile.passphrase !== passphrase) {
-        setError('Passphrase does not match. Please try again.')
+        setError('C.E.S. not found or passphrase does not match. Please check your credentials or create a profile.')
         setLoading(false)
         return
       }
 
       // Success — sign in
       await signIn(profile)
+      unified.clearError()
       setSuccess(true)
       setTimeout(() => {
         navigate('/')
