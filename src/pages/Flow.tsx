@@ -390,6 +390,52 @@ export default function Flow() {
               })}
             </div>
 
+            {/* ═══ Full 12-Code Spectrum Reference ═══ */}
+            <div className="mb-5 p-4 rounded-xl border border-lavender/10 bg-void-800/30">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans">All 12 Ray Frequencies</p>
+                <p className="text-[10px] text-lavender/30">Click a Code to filter or reflect</p>
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                {CODES_DATA.map(code => (
+                  <button
+                    key={code.number}
+                    onClick={() => setSelectedCodeNum(code.number)}
+                    className={`p-2 rounded-lg border text-center transition-all ${
+                      selectedCodeNum === code.number
+                        ? 'border-gold-400/40 bg-gold-400/10'
+                        : 'border-white/5 bg-white/[0.03] hover:border-lavender/15 hover:bg-white/[0.06]'
+                    }`}
+                    title={`${code.ray}: ${code.name}`}
+                  >
+                    <span className="block w-3 h-3 rounded-full mx-auto mb-1">
+                      <span className="block w-full h-full rounded-full" style={{ background: code.color }} />
+                    </span>
+                    <span className="text-[10px] font-sans" style={{ color: code.color + 'cc' }}>
+                      {code.number}
+                    </span>
+                    <span className="block text-[8px] leading-tight mt-0.5 text-lavender/50 truncate">
+                      {code.name.split(' ').slice(0, 2).join(' ')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {selectedCodeNum > 0 && (
+                <div className="mt-3 p-3 rounded-lg border flex items-start gap-3"
+                  style={{ borderColor: CODES_DATA.find(c => c.number === selectedCodeNum)?.color + '20' }}
+                >
+                  <span className="w-4 h-4 rounded-full shrink-0 mt-0.5"
+                    style={{ background: CODES_DATA.find(c => c.number === selectedCodeNum)?.color }} />
+                  <div>
+                    <p className="text-sm text-cream">
+                      {CODES_DATA.find(c => c.number === selectedCodeNum)?.ray}: {CODES_DATA.find(c => c.number === selectedCodeNum)?.name}
+                    </p>
+                    <p className="text-xs text-lavender/50 mt-1">This Code is selected. Your log entries will be tagged with this frequency.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Phase Tabs */}
             <div className="flex gap-1 mb-6 border-b border-lavender/10">
               <PhaseTab label="Agreement" phase="before" current={activePhase} onClick={() => setActivePhase('before')} />
