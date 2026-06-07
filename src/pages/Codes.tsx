@@ -3,39 +3,62 @@ import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const CODES = [
-  { number: 1, name: 'Sovereignty', ray: 'Magenta Ray', color: '#c4407a',
-    mantra: 'I choose with discerning authorship.',
-    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure.' },
-  { number: 2, name: 'Consent', ray: 'Red Ray', color: '#c94040',
+  /* ═══ Code 1 ═══ */
+  { number: 1, name: 'Consent', ray: 'Red Ray', color: '#ef4444',
     mantra: 'I ground courage into form.',
-    exchange: 'Every step of the Heartlight Exchange is consent-led. Co-Creators respond to wishes through resonance, not compulsion. The Heartlight Exchange Agreement is co-signed by both beings. Boundaries are honored as sacred intelligence.' },
-  { number: 3, name: 'Care', ray: 'Orange Ray', color: '#d4732a',
+    exchange: 'Every step of the Heartlight Exchange is consent-led. Co-Creators respond to wishes through resonance, not compulsion. Every being enters this exchange as a sovereign — no one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure. The Heartlight Exchange Agreement is co-signed by both beings. Boundaries are honored as sacred intelligence.' },
+
+  /* ═══ Code 2 ═══ */
+  { number: 2, name: 'Care', ray: 'Orange Ray', color: '#f97316',
     mantra: 'I delight will into motion.',
     exchange: 'Care shapes how offerings are crafted, how wishes are received, and how changes are communicated. The exchange moves at the pace of genuine care, tending the being on the other end with full presence.' },
-  { number: 4, name: 'Truth', ray: 'Yellow Ray', color: '#d4b830',
-    mantra: 'I voice truth as sacred vow.',
-    exchange: 'Co-Creators represent their offerings truthfully. Wishing beings share their needs honestly. When something shifts in timeline, capacity, or scope, truth is spoken early and with kindness, arriving clearly before it is needed.' },
-  { number: 5, name: 'Thrival', ray: 'Green Ray', color: '#3a9b6f',
+
+  /* ═══ Code 3 ═══ */
+  { number: 3, name: 'Sovereignty', ray: 'Yellow Ray', color: '#eab308',
+    mantra: 'I choose with discerning authorship.',
+    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure.' },
+
+  /* ═══ Code 4 ═══ */
+  { number: 4, name: 'Thrival', ray: 'Green Ray', color: '#22c55e',
     mantra: 'I nourish life and life nourishes me.',
     exchange: 'The Green Ray holds the sacred truth that co-creation flows from a place of thrival. Co-Creators are transparent about where they are in life — their capacity, their needs, their circumstances — so that every exchange is built on a foundation of compassion and trust. Living essentials — food, water, housing, and community — are honored as the sacred ground of all creative life.' },
-  { number: 6, name: 'Discernment & Repair', ray: 'Turquoise Ray', color: '#2ab3c4',
+
+  /* ═══ Code 5 ═══ */
+  { number: 5, name: 'Discernment & Repair', ray: 'Turquoise Ray', color: '#2dd4bf',
     mantra: 'I flow with clarity and restore with grace.',
     exchange: 'Co-Creators practice discernment in which wishes they respond to, stepping forward only when there is genuine resonance, capacity, and heart-alignment. And when misalignment arises, repair is the path. The Adaptability Clause in every Agreement honors that growth sometimes asks for reshaping.' },
-  { number: 7, name: 'Sustainability', ray: 'Blue Ray', color: '#3a6bb5',
+
+  /* ═══ Code 6 ═══ */
+  { number: 6, name: 'Sustainability & Communication', ray: 'Blue Ray', color: '#3b82f6',
     mantra: 'I transmute and ascend with grace.',
-    exchange: 'Co-Creators honor their own rhythms and do not overextend. The seasonal wheel structures the exchange so creation breathes. Rest is a sacred part of every offering.' },
-  { number: 8, name: 'Mutual Respect', ray: 'Indigo Ray', color: '#5a4a9e',
+    exchange: 'Co-Creators honor their own rhythms and do not overextend. The seasonal wheel structures the exchange so creation breathes. Rest is a sacred part of every offering. Communication is agreed upon at the beginning of every co-creation and may evolve throughout the exchange and wish fulfillments. Remember a high priority is to fulfill our dreams, wishes, and visions together. Communicating as often as we feel called to is of great significance.' },
+
+  /* ═══ Code 7 ═══ */
+  { number: 7, name: 'Vision', ray: 'Indigo Ray', color: '#6366f1',
     mantra: 'I weave many as One.',
-    exchange: 'Both beings in a Heartlight Exchange are equally held. The wishing being is a co-creator of what arrives. The Co-Creator is a sacred craftsperson bringing their soul into form. Neither is above nor below the other.' },
-  { number: 9, name: 'Authentic Joy', ray: 'Violet Ray', color: '#8b4fb5',
+    exchange: 'A clear and aligned vision guides how every being involved contributes to the co-creation and fulfills the exchanges and wishes. Each Co-Creator holds the broader picture of what is being brought into form, ensuring that individual contributions serve the shared intention.' },
+
+  /* ═══ Code 8 ═══ */
+  { number: 8, name: 'Sanctity of Experience', ray: 'Violet Ray', color: '#8b5cf6',
     mantra: 'I breathe yes into being.',
-    exchange: 'Heartlight Exchanges live to bring joy as a living quality within the process itself. Creation with authentic joy is essential. When wishing and agreeing to an exchange, you understand that what you are co-creating brings you joy.' },
+    exchange: 'The Violet Ray upholds the sanctity of how every individual being experiences life, energy, and spirituality. Each path is honored as it is — for our Heartlight\'s Greatest & Highest Good. Both beings in a Heartlight Exchange are equally held. The wishing being is a co-creator of what arrives. The Co-Creator is a sacred craftsperson bringing their soul into form. Neither is above nor below the other.' },
+
+  /* ═══ Code 9 ═══ */
+  { number: 9, name: 'Authentic Joy', ray: 'Magenta Ray', color: '#d946ef',
+    mantra: 'I create from the well of authentic joy.',
+    exchange: 'Heartlight Exchanges live to bring joy as a living quality within the process itself. Co-Creators create from a space of conscious awareness of authentic joy, and this resonance shows through in every co-creation. When wishing and agreeing to an exchange, you understand that what you are co-creating brings you joy.' },
+
+  /* ═══ Code 10 ═══ */
   { number: 10, name: 'Conscious Awareness', ray: 'Omni Ray', color: '#c0c0d8',
     mantra: 'I embrace Lux and Umbra as harmony.',
-    exchange: 'Both beings bring awareness to what they carry into the exchange: their expectations, their projections, their energy. The Privacy Promise protects what is shared. Code stewards hold the field with conscious awareness.' },
+    exchange: 'We are intentional to be consciously aware of what we are meant to in the present moment. This clear awareness of our intentionality while co-creating is encouraged to be documented along the journey of the co-creation. Both beings bring awareness to what they carry into the exchange: their expectations, their projections, their energy. The Privacy Promise protects what is shared. Code stewards hold the field with conscious awareness.' },
+
+  /* ═══ Code 11 ═══ */
   { number: 11, name: 'Sacred Service', ray: 'Elemental Ray', color: '#7a9e5a',
     mantra: 'I shape reality with living elements.',
     exchange: 'Every Heartlight Exchange is an act of sacred service for the whole living field of Atlas Island. What one Co-Creator creates in love adds to the resonance of ALL. Service is the frequency through which gifts multiply.' },
+
+  /* ═══ Code 12 ═══ */
   { number: 12, name: 'Co-Creation', ray: 'ALL Ray', color: '#e8d4ff',
     mantra: 'I am the living synthesis of ALL.',
     exchange: 'The exchange is a living co-creation. The wishing being co-creates through how they receive, reflect, and share what arrives. The Storyfire of witnessing completes the circuit, and what began as a wish becomes a shared miracle in form.' },
