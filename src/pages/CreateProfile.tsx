@@ -231,7 +231,26 @@ export default function CreateProfile() {
       <h2 className="font-serif text-2xl text-cream mb-6 text-center">Step 2 — Your Presence</h2>
 
       <div className="space-y-6 max-w-lg mx-auto">
-        {/* Bio */}
+        {/* 1. Life Path Number */}
+        <div>
+          <label className="block text-sm text-lavender/70 mb-1">Life Path Number <span className="text-lavender/40">(optional)</span></label>
+          <input
+            type="text"
+            value={numerology[0] || ''}
+            onChange={(e) => setNumerology(e.target.value.trim() ? [e.target.value.trim()] : [])}
+            placeholder="e.g. 7, 11, 22..."
+            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+          />
+          <p className="text-xs text-lavender/40 mt-1">Your numerological life path, if you resonate with sharing it.</p>
+        </div>
+
+        {/* 2. Sun & Moon Placements */}
+        <div className="grid grid-cols-2 gap-3">
+          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
+          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
+        </div>
+
+        {/* 3. Bio */}
         <div>
           <label className="block text-sm text-lavender/70 mb-1">Bio</label>
           <textarea
@@ -244,23 +263,7 @@ export default function CreateProfile() {
           <p className="text-xs text-lavender/40 mt-1">This appears on your directory profile.</p>
         </div>
 
-        {/* Portfolio Link */}
-        <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
-
-        {/* Sun & Moon Placements */}
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
-          <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
-        </div>
-
-        {/* Portfolio Upload (Phase 2C placeholder) */}
-        <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
-          <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
-          <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
-          <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your work.</p>
-        </div>
-
-        {/* Contact Methods — Icon Grid */}
+        {/* 4. Connect & Contact — Icon Grid */}
         <div>
           <label className="block text-sm text-lavender/70 mb-3">Connect & Contact <span className="text-lavender/40">(optional — toggle 👁 to show on profile)</span></label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -306,20 +309,17 @@ export default function CreateProfile() {
           </div>
         </div>
 
-        {/* Life Path Number */}
-        <div>
-          <label className="block text-sm text-lavender/70 mb-1">Life Path Number <span className="text-lavender/40">(optional)</span></label>
-          <input
-            type="text"
-            value={numerology[0] || ''}
-            onChange={(e) => setNumerology(e.target.value.trim() ? [e.target.value.trim()] : [])}
-            placeholder="e.g. 7, 11, 22..."
-            className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-          />
-          <p className="text-xs text-lavender/40 mt-1">Your numerological life path, if you resonate with sharing it.</p>
+        {/* 5. Portfolio Link */}
+        <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
+
+        {/* 6. Portfolio Upload (Phase 2C placeholder) */}
+        <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
+          <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
+          <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
+          <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your work.</p>
         </div>
 
-        {/* Accessibility */}
+        {/* 7. Accessibility */}
         <div>
           <label className="block text-sm text-lavender/70 mb-2">Accessibility <span className="text-lavender/40">(optional, select all that apply)</span></label>
           <div className="flex flex-wrap gap-2">
@@ -339,7 +339,7 @@ export default function CreateProfile() {
           </div>
         </div>
 
-        {/* Consent Statement */}
+        {/* 8. Consent & Boundaries */}
         <div>
           <label className="block text-sm text-lavender/70 mb-1">Consent & Boundaries <span className="text-lavender/40">(optional)</span></label>
           <textarea
