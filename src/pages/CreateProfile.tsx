@@ -532,7 +532,10 @@ export default function CreateProfile() {
       {/* Navigation */}
       <div className="flex justify-between mt-8 max-w-lg mx-auto">
         <button
-          onClick={() => setStep((s) => Math.max(1, s - 1))}
+          onClick={() => {
+            setStep((s) => Math.max(1, s - 1));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           disabled={step === 1}
           className={`px-5 py-2.5 rounded-full border text-sm transition-all ${
             step === 1
@@ -545,7 +548,10 @@ export default function CreateProfile() {
 
         {step < 3 ? (
           <button
-            onClick={() => setStep((s) => Math.min(3, s + 1))}
+            onClick={() => {
+              setStep((s) => Math.min(3, s + 1));
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             disabled={!canProceed()}
             className={`px-5 py-2.5 rounded-full text-sm transition-all ${
               canProceed()
