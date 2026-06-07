@@ -271,15 +271,15 @@ healing, creative tools, etc.
 
 ## Implementation Waves
 
-| Wave | Scope | Commit Theme |
-|------|-------|-------------|
-| **Wave A** ✅ | Refactor personal profile (3-step C.E.S.) | `refactor(profile)` |
-| **Wave B** | Vendor types, constants, storage layer | `feat(vendor-types)` |
-| **Wave C** | `/my-storefronts` dashboard + modals | `feat(storefronts)` |
-| **Wave D** | Offering creation + Stripe Connect setup | `feat(offerings)` |
-| **Wave E** | Unified Exchange browser (offerings + beings) | `feat(exchange-v2)` |
-| **Wave F** | Collective treasury + wish fulfillment | `feat(treasury)` |
-| **Wave G** | Consent layer + Steward audit tools | `feat(consent)` |
+| Wave | Scope | Status | Commit Theme |
+|------|-------|--------|-------------|
+| **Wave A** ✅ | Refactor personal profile (3-step C.E.S.) | Deployed | `refactor(profile)` |
+| **Wave B** ✅ | Vendor types, constants, storage layer | Deployed | `feat(vendor-types)` |
+| **Wave C** 🔄 | `/my-storefronts` dashboard + modals | In Progress | `feat(storefronts)` |
+| **Wave D** | Offering creation + Stripe Connect setup | Planned | `feat(offerings)` |
+| **Wave E** | Unified Exchange browser (offerings + beings) | Planned | `feat(exchange-v2)` |
+| **Wave F** | Collective treasury + wish fulfillment | Planned | `feat(treasury)` |
+| **Wave G** | Consent layer + Steward audit tools | Planned | `feat(consent)` |
 
 ---
 
