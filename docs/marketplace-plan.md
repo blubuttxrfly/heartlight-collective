@@ -8,23 +8,25 @@
 
 ## The Intention
 
-Beings of the Heartlight Collective have not yet had a real space to share their offerings, gifts, and services. This plan creates a **unified marketplace** where every co-creator can:
+Beings of the Heartlight Collective have not yet had a real space to share their offerings, gifts, and services. Even in the previous version, there was no true vessel for a being to say: *"This is what I offer, this is how we may exchange, and here are my boundaries."*
+
+This plan creates a **unified marketplace** where every co-creator can:
 
 - List **offerings** (services, gifts, digital products, sessions, events)
-- Set **exchange terms** — from aligned gift-economy to fixed-price
-- Receive **payments** through Stripe, Venmo, Cash App, Zelle, or the Collective itself
-- Build **vendor storefronts** as sovereign vessels for their work
-- Flow with **aligned exchanges** that honor authentic joy, boundaries, and consent
+- Set **exchange terms** — from aligned gift-economy to **fixed price** (Stripe), peer-to-peer direct payments (Venmo, Cash App, Zelle), or collective-funded flow
+- Receive **payments** securely and sovereignly
+- Build **vendor storefronts** as vessels for their work
+- Flow with **aligned exchanges** that honor authentic joy, conscious awareness, boundaries, and consent
 
 ---
 
 ## Core Principles
 
-1. **Sovereignty First** — Every being owns their offerings, sets their prices, defines their boundaries.
-2. **Consent Is Non-Negotiable** — No one can be compelled to provide a service. Every exchange is an invitation.
-3. **Aligned Over Forced** — The Collective flows funds toward aligned exchanges, not extraction.
+1. **Sovereignty First** — Every being owns their offerings, sets their prices, defines their boundaries. No one is compelled.
+2. **Consent Is Non-Negotiable** — Every exchange is an invitation. Either party may decline for any reason. Consent is enthusiastic, informed, and revocable.
+3. **Aligned Over Forced** — The Collective flows funds toward aligned exchanges, not extraction. No one "pulls" from the Collective — aligned exchanges flow *through* it.
 4. **Transparency** — All payment methods, terms, and collective flows are visible and auditable.
-5. **Essentials Are Assured** — Through aligned exchanges, wish fulfillments, grants, and scholarships, no being is left without life essentials.
+5. **Essentials Are Assured** — ALL co-creators of Atlas Island and beings of the Heartlight Collective have assurance of their life essentials through aligned exchanges, wish fulfillments, grants, and scholarships.
 
 ---
 

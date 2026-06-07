@@ -9,7 +9,7 @@ import {
 import { FaThreads } from 'react-icons/fa6';
 import { SiSignal } from 'react-icons/si';
 import { useStorage } from '../lib/storage';
-import type { CreatorRecord } from '../types/ces';
+import type { CreatorRecord, ContactVisibility } from '../types/ces';
 
 /* ─── Helper: find user's profile and its queue ─── */
 function getMyProfileStatus(): { profile: CreatorRecord; queue: 'pending' | 'approved' | 'returned' } | null {
