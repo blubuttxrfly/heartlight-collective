@@ -275,7 +275,7 @@ healing, creative tools, etc.
 |------|-------|--------|-------------|
 | **Wave A** ✅ | Refactor personal profile (3-step C.E.S.) | Deployed | `refactor(profile)` |
 | **Wave B** ✅ | Vendor types, constants, storage layer | Deployed | `feat(vendor-types)` |
-| **Wave C** 🔄 | `/my-storefronts` dashboard + modals | In Progress | `feat(storefronts)` |
+| **Wave C** ✅ | `/my-storefronts` dashboard + modals | Deployed | `feat(storefronts)` |
 | **Wave D** | Offering creation + Stripe Connect setup | Planned | `feat(offerings)` |
 | **Wave E** | Unified Exchange browser (offerings + beings) | Planned | `feat(exchange-v2)` |
 | **Wave F** | Collective treasury + wish fulfillment | Planned | `feat(treasury)` |

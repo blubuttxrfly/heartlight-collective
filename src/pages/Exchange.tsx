@@ -9,7 +9,7 @@ import {
 import { FaThreads } from 'react-icons/fa6';
 import { SiSignal } from 'react-icons/si';
 import { useStorage } from '../lib/storage';
-import type { CreatorRecord, ContactVisibility } from '../types/ces';
+import type { CreatorRecord } from '../types/ces';
 
 /* ─── Helper: find user's profile and its queue ─── */
 function getMyProfileStatus(): { profile: CreatorRecord; queue: 'pending' | 'approved' | 'returned' } | null {
@@ -171,7 +171,7 @@ export default function Exchange() {
                 {/* Visible contact icons on card */}
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-lavender/5">
                   {Object.entries(profile.contactMethods || {})
-                    .filter(([key, val]) => profile.contactVisibility?.[key as keyof ContactVisibility] && val?.trim())
+                    .filter(([key, val]) => (profile.contactVisibility as Record<string, boolean>)?.[key] && val?.trim())
                     .map(([key, val]) => {
                       const Icon = CONTACT_ICON_MAP[key];
                       if (!Icon) return null;

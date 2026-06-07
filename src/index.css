@@ -16,9 +16,9 @@
   --color-lavender: #d4b8ff;
   --color-cream: #f5f0ff;
 
-  /* Typography */
-  --font-serif: 'Alice', 'Georgia', serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  /* Typography — Alice as primary, honoring Atlas's resonance */
+  --font-serif: 'Alice', 'Georgia', 'Times New Roman', serif;
+  --font-sans: 'Alice', system-ui, sans-serif;
 
   /* Animations */
   --animate-pulse-slow: pulse 4s ease-in-out infinite;
@@ -115,11 +115,16 @@
   }
 }
 
-/* Base body styles */
+/* Base body styles — Alice throughout */
 body {
   background-color: #05030a;
   color: #f5f0ff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure Alice on all interactive elements */
+input, textarea, button, select {
+  font-family: inherit;
 }
