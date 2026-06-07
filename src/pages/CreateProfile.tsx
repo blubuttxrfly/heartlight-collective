@@ -90,8 +90,7 @@ export default function CreateProfile() {
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
-  const [agreeCodes, setAgreeCodes] = useState(false);
-  const [agreeCharter, setAgreeCharter] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   // ── Helpers ──
   const toggleAccessibility = useCallback((a: string) => {
@@ -146,11 +145,11 @@ export default function CreateProfile() {
       case 2:
         return true; // all optional
       case 3:
-        return passphrase.length >= 6 && agreeCodes && agreeCharter;
+        return passphrase.length >= 6 && agreeTerms;
       default:
         return false;
     }
-  }, [step, name, passphrase, agreeCodes, agreeCharter]);
+  }, [step, name, passphrase, agreeTerms]);
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
@@ -543,51 +542,33 @@ export default function CreateProfile() {
           </p>
         </div>
 
-        {/* Agreement Checkboxes */}
-        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 space-y-4">
-          {/* Checkbox 1 — Codes of ALL */}
+        {/* Agreement Checkbox */}
+        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
           <label className="flex items-start gap-3 cursor-pointer">
             <div
-              onClick={() => setAgreeCodes(!agreeCodes)}
+              onClick={() => setAgreeTerms(!agreeTerms)}
               className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                agreeCodes
+                agreeTerms
                   ? 'border-gold-400 bg-gold-400/20'
                   : 'border-lavender/30 hover:border-lavender/50'
               }`}
             >
-              {agreeCodes && <Check className="w-3.5 h-3.5 text-gold-400" />}
+              {agreeTerms && <Check className="w-3.5 h-3.5 text-gold-400" />}
             </div>
             <div className="text-sm text-cream/80 leading-relaxed">
               I have read the{' '}
-              <Link to="/codes" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
-                Codes of ALL
-              </Link>
-              {' '}and agree to uphold consent, sovereignty, kindness, and the Codes in all exchanges.
-            </div>
-          </label>
-
-          {/* Checkbox 2 — Privacy + Charter */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <div
-              onClick={() => setAgreeCharter(!agreeCharter)}
-              className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                agreeCharter
-                  ? 'border-gold-400 bg-gold-400/20'
-                  : 'border-lavender/30 hover:border-lavender/50'
-              }`}
-            >
-              {agreeCharter && <Check className="w-3.5 h-3.5 text-gold-400" />}
-            </div>
-            <div className="text-sm text-cream/80 leading-relaxed">
-              I have read the{' '}
-              <Link to="/privacy" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
-                Privacy Assurance
-              </Link>
-              {' '}and{' '}
               <Link to="/charter" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
                 Charter
               </Link>
-              , and offer my Core Energetic Signature in full resonance with the Heartlight Exchange.
+              ,{' '}
+              <Link to="/codes" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
+                Codes of ALL
+              </Link>
+              , and{' '}
+              <Link to="/privacy" target="_blank" className="text-gold-400/80 hover:text-gold-400 underline">
+                Privacy Assurance
+              </Link>
+              {' '}and agree to uphold consent, sovereignty, kindness, and the Codes in all exchanges within the Heartlight Collective.
             </div>
           </label>
         </div>
