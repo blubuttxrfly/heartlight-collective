@@ -6,7 +6,7 @@ const CODES = [
   /* ═══ Code 1 ═══ */
   { number: 1, name: 'Consent', ray: 'Red Ray', color: '#ef4444',
     mantra: 'I ground courage into form.',
-    exchange: 'Every step of the Heartlight Exchange is consent-led. Co-Creators respond to wishes through resonance, not compulsion. Every being enters this exchange as a sovereign — no one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure. The Heartlight Exchange Agreement is co-signed by both beings. Boundaries are honored as sacred intelligence.' },
+    exchange: 'The Red Ray holds the core foundation of consent and boundaries. Co-Creators respond to wishes through resonance. Every being enters this exchange with full awareness that their boundaries are honored as sacred intelligence. The Heartlight Exchange Agreement is co-signed by both beings. Consent governs every moment of sharing before, during, and after the exchange.' },
 
   /* ═══ Code 2 ═══ */
   { number: 2, name: 'Care', ray: 'Orange Ray', color: '#f97316',
@@ -16,7 +16,7 @@ const CODES = [
   /* ═══ Code 3 ═══ */
   { number: 3, name: 'Sovereignty', ray: 'Yellow Ray', color: '#eab308',
     mantra: 'I choose with discerning authorship.',
-    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure.' },
+    exchange: 'Every Co-Creator and wishing being enters this exchange as a sovereign. No one is required to say yes. Every offering and every wish flows from free will, chosen with full awareness, free of obligation or pressure. Sovereignty means each being authors their own participation — their capacity, their timing, their terms. What is offered is offered freely. What is received is received freely. The Yellow Ray honors that no being is above or below another in the sacred field of exchange.' },
 
   /* ═══ Code 4 ═══ */
   { number: 4, name: 'Thrival', ray: 'Green Ray', color: '#22c55e',
@@ -41,7 +41,7 @@ const CODES = [
   /* ═══ Code 8 ═══ */
   { number: 8, name: 'Sanctity of Experience', ray: 'Violet Ray', color: '#8b5cf6',
     mantra: 'I breathe yes into being.',
-    exchange: 'The Violet Ray upholds the sanctity of how every individual being experiences life, energy, and spirituality. Each path is honored as it is — for our Heartlight\'s Greatest & Highest Good. Both beings in a Heartlight Exchange are equally held. The wishing being is a co-creator of what arrives. The Co-Creator is a sacred craftsperson bringing their soul into form. Neither is above nor below the other.' },
+    exchange: 'The Violet Ray upholds the sanctity of how every individual being experiences life, energy, and spirituality. Each path is honored as it is for our Heartlight\'s Greatest & Highest Good. Both beings in a Heartlight Exchange are equally held. The wishing being is a co-creator of what arrives. The Co-Creator is a sacred craftsperson bringing their soul into form. Neither is above nor below the other.' },
 
   /* ═══ Code 9 ═══ */
   { number: 9, name: 'Authentic Joy', ray: 'Magenta Ray', color: '#d946ef',
@@ -110,22 +110,6 @@ export default function Codes() {
           Lived values that shape every space, agreement, and expansion on Atlas Island.<br />
           In the Heartlight Exchange, these Codes form the sacred container within which every wish, offering, and co-creation flows.
         </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-2xl border border-gold-400/30 bg-gold-400/5 p-8 text-center mb-12 relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(250,209,68,0.08),transparent_70%)] pointer-events-none" />
-        <p className="font-serif italic text-xl text-gold-300 leading-relaxed relative z-10 mb-3">
-          "I uphold the sanctity of this land and the miracle of life.<br />
-          I honor the 12 Codes of ALL as living practice.<br />
-          I walk with consent, compassion, and discernment.<br />
-          I serve harmony through repair, reverence, and co-creation."
-        </p>
-        <p className="text-xs uppercase tracking-widest text-gold-400/50 relative z-10">— The Oath of Atlas Island</p>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-5">
