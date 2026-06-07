@@ -103,3 +103,52 @@ export const CONTACT_FIELDS = [
   { key: 'telegram',  label: 'Telegram',  placeholder: '@handle or +number',    icon: 'telegram' },
   { key: 'signal',    label: 'Signal',    placeholder: '+1 (000) 000-0000',       icon: 'signal' },
 ] as const;
+
+// ═══════════════════════════════════════════════════════════════
+//  Marketplace Constants (Wave B+)
+// ═══════════════════════════════════════════════════════════════
+
+export const OFFERING_CATEGORIES = [
+  'Astrology & Cosmic Guidance',
+  'Creative Arts & Design',
+  'Education & Mentorship',
+  'Healing & Wellness',
+  'Music & Sound',
+  'Technology & Web',
+  'Writing & Content',
+  'Events & Facilitation',
+  'Handcrafts & Goods',
+  'Other',
+] as const;
+
+export const CURRENCIES: { code: string; label: string; symbol: string }[] = [
+  { code: 'USD', label: 'US Dollar', symbol: '$' },
+];
+
+export const PRICE_TYPE_OPTIONS: { value: string; label: string; description: string }[] = [
+  { value: 'fixed',            label: 'Fixed Price',       description: 'A set price for your offering, paid via Stripe or direct transfer.' },
+  { value: 'gift',             label: 'Gift Economy',      description: 'No set price. The receiver offers what feels aligned.' },
+  { value: 'collective_funded', label: 'Collective Funded', description: 'Funds flow from the Collective treasury for aligned exchanges.' },
+  { value: 'negotiable',       label: 'Negotiable',        description: 'Price is discussed and agreed upon between both beings.' },
+];
+
+export const OFFERING_AVAILABILITY_OPTIONS = [
+  { value: 'available',     label: 'Available' },
+  { value: 'limited',       label: 'Limited Spots' },
+  { value: 'waitlist',      label: 'Waitlist Open' },
+  { value: 'unavailable',   label: 'Currently Unavailable' },
+] as const;
+
+export const PAYMENT_METHOD_LABELS: Record<string, { label: string; prefix: string; example: string }> = {
+  venmo:     { label: 'Venmo',     prefix: 'venmo.com/u/',  example: '@username' },
+  cashapp:   { label: 'Cash App',  prefix: 'cash.app/$',    example: '$username' },
+  zelle:     { label: 'Zelle',     prefix: '',              example: 'phone or email' },
+  stripe:    { label: 'Stripe',    prefix: '',              example: 'Stripe Connect account' },
+  collective: { label: 'Collective', prefix: '',             example: 'Collective treasury' },
+};
+
+export const VENDOR_MEMBER_ROLES = [
+  { value: 'owner',       label: 'Owner',       description: 'Full sovereign control of the storefront' },
+  { value: 'admin',       label: 'Admin',       description: 'Can manage offerings and members' },
+  { value: 'contributor', label: 'Contributor', description: 'Can add/edit offerings, no payment settings' },
+] as const;

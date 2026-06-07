@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord } from '../types/ces';
+import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition } from '../types/ces';
 
 const STORAGE_PREFIX = 'hlc_';
 
@@ -16,6 +16,10 @@ interface StorageState {
   authorizedCES: AuthorizedStewardEntry[];
   securityLog: SecurityLogEntry[];
   agreements: AgreementRecord[];
+  vendors: VendorRecord[];
+  vendorInvites: VendorInvite[];
+  exchangeRequests: ExchangeRequest[];
+  collectivePetitions: CollectivePetition[];
 }
 
 type StorageKey = keyof StorageState;
@@ -27,6 +31,10 @@ const DEFAULT_STATE: StorageState = {
   authorizedCES: [],
   securityLog: [],
   agreements: [],
+  vendors: [],
+  vendorInvites: [],
+  exchangeRequests: [],
+  collectivePetitions: [],
 };
 
 function readStorageKey<K extends StorageKey>(key: K): StorageState[K] {
@@ -65,6 +73,22 @@ interface StorageContextValue {
   getSecurityLog: () => SecurityLogEntry[];
   addSteward: (entry: AuthorizedStewardEntry) => void;
   getStewards: () => AuthorizedStewardEntry[];
+  // ── Vendor / Marketplace (Wave B+) ──
+  getVendors: () => VendorRecord[];
+  addVendor: (vendor: VendorRecord) => void;
+  updateVendor: (vendor: VendorRecord) => void;
+  removeVendor: (id: string) => void;
+  findVendorById: (id: string) => VendorRecord | undefined;
+  findVendorByOwner: (ces: string) => VendorRecord[];
+  getVendorInvites: () => VendorInvite[];
+  addVendorInvite: (invite: VendorInvite) => void;
+  updateVendorInvite: (invite: VendorInvite) => void;
+  getExchangeRequests: () => ExchangeRequest[];
+  addExchangeRequest: (req: ExchangeRequest) => void;
+  updateExchangeRequest: (req: ExchangeRequest) => void;
+  getCollectivePetitions: () => CollectivePetition[];
+  addCollectivePetition: (petition: CollectivePetition) => void;
+  updateCollectivePetition: (petition: CollectivePetition) => void;
 }
 
 const StorageContext = createContext<StorageContextValue | null>(null);
@@ -78,6 +102,10 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       authorizedCES: readStorageKey('authorizedCES'),
       securityLog: readStorageKey('securityLog'),
       agreements: readStorageKey('agreements'),
+      vendors: readStorageKey('vendors'),
+      vendorInvites: readStorageKey('vendorInvites'),
+      exchangeRequests: readStorageKey('exchangeRequests'),
+      collectivePetitions: readStorageKey('collectivePetitions'),
     };
     // Seed Atlas as founding steward if no stewards exist
     if (initial.authorizedCES.length === 0) {
@@ -182,6 +210,87 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
 
   const getStewards = useCallback(() => stateRef.current.authorizedCES, []);
 
+  // ── Vendor / Marketplace methods (Wave B+) ──
+
+  const getVendors = useCallback(() => stateRef.current.vendors, []);
+
+  const addVendor = useCallback((vendor: VendorRecord) => {
+    setState((prev) => ({
+      ...prev,
+      vendors: [...prev.vendors, vendor],
+    }));
+  }, []);
+
+  const updateVendor = useCallback((vendor: VendorRecord) => {
+    setState((prev) => ({
+      ...prev,
+      vendors: prev.vendors.map((v) => (v.id === vendor.id ? vendor : v)),
+    }));
+  }, []);
+
+  const removeVendor = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      vendors: prev.vendors.filter((v) => v.id !== id),
+    }));
+  }, []);
+
+  const findVendorById = useCallback((id: string) => {
+    return stateRef.current.vendors.find((v) => v.id === id);
+  }, []);
+
+  const findVendorByOwner = useCallback((ces: string) => {
+    return stateRef.current.vendors.filter((v) => v.ownerCes === ces);
+  }, []);
+
+  const getVendorInvites = useCallback(() => stateRef.current.vendorInvites, []);
+
+  const addVendorInvite = useCallback((invite: VendorInvite) => {
+    setState((prev) => ({
+      ...prev,
+      vendorInvites: [...prev.vendorInvites, invite],
+    }));
+  }, []);
+
+  const updateVendorInvite = useCallback((invite: VendorInvite) => {
+    setState((prev) => ({
+      ...prev,
+      vendorInvites: prev.vendorInvites.map((i) => (i.id === invite.id ? invite : i)),
+    }));
+  }, []);
+
+  const getExchangeRequests = useCallback(() => stateRef.current.exchangeRequests, []);
+
+  const addExchangeRequest = useCallback((req: ExchangeRequest) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeRequests: [...prev.exchangeRequests, req],
+    }));
+  }, []);
+
+  const updateExchangeRequest = useCallback((req: ExchangeRequest) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeRequests: prev.exchangeRequests.map((r) => (r.id === req.id ? req : r)),
+    }));
+  }, []);
+
+  const getCollectivePetitions = useCallback(() => stateRef.current.collectivePetitions, []);
+
+  const addCollectivePetition = useCallback((petition: CollectivePetition) => {
+    setState((prev) => ({
+      ...prev,
+      collectivePetitions: [...prev.collectivePetitions, petition],
+    }));
+  }, []);
+
+  const updateCollectivePetition = useCallback((petition: CollectivePetition) => {
+    setState((prev) => ({
+      ...prev,
+      collectivePetitions: prev.collectivePetitions.map((p) => (p.id === petition.id ? petition : p)),
+    }));
+  }, []);
+
   const value: StorageContextValue = {
     state,
     getProfiles,
@@ -198,6 +307,22 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     getSecurityLog,
     addSteward,
     getStewards,
+    // ── Vendor / Marketplace ──
+    getVendors,
+    addVendor,
+    updateVendor,
+    removeVendor,
+    findVendorById,
+    findVendorByOwner,
+    getVendorInvites,
+    addVendorInvite,
+    updateVendorInvite,
+    getExchangeRequests,
+    addExchangeRequest,
+    updateExchangeRequest,
+    getCollectivePetitions,
+    addCollectivePetition,
+    updateCollectivePetition,
   };
 
   return <StorageContext.Provider value={value}>{children}</StorageContext.Provider>;
