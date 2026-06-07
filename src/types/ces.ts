@@ -304,3 +304,54 @@ export interface CollectivePetition {
   reviewedAt?: string;
   fundedAt?: string;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  Codes Co-Creation Journey Types (Wave H)
+//  The Flow page — live exchange documentation and Code awareness
+// ═══════════════════════════════════════════════════════════════
+
+export type ExchangeJourneyStatus =
+  | 'agreement_pending'
+  | 'active'
+  | 'fulfillment_review'
+  | 'complete'
+  | 'adapted';
+
+export type JourneyPhase = 'before' | 'during' | 'after';
+
+export interface CodeLogEntry {
+  id: string;
+  exchangeId: string;
+  authorCes: string;
+  authorName: string;
+  ray: RayKey;
+  codeNumber: number;
+  timestamp: string;
+  content: string;
+  visibility: 'private' | 'public';
+  phase: JourneyPhase;
+  moodEnergy?: string;
+}
+
+export interface ExchangeJourney {
+  id: string;
+  agreementId: string;
+  title: string;
+  description: string;
+  wishingCes: string;
+  wishingName: string;
+  coCreatorCes: string;
+  coCreatorName: string;
+  status: ExchangeJourneyStatus;
+  currentPhase: JourneyPhase;
+  selectedCodes: number[];
+  logs: CodeLogEntry[];
+  fulfillmentNotes: string;
+  fulfillmentSignedAt: string | null;
+  fulfillmentSignedBy: string[];
+  adaptationConsent: boolean;
+  adaptedFromJourneyId?: string;
+  adaptedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
