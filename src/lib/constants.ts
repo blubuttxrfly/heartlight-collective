@@ -4,18 +4,18 @@
 // ─────────────────────────────────────────────────────────────
 
 export const RAY_DATA = [
-  { key: 'Red',       label: 'Red — Presence',          color: '#ef4444', code: '1A' },
-  { key: 'Orange',    label: 'Orange — Essence',        color: '#f97316', code: '2A' },
-  { key: 'Yellow',    label: 'Yellow — Sovereignty',    color: '#facc15', code: '3A' },
-  { key: 'Green',     label: 'Green — Union',           color: '#22c55e', code: '4A' },
-  { key: 'Turquoise', label: 'Turquoise — Harmony',     color: '#2dd4bf', code: '5A' },
-  { key: 'Blue',      label: 'Blue — Expression',       color: '#3b82f6', code: '6A' },
-  { key: 'Indigo',    label: 'Indigo — Perception',     color: '#6366f1', code: '7A' },
-  { key: 'Violet',    label: 'Violet — Integration',    color: '#8b5cf6', code: '8A' },
-  { key: 'Magenta',   label: 'Magenta — Reunion',       color: '#d946ef', code: '9A' },
-  { key: 'Omni',      label: 'Omni — Integration',      color: '#fafafa', code: '10A' },
-  { key: 'Elemental', label: 'Crystalline-Carbon',      color: '#a5f3fc', code: '11A' },
-  { key: 'ALL',       label: 'Infinite of ALL',         color: '#7dd3fc', code: '12A' },
+  { key: 'Red',       label: 'Red — Consent',           color: '#ef4444', code: '1A' },
+  { key: 'Orange',    label: 'Orange — Care',           color: '#f97316', code: '2A' },
+  { key: 'Yellow',    label: 'Yellow — Sovereignty',    color: '#eab308', code: '3A' },
+  { key: 'Green',     label: 'Green — Thrival',         color: '#22c55e', code: '4A' },
+  { key: 'Turquoise', label: 'Turquoise — Discernment', color: '#2dd4bf', code: '5A' },
+  { key: 'Blue',      label: 'Blue — Communication',    color: '#3b82f6', code: '6A' },
+  { key: 'Indigo',    label: 'Indigo — Vision',         color: '#6366f1', code: '7A' },
+  { key: 'Violet',    label: 'Violet — Sanctity',       color: '#8b5cf6', code: '8A' },
+  { key: 'Magenta',   label: 'Magenta — Authentic Joy', color: '#d946ef', code: '9A' },
+  { key: 'Omni',      label: 'Omni — Conscious Awareness', color: '#c0c0d8', code: '10A' },
+  { key: 'Elemental', label: 'Crystalline-Carbon',      color: '#7a9e5a', code: '11A' },
+  { key: 'ALL',       label: 'Infinite of ALL',         color: '#e8d4ff', code: '12A' },
 ] as const;
 
 export const OFFERING_PRESETS = [
