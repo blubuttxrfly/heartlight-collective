@@ -51,6 +51,7 @@ export interface ContactMethods {
 export type ContactVisibility = Record<keyof ContactMethods, boolean>;
 
 export interface PortfolioItem {
+  id: string;                    // Unique identifier for gallery management
   type: 'image' | 'video';
   url: string;
   caption: string;

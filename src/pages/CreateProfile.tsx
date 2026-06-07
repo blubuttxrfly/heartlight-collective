@@ -78,7 +78,8 @@ export default function CreateProfile() {
   // Step 2
   const [bio, setBio] = useState('');
   const [portfolioLink, setPortfolioLink] = useState('');
-  const [portfolioItems, _setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const portfolioInputRef = useRef<HTMLInputElement>(null);
   const [contactMethods, setContactMethods] = useState<ContactMethods>(emptyContact());
   const [contactVisibility, setContactVisibility] = useState<ContactVisibility>(emptyContactVisibility());
   const [numerology, setNumerology] = useState<string[]>([]);
@@ -103,6 +104,38 @@ export default function CreateProfile() {
 
   const toggleContactVisibility = useCallback((key: keyof ContactVisibility) => {
     setContactVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  /* ─── Portfolio upload helpers ─── */
+  const addPortfolioItem = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target?.result as string;
+      setPortfolioItems((prev) => [
+        ...prev,
+        {
+          id: `pi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          type: file.type.startsWith('video') ? 'video' : 'image',
+          url,
+          caption: '',
+          fileName: file.name,
+          contentType: file.type,
+          fileSize: file.size,
+          uploadedAt: new Date().toISOString(),
+        },
+      ]);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const removePortfolioItem = useCallback((id: string) => {
+    setPortfolioItems((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const updatePortfolioCaption = useCallback((id: string, caption: string) => {
+    setPortfolioItems((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, caption } : p))
+    );
   }, []);
 
   // ── Validation per step ──
@@ -312,11 +345,80 @@ export default function CreateProfile() {
         {/* 5. Portfolio Link */}
         <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
 
-        {/* 6. Portfolio Upload (Phase 2C placeholder) */}
-        <div className="border border-dashed border-lavender/10 rounded-xl p-6 text-center">
-          <Upload className="w-6 h-6 text-lavender/40 mx-auto mb-2" />
-          <p className="text-sm text-lavender/60 mb-1">Portfolio uploads coming in Phase 2C</p>
-          <p className="text-xs text-lavender/30">You will be able to add photos and videos to showcase your work.</p>
+        {/* 6. Portfolio Upload */}
+        <div>
+          <label className="block text-sm text-lavender/70 mb-2">Portfolio <span className="text-lavender/40">(optional — images & videos)</span></label>
+
+          {/* Hidden file input */}
+          <input
+            ref={portfolioInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              files.forEach(addPortfolioItem);
+              if (portfolioInputRef.current) portfolioInputRef.current.value = '';
+            }}
+          />
+
+          {/* Upload trigger */}
+          {portfolioItems.length < 6 && (
+            <button
+              onClick={() => portfolioInputRef.current?.click()}
+              className="w-full border border-dashed border-lavender/20 rounded-xl p-4 text-center hover:border-lavender/40 hover:bg-void-800/40 transition-all mb-3"
+            >
+              <Upload className="w-5 h-5 text-lavender/40 mx-auto mb-1" />
+              <p className="text-sm text-lavender/60">Click to upload images or videos</p>
+              <p className="text-xs text-lavender/30">Up to 6 items · Max 10MB each</p>
+            </button>
+          )}
+
+          {/* Gallery grid */}
+          {portfolioItems.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {portfolioItems.map((item) => (
+                <div key={item.id} className="group relative rounded-xl overflow-hidden border border-lavender/10 bg-void-800/40">
+                  {item.type === 'video' ? (
+                    <video
+                      src={item.url}
+                      className="w-full aspect-square object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={item.url}
+                      alt={item.fileName || 'Portfolio item'}
+                      className="w-full aspect-square object-cover"
+                    />
+                  )}
+
+                  {/* Remove button */}
+                  <button
+                    onClick={() => removePortfolioItem(item.id)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-void-950/80 border border-lavender/20 text-lavender/60 hover:text-cream hover:border-cream/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                    title="Remove"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Caption input */}
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      value={item.caption}
+                      onChange={(e) => updatePortfolioCaption(item.id, e.target.value)}
+                      placeholder="Caption..."
+                      className="w-full bg-transparent text-xs text-cream placeholder:text-lavender/25 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 7. Accessibility */}
