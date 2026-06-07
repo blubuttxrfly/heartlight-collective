@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa6';
 import { FaThreads } from 'react-icons/fa6';
 import { SiSignal } from 'react-icons/si';
+import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { useStorage } from '../lib/storage';
 import { generateCESNumberValue } from '../lib/ces';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
@@ -61,6 +62,7 @@ const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string 
 /* ─── Main wizard ─── */
 export default function CreateProfile() {
   const { addProfile, getProfiles } = useStorage();
+  const unified = useUnifiedStorage();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [cesDigits, setCesDigits] = useState<string[]>(Array(9).fill(''));
@@ -228,7 +230,7 @@ export default function CreateProfile() {
       stewardshipNote: '',
     };
 
-    addProfile(record, 'pending');
+    unified.createProfile(record, 'pending');
     setSubmitted(true);
   }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 
