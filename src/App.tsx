@@ -10,6 +10,7 @@ import Privacy from './pages/Privacy'
 import CreateProfile from './pages/CreateProfile'
 import StewardGate from './pages/StewardGate'
 import MyStorefronts from './pages/MyStorefronts'
+import SignIn from './pages/SignIn'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/create-profile" element={<CreateProfile />} />
           <Route path="/steward" element={<StewardGate />} />
           <Route path="/my-storefronts" element={<MyStorefronts />} />
+          <Route path="/sign-in" element={<SignIn />} />
         </Routes>
       </main>
       <Footer />

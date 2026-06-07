@@ -38,7 +38,8 @@ export default function Header() {
 
   const localProfile = getLocalProfile();
   const hasProfile = !!localProfile;
-  const isSteward = signedIn && user?.cesNumber === '111111111';
+  const isSteward = signedIn && user?.ces === '111111111';
+  const sessionEmoji = signedIn ? (localProfile?.emoji || '✦') : (localProfile?.emoji || '✦');
 
   return (
     <header className="relative z-50">
@@ -51,7 +52,7 @@ export default function Header() {
               className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
             >
               <span className="w-7 h-7 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-sm">
-                {user?.emoji || '✦'}
+                {sessionEmoji}
               </span>
               <span className="text-xs text-lavender/80 hidden sm:inline max-w-[100px] truncate">{user?.name}</span>
               <ChevronDown className="w-3 h-3 text-lavender/40" />
@@ -64,7 +65,7 @@ export default function Header() {
               >
                 <div className="px-4 py-3 border-b border-lavender/5">
                   <p className="text-xs text-lavender/50">C.E.S.</p>
-                  <p className="text-sm text-gold-300 font-mono">{user?.cesNumber}</p>
+                  <p className="text-sm text-gold-300 font-mono">{user?.ces}</p>
                 </div>
                 <Link
                   to="/profile"

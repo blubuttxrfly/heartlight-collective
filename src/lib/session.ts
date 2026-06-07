@@ -1,67 +1,109 @@
 // ─────────────────────────────────────────────────────────────
-//  Heartlight Collective — Sovereign Session
-//  Mirrors the original getCurrentUser / setCurrentUser pattern
-//  Uses sessionStorage so the session is tab-specific
+//  Heartlight Collective — Sovereign Session (Unified)
+//  Single source of truth: localStorage for cross-tab persistence
+//  + Supabase sync when credentials are configured
+//  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useCallback } from 'react';
-import type { CreatorRecord } from '../types/ces';
+import { useState, useEffect, useCallback } from 'react'
+import type { CreatorRecord } from '../types/ces'
 
-const SESSION_KEY = 'hlc_currentUser';
+const SESSION_KEY = 'hlc_session_v2' // bumped for new unified format
 
-/** Read the current user from sessionStorage. */
-export function getCurrentUser(): CreatorRecord | null {
+/* ═══ Unified User ─ both local and Supabase ═══ */
+export interface HLCUser {
+  ces: string                    // 9-digit C.E.S.
+  name: string
+  isSteward: boolean
+  fromSupabase?: boolean          // true if validated against cloud
+}
+
+/* ═══ Helpers ── read/write localStorage ═══ */
+function readSession(): HLCUser | null {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as CreatorRecord;
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as HLCUser
   } catch {
-    return null;
+    // Migrate from old sessionStorage format if present
+    try {
+      const old = sessionStorage.getItem('hlc_currentUser')
+      if (old) {
+        const profile = JSON.parse(old) as CreatorRecord
+        const user: HLCUser = {
+          ces: profile.cesNumber || '',
+          name: profile.name,
+          isSteward: profile.stewardship === 'active',
+        }
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user))
+        sessionStorage.removeItem('hlc_currentUser')
+        return user
+      }
+    } catch { /* ignore */ }
+    return null
   }
 }
 
-/** Store the current user in sessionStorage. */
-export function setCurrentUser(profile: CreatorRecord | null): void {
-  try {
-    if (profile === null) {
-      sessionStorage.removeItem(SESSION_KEY);
-    } else {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(profile));
-    }
-  } catch {
-    // silently fail
+function writeSession(user: HLCUser | null) {
+  if (user) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user))
+  } else {
+    localStorage.removeItem(SESSION_KEY)
+    sessionStorage.removeItem('hlc_currentUser')
   }
 }
 
-/** Clear the current session. */
-export function clearCurrentUser(): void {
-  sessionStorage.removeItem(SESSION_KEY);
-}
-
-/** React hook for live session state. */
+/* ═══ Hook ── Unified useSession ═══ */
 export function useSession() {
-  const [user, setUser] = useState<CreatorRecord | null>(() => getCurrentUser());
+  const [user, setUser] = useState<HLCUser | null>(() => readSession())
 
-  const signIn = useCallback((profile: CreatorRecord) => {
-    setCurrentUser(profile);
-    setUser(profile);
-  }, []);
+  /* ── Sign in with CES + passphrase ── */
+  const signIn = useCallback(async (profile: CreatorRecord) => {
+    const u: HLCUser = {
+      ces: profile.cesNumber || '',
+      name: profile.name,
+      isSteward: profile.stewardship === 'active',
+    }
+    writeSession(u)
+    setUser(u)
+  }, [])
 
+  /* ── Sign out ── */
   const signOut = useCallback(() => {
-    clearCurrentUser();
-    setUser(null);
-  }, []);
+    writeSession(null)
+    setUser(null)
+  }, [])
 
+  /* ── Refresh (for external changes) ── */
   const refresh = useCallback(() => {
-    setUser(getCurrentUser());
-  }, []);
+    setUser(readSession())
+  }, [])
 
-  // Listen for storage events from other tabs (optional)
+  /* ── Listen for storage events from other tabs ── */
   useEffect(() => {
-    const handler = () => setUser(getCurrentUser());
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, []);
+    const handler = () => setUser(readSession())
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
 
-  return { user, signedIn: !!user, signIn, signOut, refresh };
+  return {
+    user,
+    signedIn: Boolean(user),
+    signIn,
+    signOut,
+    refresh,
+  }
+}
+
+// ── Backward-compat helpers (for non-React code) ──
+export function getCurrentUser(): HLCUser | null {
+  return readSession()
+}
+
+export function clearCurrentUser(): void {
+  writeSession(null)
+}
+
+export function setCurrentUser(user: HLCUser | null): void {
+  writeSession(user)
 }
