@@ -12,6 +12,7 @@ import CreateProfile from './pages/CreateProfile'
 import StewardGate from './pages/StewardGate'
 import MyStorefronts from './pages/MyStorefronts'
 import SignIn from './pages/SignIn'
+import Diagnostics from './pages/Diagnostics'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/steward" element={<StewardGate />} />
           <Route path="/my-storefronts" element={<MyStorefronts />} />
           <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/diagnostics" element={<Diagnostics />} />
         </Routes>
       </main>
       <Footer />
