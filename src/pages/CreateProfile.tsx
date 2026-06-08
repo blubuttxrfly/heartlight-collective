@@ -95,6 +95,7 @@ export default function CreateProfile() {
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [guideGuardianOptIn, setGuideGuardianOptIn] = useState(false);
 
   // ── Helpers ──
   const toggleAccessibility = useCallback((a: string) => {
@@ -226,8 +227,10 @@ export default function CreateProfile() {
       passphrase,
       wishAvailability,
       directoryWishStatus: wishAvailability,
-      stewardship: 'suspended',
+      stewardship: 'pending',
       stewardshipNote: '',
+      guideGuardianStatus: guideGuardianOptIn ? 'opted_in' : 'not_opted_in',
+      guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
     };
 
     unified.createProfile(record, 'pending');
@@ -295,7 +298,7 @@ export default function CreateProfile() {
         </div>
 
         <Field label="Name *" value={name} onChange={setName} placeholder="Your name as you wish it to appear" />
-        <Field label="Pronouns" value={pronouns} onChange={setPronouns} placeholder="e.g. they/them, she/her" />
+        <Field label="Pronouns" value={pronouns} onChange={(v) => setPronouns(v.toLowerCase())} placeholder="e.g. they/them, she/her" />
         <Field label="Title / Role" value={title} onChange={setTitle} placeholder="e.g. Astrologer, Web Developer" />
         <Field label="Location" value={location} onChange={setLocation} placeholder="City, Region, or Earth" />
       </div>
@@ -634,6 +637,30 @@ export default function CreateProfile() {
           <p className="text-xs text-lavender/40 mt-2">
             This controls whether other beings can cast wishes to you through the Exchange.
           </p>
+        </div>
+
+        {/* Guide & Guardian Opt-In */}
+        <div className="rounded-xl border border-gold-400/20 bg-gold-400/5 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div
+              onClick={() => setGuideGuardianOptIn(!guideGuardianOptIn)}
+              className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                guideGuardianOptIn
+                  ? 'border-gold-400 bg-gold-400/20'
+                  : 'border-lavender/30 hover:border-lavender/50'
+              }`}
+            >
+              {guideGuardianOptIn && <Check className="w-3.5 h-3.5 text-gold-400" />}
+            </div>
+            <div className="text-sm text-cream/80 leading-relaxed">
+              I want to receive more information and the opportunity to be a Heartlight Guide & Guardian within the Heartlight Collective. This entails upholding the sanctity of the codes within our community to live our absolute best dreams lives, with & for our Heartlight's Greatest & Highest Good.
+              <br />
+              <br />
+              <span className="text-lavender/50 text-xs">
+                You may opt in or out at any time with no explanation needed. ✦
+              </span>
+            </div>
+          </label>
         </div>
 
         {/* Agreement Checkbox */}

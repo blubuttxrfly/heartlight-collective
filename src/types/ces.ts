@@ -62,6 +62,14 @@ export interface PortfolioItem {
   uploadedAt?: string;
 }
 
+export type GuideGuardianStatus = 
+  | 'not_opted_in'           // Has not opted in
+  | 'opted_in'               // Checked the box, hasn't done Oathis
+  | 'companion'              // Exploring via Oathis ceremony
+  | 'active'                 // Completed Oathis, actively serving
+  | 'inactive'               // Temporarily paused (can reactivate)
+  | 'declined';              // Opted out after opting in
+
 export interface CreatorRecord {
   id: string;
   name: string;
@@ -106,6 +114,10 @@ export interface CreatorRecord {
   directoryWishStatus: WishAvailability;
   stewardship: 'active' | 'suspended' | 'banned' | 'pending' | 'returned';
   stewardshipNote: string;
+  
+  // NEW — Guide & Guardian journey tracking
+  guideGuardianStatus: GuideGuardianStatus;
+  guideGuardianOptedInAt?: string;
 }
 
 export interface AuthorizedStewardEntry {

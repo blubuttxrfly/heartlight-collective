@@ -41,6 +41,8 @@ function recordToRow(profile: CreatorRecord): Record<string, unknown> {
     accessibility: profile.accessibility || [],
     consent: profile.consent || '',
     numerology: profile.numerology || [],
+    guide_guardian_status: profile.guideGuardianStatus || 'not_opted_in',
+    guide_guardian_opted_in_at: profile.guideGuardianOptedInAt || null,
   }
 }
 
@@ -76,6 +78,9 @@ function rowToRecord(row: any): CreatorRecord {
     consent: String(row.consent || ''),
     numerology: Array.isArray(row.numerology) ? row.numerology : [],
     contactMethod: '',
+    // Guide & Guardian journey tracking
+    guideGuardianStatus: row.guide_guardian_status || 'not_opted_in',
+    guideGuardianOptedInAt: row.guide_guardian_opted_in_at || undefined,
     // Legacy optional fields
     ray: undefined,
     rays: undefined,
