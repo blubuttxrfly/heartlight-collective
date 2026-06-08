@@ -192,7 +192,7 @@ export default function Directory() {
             <div className="mt-4">
               <Link
                 to={`/profile/${profile.cesNumber}`}
-                className="block w-full text-center px-4 py-2 rounded-full border border-gold-400/30 bg-gold-400/10 text-gold-300 hover:bg-gold-400/20 transition-all text-sm"
+                className="block w-full text-center px-4 py-2 rounded-full border border-heartlight-green/30 bg-heartlight-green/10 text-heartlight-green hover:bg-heartlight-green/20 transition-all text-sm"
               >
                 View Profile
               </Link>
