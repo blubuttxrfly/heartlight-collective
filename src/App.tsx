@@ -7,6 +7,7 @@ import Flow from './pages/Flow'
 import Charter from './pages/Charter'
 import Codes from './pages/Codes'
 import Privacy from './pages/Privacy'
+import Directory from './pages/Directory'
 import CreateProfile from './pages/CreateProfile'
 import StewardGate from './pages/StewardGate'
 import MyStorefronts from './pages/MyStorefronts'
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/exchange" element={<Exchange />} />
           <Route path="/flow" element={<Flow />} />
+          <Route path="/directory" element={<Directory />} />
           <Route path="/charter" element={<Charter />} />
           <Route path="/codes" element={<Codes />} />
           <Route path="/privacy" element={<Privacy />} />

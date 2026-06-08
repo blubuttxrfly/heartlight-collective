@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity, Users } from 'lucide-react';
 import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
 const primaryNav = [
   { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'gold' },
+  { path: '/directory', label: 'Directory', icon: Users, hue: 'gold' },
   { path: '/', label: 'Collective', icon: Globe, hue: 'magenta' },
   { path: '/flow', label: 'Flow', icon: Infinity, hue: 'lavender' },
 ];
