@@ -61,6 +61,8 @@ Your Supabase `profiles` table needs these columns:
 - `stewardship` (text) — values: `'pending'`, `'active'`, `'suspended'`, `'banned'`, `'returned'`
 - `ces_number` (text, unique)
 - `ces_passphrase_hash` (text)
+- `guide_guardian_status` (text) — values: `'not_opted_in'`, `'opted_in'`, `'companion'`, `'active'`, `'inactive'`, `'declined'`
+- `guide_guardian_opted_in_at` (timestamptz) — timestamp when being opted in
 - All existing columns from the schema
 
 If the table doesn't exist yet, create it via Supabase SQL Editor:
@@ -91,6 +93,8 @@ CREATE TABLE profiles (
   directory_wish_status text DEFAULT 'accepting',
   stewardship text DEFAULT 'pending',
   stewardship_note text DEFAULT '',
+  guide_guardian_status text DEFAULT 'not_opted_in',
+  guide_guardian_opted_in_at timestamptz DEFAULT NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -102,3 +106,25 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow anon access" ON profiles
   FOR ALL USING (true) WITH CHECK (true);
 ```
+
+## Phase 1 Migration (Run This After Deploying)
+
+If you already have a `profiles` table from before Phase 1, run this migration to add the new Guide & Guardian columns:
+
+```sql
+-- Add Guide & Guardian status tracking
+ALTER TABLE profiles 
+  ADD COLUMN IF NOT EXISTS guide_guardian_status text DEFAULT 'not_opted_in',
+  ADD COLUMN IF NOT EXISTS guide_guardian_opted_in_at timestamptz DEFAULT NULL;
+
+-- Add index for faster filtering (optional)
+CREATE INDEX IF NOT EXISTS idx_profiles_guide_guardian_status 
+  ON profiles(guide_guardian_status);
+
+-- Update existing profiles to default state
+UPDATE profiles 
+  SET guide_guardian_status = 'not_opted_in' 
+  WHERE guide_guardian_status IS NULL;
+```
+
+**How to run:** Go to your Supabase project → SQL Editor → paste the migration → Run ✦
