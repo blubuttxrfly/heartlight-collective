@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Eye, EyeOff, Check, X, ArrowLeft, LogOut, AlertTriangle, UserCheck, UserX, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useStorage } from '../lib/storage';
+import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { cesEncrypt } from '../lib/ces';
 import type { CreatorRecord, SecurityLogEntry } from '../types/ces';
 
 /* ─── Steward Gate ─── */
 export default function StewardGate() {
-  const { getStewards, getPending, getApproved, getReturned, getSecurityLog, moveProfile, addSecurityLog } = useStorage();
+  const { getStewards, getPending, getApproved, getReturned, getSecurityLog, moveProfile, addSecurityLog } = useUnifiedStorage();
 
   const [authorized, setAuthorized] = useState(false);
   const [ces, setCes] = useState('');
@@ -16,6 +16,35 @@ export default function StewardGate() {
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<'pending' | 'approved' | 'returned' | 'security'>('pending');
+
+  // Load profiles from Supabase/localStorage
+  const [pending, setPending] = useState<CreatorRecord[]>([]);
+  const [approved, setApproved] = useState<CreatorRecord[]>([]);
+  const [returned, setReturned] = useState<CreatorRecord[]>([]);
+  const [securityLog, setSecurityLog] = useState<SecurityLogEntry[]>([]);
+
+  // Fetch profiles when authorized
+  useEffect(() => {
+    if (!authorized) return;
+
+    const loadProfiles = async () => {
+      try {
+        const [pendingRes, approvedRes, returnedRes] = await Promise.all([
+          getPending(),
+          getApproved(),
+          getReturned(),
+        ]);
+        setPending(Array.isArray(pendingRes) ? pendingRes : []);
+        setApproved(Array.isArray(approvedRes) ? approvedRes : []);
+        setReturned(Array.isArray(returnedRes) ? returnedRes : []);
+        setSecurityLog(getSecurityLog());
+      } catch (err) {
+        console.error('Failed to load profiles:', err);
+      }
+    };
+
+    loadProfiles();
+  }, [authorized, getPending, getApproved, getReturned, getSecurityLog]);
 
   // Check if already a steward (stored in localStorage)
   useEffect(() => {
@@ -154,10 +183,23 @@ export default function StewardGate() {
   }
 
   // ── Steward Panel ──
-  const pending = getPending();
-  const approved = getApproved();
-  const returned = getReturned();
-  const securityLog = getSecurityLog();
+  const handleApprove = async (id: string) => {
+    await moveProfile(id, 'pending', 'approved');
+    // Refresh profiles after move
+    const [pendingRes, approvedRes, returnedRes] = await Promise.all([getPending(), getApproved(), getReturned()]);
+    setPending(Array.isArray(pendingRes) ? pendingRes : []);
+    setApproved(Array.isArray(approvedRes) ? approvedRes : []);
+    setReturned(Array.isArray(returnedRes) ? returnedRes : []);
+  };
+
+  const handleReturn = async (id: string) => {
+    await moveProfile(id, 'pending', 'returned');
+    // Refresh profiles after move
+    const [pendingRes, approvedRes, returnedRes] = await Promise.all([getPending(), getApproved(), getReturned()]);
+    setPending(Array.isArray(pendingRes) ? pendingRes : []);
+    setApproved(Array.isArray(approvedRes) ? approvedRes : []);
+    setReturned(Array.isArray(returnedRes) ? returnedRes : []);
+  };
 
   return (
     <div className="px-4 pb-12 max-w-5xl mx-auto">
@@ -212,8 +254,8 @@ export default function StewardGate() {
                   <ProfileReviewCard
                     key={p.id}
                     profile={p}
-                    onApprove={() => moveProfile(p.id, 'pending', 'approved')}
-                    onReturn={() => moveProfile(p.id, 'pending', 'returned')}
+                    onApprove={() => handleApprove(p.id)}
+                    onReturn={() => handleReturn(p.id)}
                   />
                 ))}
               </div>

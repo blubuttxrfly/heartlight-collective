@@ -104,7 +104,7 @@ export interface CreatorRecord {
   passphrase: string;
   wishAvailability: WishAvailability;
   directoryWishStatus: WishAvailability;
-  stewardship: 'active' | 'suspended' | 'banned';
+  stewardship: 'active' | 'suspended' | 'banned' | 'pending' | 'returned';
   stewardshipNote: string;
 }
 
