@@ -1,20 +1,55 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { CreatorRecord } from '../types/ces';
 
 export default function Diagnostics() {
   const unified = useUnifiedStorage();
   const [supabaseConfigured, setSupabaseConfigured] = useState(false);
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
   const [pending, setPending] = useState<CreatorRecord[]>([]);
   const [approved, setApproved] = useState<CreatorRecord[]>([]);
+  const [localStorageCount, setLocalStorageCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
-    setSupabaseConfigured(isSupabaseConfigured());
+    const configured = isSupabaseConfigured();
+    setSupabaseConfigured(configured);
+    if (configured) {
+      testSupabaseConnection();
+    }
     loadProfiles();
+    countLocalStorage();
   }, []);
+
+  const testSupabaseConnection = async () => {
+    try {
+      const { error } = await supabase.from('profiles').select('count').limit(1);
+      if (error) {
+        setSupabaseConnected(false);
+        setTestResult(`Connection failed: ${error.message}`);
+      } else {
+        setSupabaseConnected(true);
+        setTestResult('✓ Supabase is reachable and responding');
+      }
+    } catch (err: any) {
+      setSupabaseConnected(false);
+      setTestResult(`Connection error: ${err.message}`);
+    }
+  };
+
+  const countLocalStorage = () => {
+    try {
+      const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]');
+      const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]');
+      const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]');
+      setLocalStorageCount(pending.length + approved.length + returned.length);
+    } catch {
+      setLocalStorageCount(0);
+    }
+  };
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -38,31 +73,51 @@ export default function Diagnostics() {
         System Diagnostics ✦
       </h1>
 
-      {/* Supabase Status */}
+      {/* Supabase Configuration */}
       <div className={`rounded-xl border p-4 mb-6 ${
         supabaseConfigured 
           ? 'border-green-400/20 bg-green-400/5' 
           : 'border-orange-400/20 bg-orange-400/5'
       }`}>
         <h2 className="font-serif text-xl text-cream mb-2">
-          {supabaseConfigured ? '✓ Supabase Connected' : '⚠ Supabase Not Configured'}
+          {supabaseConfigured ? '✓ Supabase Configured' : '⚠ Supabase Not Configured'}
         </h2>
-        <p className="text-sm text-lavender/70">
+        <p className="text-sm text-lavender/70 mb-3">
           {supabaseConfigured 
-            ? 'Cross-browser sync is enabled. Profiles will appear in the admin panel from any browser.' 
-            : 'Profiles are stored in browser localStorage only. Run the Supabase migration and add env vars to Vercel.'}
+            ? 'Environment variables are present. Testing connection...' 
+            : 'VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing from Vercel environment variables.'}
+        </p>
+        {supabaseConfigured && supabaseConnected === false && (
+          <p className="text-sm text-magenta-300 mt-2">
+            ⚠️ {testResult}
+          </p>
+        )}
+        {supabaseConfigured && supabaseConnected === true && (
+          <p className="text-sm text-green-300 mt-2">
+            ✓ {testResult}
+          </p>
+        )}
+      </div>
+
+      {/* localStorage Profiles */}
+      <div className="rounded-xl border border-lavender/10 bg-void-900/40 p-4 mb-6">
+        <h2 className="font-serif text-lg text-cream mb-2">
+          Browser localStorage Profiles: {localStorageCount}
+        </h2>
+        <p className="text-xs text-lavender/50">
+          These profiles exist only in this browser. They won't sync across devices unless Supabase is working.
         </p>
       </div>
 
       {/* Pending Profiles */}
       <div className="rounded-xl border border-lavender/10 bg-void-900/40 p-6 mb-6">
         <h2 className="font-serif text-xl text-cream mb-4">
-          Pending Profiles ({pending.length})
+          Pending Profiles from Supabase ({pending.length})
         </h2>
         {loading ? (
           <p className="text-lavender/50">Loading...</p>
         ) : pending.length === 0 ? (
-          <p className="text-lavender/50">No pending profiles.</p>
+          <p className="text-lavender/50">No pending profiles in Supabase.</p>
         ) : (
           <div className="space-y-3">
             {pending.map((profile) => (
@@ -86,12 +141,12 @@ export default function Diagnostics() {
       {/* Approved Profiles */}
       <div className="rounded-xl border border-lavender/10 bg-void-900/40 p-6 mb-6">
         <h2 className="font-serif text-xl text-cream mb-4">
-          Approved Profiles ({approved.length})
+          Approved Profiles from Supabase ({approved.length})
         </h2>
         {loading ? (
           <p className="text-lavender/50">Loading...</p>
         ) : approved.length === 0 ? (
-          <p className="text-lavender/50">No approved profiles.</p>
+          <p className="text-lavender/50">No approved profiles in Supabase.</p>
         ) : (
           <div className="space-y-3">
             {approved.map((profile) => (
@@ -111,17 +166,44 @@ export default function Diagnostics() {
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-3">
+      {/* Critical Actions */}
+      <div className="space-y-3">
         <Link
           to="/steward"
-          className="flex-1 text-center px-4 py-3 rounded-full border border-gold-400/30 bg-gold-400/10 text-gold-300 hover:bg-gold-400/20 transition-all"
+          className="block text-center px-4 py-3 rounded-full border border-gold-400/30 bg-gold-400/10 text-gold-300 hover:bg-gold-400/20 transition-all"
         >
-          Go to Admin Panel
+          🛡️ Go to Admin Panel
         </Link>
+        
+        {!supabaseConfigured && (
+          <div className="p-4 rounded-xl border border-magenta-400/20 bg-magenta-400/5">
+            <h3 className="font-serif text-lg text-magenta-300 mb-2">
+              ⚠️ Critical: Supabase Not Configured
+            </h3>
+            <p className="text-sm text-lavender/70 mb-3">
+              To enable cross-device sync, you MUST add these environment variables to Vercel:
+            </p>
+            <code className="block text-xs text-cream bg-void-900 p-3 rounded-lg mb-3">
+              VITE_SUPABASE_URL=https://rvxogihtwztdzxbwktzr.supabase.co<br/>
+              VITE_SUPABASE_ANON_KEY=sb_publishable_...
+            </code>
+            <p className="text-xs text-lavender/50 mb-3">
+              Then redeploy the Vercel project.
+            </p>
+            <a
+              href="https://vercel.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 rounded-full border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/10 transition-all text-sm"
+            >
+              Open Vercel Dashboard
+            </a>
+          </div>
+        )}
+
         <Link
           to="/"
-          className="flex-1 text-center px-4 py-3 rounded-full border border-lavender/20 text-lavender/70 hover:bg-lavender/5 transition-all"
+          className="block text-center px-4 py-3 rounded-full border border-lavender/20 text-lavender/70 hover:bg-lavender/5 transition-all"
         >
           Return Home
         </Link>
