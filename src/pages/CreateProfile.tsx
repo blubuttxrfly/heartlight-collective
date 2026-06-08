@@ -226,7 +226,7 @@ export default function CreateProfile() {
       passphrase,
       wishAvailability,
       directoryWishStatus: wishAvailability,
-      stewardship: 'active',
+      stewardship: 'suspended',
       stewardshipNote: '',
     };
 

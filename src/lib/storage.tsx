@@ -176,10 +176,16 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => {
       const profile = prev[from].find((p) => p.id === id);
       if (!profile) return prev;
+      const updated = { ...profile };
+      if (to === 'approved') {
+        updated.stewardship = 'active';
+      } else if (to === 'returned' || to === 'pending') {
+        updated.stewardship = 'suspended';
+      }
       return {
         ...prev,
         [from]: prev[from].filter((p) => p.id !== id),
-        [to]: [...prev[to], profile],
+        [to]: [...prev[to], updated],
       };
     });
   }, []);
