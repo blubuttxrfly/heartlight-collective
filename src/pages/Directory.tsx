@@ -35,7 +35,7 @@ export default function Directory() {
     <div className="px-4 pb-16 max-w-6xl mx-auto">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="font-serif text-4xl text-gold-shimmer mb-4">
+        <h1 className="font-serif text-4xl text-heartlight-green mb-4">
           Creator Directory ✦
         </h1>
         <p className="text-lavender/70 text-lg">
