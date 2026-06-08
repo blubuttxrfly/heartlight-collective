@@ -28,6 +28,12 @@ export default function Diagnostics() {
     const url = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
+    console.log('Testing Supabase connection...');
+    console.log('URL:', url);
+    console.log('Anon Key (first 20 chars):', anonKey?.slice(0, 20) + '...');
+    console.log('Anon Key exists:', !!anonKey);
+    console.log('Anon Key length:', anonKey?.length);
+    
     try {
       // Test 1: Direct fetch to Supabase REST API
       const response = await fetch(`${url}/rest/v1/profiles?limit=1`, {
@@ -39,8 +45,12 @@ export default function Diagnostics() {
         }
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Error response:', errorText);
         setSupabaseConnected(false);
         setTestResult(`HTTP ${response.status}: ${response.statusText}. ${errorText.slice(0, 200)}`);
         return;
@@ -48,11 +58,13 @@ export default function Diagnostics() {
       
       // Test 2: Try to read data
       const data = await response.json();
+      console.log('Success! Data:', data);
       setSupabaseConnected(true);
       setTestResult(`✓ Supabase is reachable. Found ${Array.isArray(data) ? data.length : 0} profiles.`);
     } catch (err: any) {
+      console.error('Fetch error:', err);
       setSupabaseConnected(false);
-      setTestResult(`Connection error: ${err.message || 'Unknown error'}. Check CORS settings in Supabase dashboard.`);
+      setTestResult(`Connection error: ${err.message || 'Unknown error'}. Check browser console for details.`);
     }
   };
 
