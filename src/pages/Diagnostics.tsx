@@ -26,17 +26,19 @@ export default function Diagnostics() {
 
   const testSupabaseConnection = async () => {
     try {
-      const { error } = await supabase.from('profiles').select('count').limit(1);
+      // Test with a simple query
+      const { data, error } = await supabase.from('profiles').select('id').limit(1);
+      
       if (error) {
         setSupabaseConnected(false);
-        setTestResult(`Connection failed: ${error.message}`);
+        setTestResult(`Query failed: ${error.message} (${error.details || 'no details'})`);
       } else {
         setSupabaseConnected(true);
-        setTestResult('✓ Supabase is reachable and responding');
+        setTestResult(`✓ Supabase is reachable. Found ${data?.length || 0} profiles.`);
       }
     } catch (err: any) {
       setSupabaseConnected(false);
-      setTestResult(`Connection error: ${err.message}`);
+      setTestResult(`Connection error: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -87,13 +89,21 @@ export default function Diagnostics() {
             ? 'Environment variables are present. Testing connection...' 
             : 'VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing from Vercel environment variables.'}
         </p>
+        {supabaseConfigured && (
+          <div className="mt-3 p-3 rounded-lg bg-void-900/60 border border-lavender/10">
+            <p className="text-xs text-lavender/50 mb-1">Supabase URL:</p>
+            <code className="text-xs text-cream">
+              {import.meta.env.VITE_SUPABASE_URL?.slice(0, 30)}...
+            </code>
+          </div>
+        )}
         {supabaseConfigured && supabaseConnected === false && (
-          <p className="text-sm text-magenta-300 mt-2">
+          <p className="text-sm text-magenta-300 mt-3">
             ⚠️ {testResult}
           </p>
         )}
         {supabaseConfigured && supabaseConnected === true && (
-          <p className="text-sm text-green-300 mt-2">
+          <p className="text-sm text-green-300 mt-3">
             ✓ {testResult}
           </p>
         )}
