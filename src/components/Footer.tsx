@@ -13,7 +13,7 @@ export default function Footer() {
             aria-label="Atlas Island"
           >
             <img
-              src="/logo-atlas-island.png"
+              src={`${import.meta.env.BASE_URL}logo-atlas-island.png`}
               alt="Atlas Island"
               className="w-16 h-16 mx-auto object-contain opacity-60 hover:opacity-100 transition-opacity"
             />

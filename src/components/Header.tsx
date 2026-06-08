@@ -131,7 +131,7 @@ export default function Header() {
         >
           <div className="w-32 h-32 mx-auto flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
             <img
-              src="/logo-transparent.png"
+              src={`${import.meta.env.BASE_URL}logo-transparent.png`}
               alt="Heartlight Collective"
               className="w-28 h-28 object-contain breathing-glow"
             />

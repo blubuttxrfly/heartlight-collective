@@ -69,7 +69,7 @@ export default function SignIn() {
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             className="w-16 h-16 mx-auto mb-4">
             <img
-              src="/logo-transparent.png"
+              src={`${import.meta.env.BASE_URL}logo-transparent.png`}
               alt="Heartlight Collective"
               className="w-full h-full object-contain breathing-glow"
             />
