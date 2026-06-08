@@ -7,7 +7,7 @@ import SignInOverlay from './SignInOverlay';
 const primaryNav = [
   { path: '/', label: 'Collective', icon: Globe, hue: 'magenta' },
   { path: '/directory', label: 'Directory', icon: Users, hue: 'heartlight' },
-  { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'heartlight' },
+  { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'solar' },
   { path: '/flow', label: 'Flow', icon: Infinity, hue: 'lavender' },
 ];
 
@@ -177,6 +177,10 @@ export default function Header() {
               heartlight: {
                 active: 'border-heartlight-green/60 bg-heartlight-green/10 text-heartlight-green',
                 inactive: 'border-heartlight-green/20 text-heartlight-green/80 hover:border-heartlight-green/40 hover:text-heartlight-green hover:bg-heartlight-green/5',
+              },
+              solar: {
+                active: 'border-gold-400/60 bg-gold-400/10 text-gold-400',
+                inactive: 'border-gold-400/20 text-gold-400/80 hover:border-gold-400/40 hover:text-gold-400 hover:bg-gold-400/5',
               },
             };
             const hue = hueStyles[item.hue as keyof typeof hueStyles];

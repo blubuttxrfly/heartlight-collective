@@ -304,9 +304,18 @@ export default function Home() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="font-serif text-3xl md:text-5xl text-cream mb-2">
-            Three Pillars of Heartlight
+          <h2 className="font-serif text-3xl md:text-5xl text-cream mb-4">
+            Welcome to the Heartlight Collective!
           </h2>
+          <p className="text-lg text-lavender/80 max-w-3xl mx-auto mb-2">
+            Feel free to explore, inquire, and join!
+          </p>
+          <p className="text-sm text-lavender/60 max-w-2xl mx-auto leading-relaxed">
+            The Heartlight Collective is a conscious co-creator community built on mutual aid, aligned exchanges, and sacred reciprocity. 
+            Here, sovereign beings come together to share gifts, offerings, and resources while honoring the Codes of ALL and supporting 
+            each other's greatest & highest good. Whether you're here to exchange, collaborate, or simply resonate with the field, 
+            you are welcome ✦
+          </p>
         </motion.div>
       </section>
 
