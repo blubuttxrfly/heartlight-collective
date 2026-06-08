@@ -61,9 +61,11 @@ function rowToRecord(row: any): CreatorRecord {
     passphrase: String(row.ces_passphrase_hash || ''),
     wishAvailability: row.wish_availability === 'closed' ? 'closed' : 'accepting',
     directoryWishStatus: row.wish_availability === 'closed' ? 'closed' : 'accepting',
-    stewardship: row.stewardship === 'active' || row.stewardship === 'banned' 
-      ? row.stewardship 
-      : 'suspended',
+    stewardship: row.stewardship === 'active' || row.stewardship === 'banned'
+      ? row.stewardship
+      : row.stewardship === 'pending' || row.stewardship === 'returned'
+        ? row.stewardship
+        : 'suspended',
     stewardshipNote: String(row.stewardship_note || ''),
     contactMethods: row.contact_methods ?? {},
     contactVisibility: row.contact_visibility ?? {},
@@ -228,6 +230,61 @@ export function useUnifiedStorage() {
     }
   }, [local])
 
+  /* ── Get Profiles by Stewardship Status ── */
+  const getProfilesByStewardship = useCallback(async (status: string): Promise<CreatorRecord[]> => {
+    setLoading(true)
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error: qErr } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('stewardship', status)
+          .order('created_at', { ascending: false })
+
+        if (!qErr && data && data.length > 0) {
+          setLoading(false)
+          return data.map((r: any) => rowToRecord(r))
+        }
+      }
+    } catch (err) {
+      console.warn('[UnifiedStorage] Stewardship query failed, using localStorage')
+    }
+
+    setLoading(false)
+    // Fallback: filter localStorage by stewardship
+    const allLocal = local.getProfiles()
+    return allLocal.filter((p) => p.stewardship === status)
+  }, [local, setLoading])
+
+  /* ── Move Profile (with Supabase sync) ── */
+  const moveProfile = useCallback(async (id: string, from: 'pending' | 'approved' | 'returned', to: 'pending' | 'approved' | 'returned') => {
+    if (from === to) return
+
+    // Update localStorage first
+    local.moveProfile(id, from, to)
+
+    // Update Supabase if configured
+    if (isSupabaseConfigured()) {
+      try {
+        // Find the profile to get its CES number
+        const profile = local.findProfileById(id)
+        if (!profile?.cesNumber) return
+
+        const newStewardship = to === 'approved' ? 'active' : 'suspended'
+        const { error: supaError } = await supabase
+          .from('profiles')
+          .update({ stewardship: newStewardship })
+          .eq('ces_number', profile.cesNumber)
+
+        if (supaError) {
+          console.warn('[UnifiedStorage] Supabase moveProfile failed:', supaError.message)
+        }
+      } catch (err: any) {
+        console.warn('[UnifiedStorage] Supabase moveProfile error:', err.message)
+      }
+    }
+  }, [local])
+
   return {
     // State
     loading: state.loading,
@@ -241,17 +298,21 @@ export function useUnifiedStorage() {
     findProfileByCES,
     updateProfile,
 
-    // Pass-through localStorage-only methods
-    getPending: local.getPending,
-    getApproved: local.getApproved,
-    getReturned: local.getReturned,
+    // Pass-through localStorage-only methods (Supabase-aware versions below)
     removeProfile: local.removeProfile,
-    moveProfile: local.moveProfile,
     findProfileById: local.findProfileById,
     addSecurityLog: local.addSecurityLog,
     getSecurityLog: local.getSecurityLog,
     addSteward: local.addSteward,
     getStewards: local.getStewards,
+
+    // Supabase-aware steward methods
+    getPending: () => getProfilesByStewardship('pending'),
+    getApproved: () => getProfilesByStewardship('active'),
+    getReturned: () => getProfilesByStewardship('suspended'),
+    moveProfile,
+
+    // Vendor methods (localStorage-only for now)
     getVendors: local.getVendors,
     addVendor: local.addVendor,
     updateVendor: local.updateVendor,
