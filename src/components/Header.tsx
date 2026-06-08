@@ -76,6 +76,13 @@ export default function Header() {
                   My Profile
                 </Link>
                 <Link
+                  to="/edit-profile"
+                  className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  Edit Profile
+                </Link>
+                <Link
                   to="/my-storefronts"
                   className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
                   onClick={() => setShowDropdown(false)}

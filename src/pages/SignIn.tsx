@@ -46,7 +46,7 @@ export default function SignIn() {
       unified.clearError()
       setSuccess(true)
       setTimeout(() => {
-        navigate('/')
+        navigate('/edit-profile')
       }, 1200)
     } catch (err: any) {
       setError(err.message || 'Something went wrong.')
