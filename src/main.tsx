@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
 import { StorageProvider } from './lib/storage'
 
 /* ─── Fonts: Alice — self-hosted, no Google CDN ─── */
@@ -11,10 +11,10 @@ import App from './App'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <HashRouter>
+    <BrowserRouter>
       <StorageProvider>
         <App />
       </StorageProvider>
-    </HashRouter>
+    </BrowserRouter>
   </StrictMode>,
 )
