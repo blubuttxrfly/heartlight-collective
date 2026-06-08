@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Heart, Globe, Infinity, TrendingUp, ArrowRight, Sparkles } from 'lucide-react'
+import { Heart, Globe, Infinity, TrendingUp, ArrowRight, Sparkles, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage'
 
@@ -75,24 +75,8 @@ function TreasuryCard() {
   )
 }
 
-/* ─── Sacred Pillars: Heart → Globe → Infinity ─── */
+/* ─── Sacred Pillars: Globe → Users → Heart → Infinity ─── */
 const pillars = [
-  {
-    icon: Heart,
-    title: 'Exchange',
-    description: 'Exchange gifts, offerings, services, and resources through aligned exchanges.',
-    href: '/exchange',
-    hue: {
-      text: 'text-gold-400',
-      textLight: 'text-gold-300',
-      textDark: 'text-gold-500',
-      border: 'border-gold-400/30',
-      borderHover: 'hover:border-gold-400/70',
-      bg: 'bg-gold-400/5',
-      bgHover: 'hover:bg-gold-400/10',
-      glow: 'group-hover:shadow-gold-400/15',
-    },
-  },
   {
     icon: Globe,
     title: 'Collective',
@@ -107,6 +91,38 @@ const pillars = [
       bg: 'bg-magenta-400/5',
       bgHover: 'hover:bg-magenta-400/10',
       glow: 'group-hover:shadow-magenta-400/15',
+    },
+  },
+  {
+    icon: Users,
+    title: 'Directory',
+    description: 'Discover sovereign beings and their C.E.S. profiles in the collective.',
+    href: '/directory',
+    hue: {
+      text: 'text-heartlight-green',
+      textLight: 'text-heartlight-green',
+      textDark: 'text-heartlight-green/70',
+      border: 'border-heartlight-green/30',
+      borderHover: 'hover:border-heartlight-green/70',
+      bg: 'bg-heartlight-green/5',
+      bgHover: 'hover:bg-heartlight-green/10',
+      glow: 'group-hover:shadow-heartlight-green/15',
+    },
+  },
+  {
+    icon: Heart,
+    title: 'Exchange',
+    description: 'Exchange gifts, offerings, services, and resources through aligned exchanges.',
+    href: '/exchange',
+    hue: {
+      text: 'text-gold-400',
+      textLight: 'text-gold-300',
+      textDark: 'text-gold-500',
+      border: 'border-gold-400/30',
+      borderHover: 'hover:border-gold-400/70',
+      bg: 'bg-gold-400/5',
+      bgHover: 'hover:bg-gold-400/10',
+      glow: 'group-hover:shadow-gold-400/15',
     },
   },
   {
@@ -134,6 +150,7 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
+      className="h-full"
     >
       <Link
         to={pillar.href}
@@ -141,7 +158,7 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
           group block rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
           ${pillar.hue.bg} ${pillar.hue.bgHover}
           transition-all duration-300
-          p-7 text-center
+          p-7 text-center h-full flex flex-col
         `}
       >
         {/* Big icon — the visual heart of the button */}
@@ -158,7 +175,7 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
         <h3 className={`font-serif text-2xl md:text-3xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
 
         {/* Description */}
-        <p className="text-lavender/60 text-sm leading-relaxed">{pillar.description}</p>
+        <p className="text-lavender/60 text-sm leading-relaxed flex-1">{pillar.description}</p>
       </Link>
     </motion.div>
   )
@@ -318,9 +335,9 @@ export default function Home() {
 
       <ProfileStatusBanner />
 
-      {/* Sacred Pillars — the three main navigation buttons */}
+      {/* Sacred Pillars — the four main navigation buttons */}
       <section className="mb-12">
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {pillars.map((pillar, i) => (
             <PillarCard key={pillar.title} pillar={pillar} index={i} />
           ))}

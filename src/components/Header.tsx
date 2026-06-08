@@ -154,9 +154,9 @@ export default function Header() {
         </p>
       </div>
 
-      {/* ── Primary Nav: 3 pillars only ── */}
-      <nav className="px-4 pb-2">
-        <div className="max-w-2xl mx-auto flex justify-center gap-3">
+      {/* ── Primary Nav: 4 pillars ── */}
+      <nav className="px-4 pb-4">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 gap-3">
           {primaryNav.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
@@ -190,7 +190,7 @@ export default function Header() {
                 key={item.path}
                 to={item.path}
                 className={`
-                  inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium tracking-wide
+                  inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full text-sm font-medium tracking-wide
                   transition-all duration-300 border
                   ${isActive ? hue.active : hue.inactive}
                 `}
