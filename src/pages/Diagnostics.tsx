@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
 import type { CreatorRecord } from '../types/ces';
 
 export default function Diagnostics() {
@@ -25,20 +25,34 @@ export default function Diagnostics() {
   }, []);
 
   const testSupabaseConnection = async () => {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
     try {
-      // Test with a simple query
-      const { data, error } = await supabase.from('profiles').select('id').limit(1);
+      // Test 1: Direct fetch to Supabase REST API
+      const response = await fetch(`${url}/rest/v1/profiles?limit=1`, {
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        }
+      });
       
-      if (error) {
+      if (!response.ok) {
+        const errorText = await response.text();
         setSupabaseConnected(false);
-        setTestResult(`Query failed: ${error.message} (${error.details || 'no details'})`);
-      } else {
-        setSupabaseConnected(true);
-        setTestResult(`✓ Supabase is reachable. Found ${data?.length || 0} profiles.`);
+        setTestResult(`HTTP ${response.status}: ${response.statusText}. ${errorText.slice(0, 200)}`);
+        return;
       }
+      
+      // Test 2: Try to read data
+      const data = await response.json();
+      setSupabaseConnected(true);
+      setTestResult(`✓ Supabase is reachable. Found ${Array.isArray(data) ? data.length : 0} profiles.`);
     } catch (err: any) {
       setSupabaseConnected(false);
-      setTestResult(`Connection error: ${err.message || 'Unknown error'}`);
+      setTestResult(`Connection error: ${err.message || 'Unknown error'}. Check CORS settings in Supabase dashboard.`);
     }
   };
 
