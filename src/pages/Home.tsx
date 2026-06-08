@@ -311,10 +311,7 @@ export default function Home() {
             Feel free to explore, inquire, and join!
           </p>
           <p className="text-sm text-lavender/60 max-w-2xl mx-auto leading-relaxed">
-            The Heartlight Collective is a conscious co-creator community built on mutual aid, aligned exchanges, and sacred reciprocity. 
-            Here, sovereign beings come together to share gifts, offerings, and resources while honoring the Codes of ALL and supporting 
-            each other's greatest & highest good. Whether you're here to exchange, collaborate, or simply resonate with the field, 
-            you are welcome ✦
+            The Heartlight Collective is a conscious co-creator community built on mutual aid, aligned exchanges, and living our absolute best dream lives. Sovereign beings here come together to share gifts, offerings, and resources while honoring the Codes of ALL and supporting one another with & for our Greatest & Highest Good. Explore below how our collective co-operates.
           </p>
         </motion.div>
       </section>
