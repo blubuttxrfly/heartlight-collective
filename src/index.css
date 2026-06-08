@@ -43,8 +43,44 @@
 
 /* Global gradient background */
 .bg-heartlight-gradient {
-  background: linear-gradient(180deg, #1a0a2f 0%, #2a0a2f 20%, #1a081f 44%, #0a0515 70%, #06050f 88%, #05030a 100%);
+  background: linear-gradient(180deg, #2d1b4e 0%, #3d1b4e 20%, #2a0a2f 44%, #1a081f 70%, #0a0515 88%, #05030a 100%);
   background-size: 100% 200%;
+  position: relative;
+}
+
+/* Stars background layer */
+.bg-heartlight-gradient::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 160px 90px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 230px 50px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 300px 120px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 370px 80px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 450px 150px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 520px 60px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 600px 180px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 100px 200px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 250px 250px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 400px 300px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 550px 280px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 700px 350px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 150px 400px, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 350px 450px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 500px 500px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 650px 420px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 800px 380px, rgba(255, 255, 255, 0.5), transparent);
+  background-size: 900px 600px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
 }
 
 /* Gold shimmer text effect */
@@ -118,7 +154,7 @@
 
 /* Base body styles — Alice throughout */
 body {
-  background-color: #05030a;
+  background-color: #2d1b4e;
   color: #f5f0ff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
