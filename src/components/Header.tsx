@@ -5,9 +5,9 @@ import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
 const primaryNav = [
-  { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'gold' },
-  { path: '/directory', label: 'Directory', icon: Users, hue: 'gold' },
   { path: '/', label: 'Collective', icon: Globe, hue: 'magenta' },
+  { path: '/directory', label: 'Directory', icon: Users, hue: 'heartlight' },
+  { path: '/exchange', label: 'Exchange', icon: Heart, hue: 'heartlight' },
   { path: '/flow', label: 'Flow', icon: Infinity, hue: 'lavender' },
 ];
 
@@ -173,6 +173,10 @@ export default function Header() {
               lavender: {
                 active: 'border-lavender/60 bg-lavender/10 text-lavender',
                 inactive: 'border-lavender/20 text-lavender/70 hover:border-lavender/40 hover:text-lavender hover:bg-lavender/5',
+              },
+              heartlight: {
+                active: 'border-heartlight-green/60 bg-heartlight-green/10 text-heartlight-green',
+                inactive: 'border-heartlight-green/20 text-heartlight-green/80 hover:border-heartlight-green/40 hover:text-heartlight-green hover:bg-heartlight-green/5',
               },
             };
             const hue = hueStyles[item.hue as keyof typeof hueStyles];
