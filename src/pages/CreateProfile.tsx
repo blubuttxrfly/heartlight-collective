@@ -227,13 +227,13 @@ export default function CreateProfile() {
       passphrase,
       wishAvailability,
       directoryWishStatus: wishAvailability,
-      stewardship: 'pending',
+      stewardship: 'active',
       stewardshipNote: '',
       guideGuardianStatus: guideGuardianOptIn ? 'opted_in' : 'not_opted_in',
       guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
     };
 
-    unified.createProfile(record, 'pending');
+    unified.createProfile(record, 'approved');
     setSubmitted(true);
   }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 
@@ -703,16 +703,16 @@ export default function CreateProfile() {
       <div className="px-4 py-16 max-w-md mx-auto text-center">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}>
           <Sparkles className="w-12 h-12 text-gold-400 mx-auto mb-4" />
-          <h2 className="font-serif text-3xl text-cream mb-3">Profile Submitted</h2>
+          <h2 className="font-serif text-3xl text-cream mb-3">Welcome to the Collective!</h2>
           <p className="text-lavender/70 mb-2">Your C.E.S. is <span className="text-gold-300 font-serif">{cesValue}</span></p>
           <p className="text-lavender/50 text-sm mb-6">
-            Your profile is now in the pending queue. A Steward will review it for alignment with the 12 Codes of ALL.
+            Your profile is now live in the Directory. Heartlight Guides & Guardians may review profiles for alignment with the 12 Codes of ALL.
           </p>
           <Link
             to="/"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
           >
-            Return to Collective
+            Enter the Collective
           </Link>
         </motion.div>
       </div>
