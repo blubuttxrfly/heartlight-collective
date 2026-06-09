@@ -55,10 +55,15 @@ function writeSession(user: HLCUser | null) {
 
 /* ═══ Hook ── Unified useSession ═══ */
 export function useSession() {
-  const [user, setUser] = useState<HLCUser | null>(() => readSession())
+  const [user, setUser] = useState<HLCUser | null>(() => {
+    const saved = readSession()
+    console.log('[useSession] Initial user from localStorage:', saved)
+    return saved
+  })
 
   /* ── Sign in with CES + passphrase ── */
   const signIn = useCallback(async (profile: CreatorRecord) => {
+    console.log('[useSession] signIn called for:', profile.cesNumber, profile.name)
     const u: HLCUser = {
       ces: profile.cesNumber || '',
       name: profile.name,
@@ -66,25 +71,35 @@ export function useSession() {
     }
     writeSession(u)
     setUser(u)
+    console.log('[useSession] Session saved, new user state:', u)
   }, [])
 
   /* ── Sign out ── */
   const signOut = useCallback(() => {
+    console.log('[useSession] signOut called')
     writeSession(null)
     setUser(null)
   }, [])
 
   /* ── Refresh (for external changes) ── */
   const refresh = useCallback(() => {
-    setUser(readSession())
+    const current = readSession()
+    console.log('[useSession] refresh called, current user:', current)
+    setUser(current)
   }, [])
 
   /* ── Listen for storage events from other tabs ── */
   useEffect(() => {
-    const handler = () => setUser(readSession())
+    const handler = () => {
+      const updated = readSession()
+      console.log('[useSession] Storage event, updated user:', updated)
+      setUser(updated)
+    }
     window.addEventListener('storage', handler)
     return () => window.removeEventListener('storage', handler)
   }, [])
+
+  console.log('[useSession] Rendering with user:', user, 'signedIn:', Boolean(user))
 
   return {
     user,

@@ -42,6 +42,8 @@ export default function Header() {
   const isSteward = signedIn && user?.ces === '111111111';
   const sessionEmoji = signedIn ? (localProfile?.emoji || '✦') : (localProfile?.emoji || '✦');
 
+  console.log('[Header] Render state:', { signedIn, user, hasProfile, localProfileCES: localProfile?.cesNumber });
+
   return (
     <header className="relative z-50">
       {/* ── Upper Right: Profile / Join / Sign In ── */}
