@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react';
 import { useStorage } from '../lib/storage';
@@ -11,6 +12,7 @@ interface SignInOverlayProps {
 }
 
 export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
+  const navigate = useNavigate();
   const { findProfileByCES, addSecurityLog } = useStorage();
   const { signIn } = useSession();
   const [step, setStep] = useState<'ces' | 'passphrase' | 'success' | 'error'>('ces');
@@ -163,13 +165,12 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
                 </button>
                 <div className="pt-2 border-t border-lavender/10">
                   <p className="text-xs text-lavender/40 text-center mb-2">New to the Collective?</p>
-                  <a
-                    href="/create-profile"
-                    onClick={(e) => { e.preventDefault(); handleClose(); }}
+                  <button
+                    onClick={() => { handleClose(); navigate('/create-profile'); }}
                     className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-medium border border-gold-400/20 bg-gold-400/5 text-gold-300 hover:bg-gold-400/10 transition-all"
                   >
                     Create C.E.S. Profile
-                  </a>
+                  </button>
                 </div>
               </div>
             )}
