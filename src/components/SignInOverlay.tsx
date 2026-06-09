@@ -44,7 +44,7 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
 
     const found = findProfileByCES(clean);
     if (!found) {
-      setErrorMsg('That C.E.S. was not found. Check your digits or create a profile.');
+      setErrorMsg('That C.E.S. was not found. You can create a new profile below.');
       setAttempts((a) => a + 1);
       return;
     }
@@ -161,6 +161,16 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
                 >
                   Continue
                 </button>
+                <div className="pt-2 border-t border-lavender/10">
+                  <p className="text-xs text-lavender/40 text-center mb-2">New to the Collective?</p>
+                  <a
+                    href="/create-profile"
+                    onClick={(e) => { e.preventDefault(); handleClose(); }}
+                    className="block w-full py-2.5 rounded-xl text-sm font-medium border border-gold-400/20 bg-gold-400/5 text-gold-300 hover:bg-gold-400/10 transition-all"
+                  >
+                    ✨ Create Your C.E.S. Profile
+                  </a>
+                </div>
               </div>
             )}
 
