@@ -166,9 +166,9 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
                   <a
                     href="/create-profile"
                     onClick={(e) => { e.preventDefault(); handleClose(); }}
-                    className="block w-full py-2.5 rounded-xl text-sm font-medium border border-gold-400/20 bg-gold-400/5 text-gold-300 hover:bg-gold-400/10 transition-all"
+                    className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-medium border border-gold-400/20 bg-gold-400/5 text-gold-300 hover:bg-gold-400/10 transition-all"
                   >
-                    ✨ Create Your C.E.S. Profile
+                    Create C.E.S. Profile
                   </a>
                 </div>
               </div>
