@@ -119,15 +119,15 @@ export default function Header() {
             <span className="text-xs text-lavender/60 hidden sm:inline">{localProfile?.name || 'Profile'}</span>
           </button>
         ) : (
-          <Link
-            to="/sign-in"
+          <button
+            onClick={() => setShowSignIn(true)}
             className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/30 bg-gold-400/10 text-gold-300 hover:bg-gold-400/20 transition-all"
           >
             <span className="w-7 h-7 rounded-full bg-void-900 border border-gold-400/20 flex items-center justify-center">
               <User className="w-4 h-4 text-gold-400" />
             </span>
             <span className="text-xs hidden sm:inline">Join/Sign-In</span>
-          </Link>
+          </button>
         )}
       </div>
 
