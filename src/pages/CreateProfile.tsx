@@ -191,11 +191,14 @@ export default function CreateProfile() {
 
   // ── Submit ──
   const handleSubmit = useCallback(() => {
+    console.log('[CreateProfile] handleSubmit called');
     const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
     // Validate CES is not already taken
     const ces = cesValue;
+    console.log('[CreateProfile] CES value:', ces);
     if (!isCesComplete || used.has(ces)) {
       // Should not happen due to canProceed, but guard anyway
+      console.warn('[CreateProfile] CES invalid or taken:', { isCesComplete, isTaken: used.has(ces) });
       const fallback = generateCESNumberValue(used);
       setCesDigits(fallback.split(''));
       return;
@@ -233,7 +236,9 @@ export default function CreateProfile() {
       guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
     };
 
+    console.log('[CreateProfile] Calling unified.createProfile with queue="approved"');
     unified.createProfile(record, 'approved');
+    console.log('[CreateProfile] Profile creation called, setting submitted state');
     setSubmitted(true);
   }, [name, pronouns, title, location, sun, moon, photo, bio, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 

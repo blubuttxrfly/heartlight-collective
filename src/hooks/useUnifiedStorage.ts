@@ -145,8 +145,20 @@ export function useUnifiedStorage() {
 
   /* ── Create Profile ── */
   const createProfile = useCallback(async (profile: CreatorRecord, queue: 'pending' | 'approved' | 'returned' = 'pending') => {
+    console.log('[UnifiedStorage] Creating profile:', {
+      ces: profile.cesNumber,
+      name: profile.name,
+      queue,
+      stewardship: profile.stewardship,
+    });
+    
     // Always save to localStorage
-    local.addProfile(profile, queue)
+    local.addProfile(profile, queue);
+    console.log('[UnifiedStorage] Profile saved to localStorage');
+    
+    // Verify it was saved
+    const saved = local.findProfileByCES(profile.cesNumber);
+    console.log('[UnifiedStorage] Verification - profile found:', !!saved, saved?.cesNumber);
 
     // Try Supabase if configured
     if (isSupabaseConfigured()) {
