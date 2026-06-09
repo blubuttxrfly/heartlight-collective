@@ -21,7 +21,7 @@ export default function Footer() {
         </div>
 
         {/* Page Links */}
-        <div className="flex justify-center gap-4 text-xs text-lavender/30">
+        <div className="flex justify-center gap-4 text-xs text-lavender/30 mb-6">
           <a href="https://atlasisland.co" className="hover:text-gold-400 transition-colors">
             Atlas Island
           </a>
@@ -36,6 +36,17 @@ export default function Footer() {
           <span>·</span>
           <Link to="/flow" className="hover:text-gold-400 transition-colors">
             Flow
+          </Link>
+        </div>
+
+        {/* Admin Panel Access */}
+        <div className="pt-4 border-t border-lavender/10">
+          <Link
+            to="/steward"
+            className="inline-block text-xs text-lavender/20 hover:text-gold-400 transition-colors"
+            title="Steward Admin Panel"
+          >
+            ⛨
           </Link>
         </div>
       </div>
