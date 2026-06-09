@@ -69,7 +69,7 @@ export default function Header() {
                   <p className="text-sm text-gold-300 font-mono">{user?.ces}</p>
                 </div>
                 <Link
-                  to="/profile"
+                  to={`/profile/${user?.ces}`}
                   className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >

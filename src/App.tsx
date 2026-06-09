@@ -13,6 +13,7 @@ import StewardGate from './pages/StewardGate'
 import MyStorefronts from './pages/MyStorefronts'
 import SignIn from './pages/SignIn'
 import EditProfile from './pages/EditProfile'
+import Profile from './pages/Profile'
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/steward" element={<StewardGate />} />
           <Route path="/my-storefronts" element={<MyStorefronts />} />
           <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/profile/:ces" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
         </Routes>
       </main>
