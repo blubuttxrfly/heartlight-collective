@@ -12,7 +12,6 @@ import CreateProfile from './pages/CreateProfile'
 import StewardGate from './pages/StewardGate'
 import MyStorefronts from './pages/MyStorefronts'
 import SignIn from './pages/SignIn'
-import Diagnostics from './pages/Diagnostics'
 import EditProfile from './pages/EditProfile'
 
 function App() {
@@ -32,7 +31,6 @@ function App() {
           <Route path="/steward" element={<StewardGate />} />
           <Route path="/my-storefronts" element={<MyStorefronts />} />
           <Route path="/sign-in" element={<SignIn />} />
-          <Route path="/diagnostics" element={<Diagnostics />} />
           <Route path="/edit-profile" element={<EditProfile />} />
         </Routes>
       </main>
