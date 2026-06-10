@@ -42,7 +42,19 @@ export default function Header() {
   const isSteward = signedIn && user?.ces === '111111111';
   const sessionEmoji = signedIn ? (localProfile?.emoji || '✦') : (localProfile?.emoji || '✦');
 
-  console.log('[Header] Render state:', { signedIn, user, hasProfile, localProfileCES: localProfile?.cesNumber });
+  console.log('[Header] Render state:', { 
+    signedIn, 
+    user: { 
+      ces: user?.ces, 
+      name: user?.name, 
+      emoji: user?.emoji, 
+      photo: user?.photo ? 'HAS PHOTO' : 'NO PHOTO',
+      photoUrl: user?.photo 
+    }, 
+    hasProfile, 
+    localProfileCES: localProfile?.cesNumber,
+    localProfilePhoto: localProfile?.photo ? 'HAS PHOTO' : 'NO PHOTO'
+  });
 
   return (
     <header className="relative z-50">
@@ -57,7 +69,16 @@ export default function Header() {
               {/* Profile Photo or Emoji */}
               <div className="w-7 h-7 rounded-full border border-lavender/10 overflow-hidden bg-void-900 flex items-center justify-center text-sm">
                 {user?.photo ? (
-                  <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
+                  <img 
+                    src={user.photo} 
+                    alt={user.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.log('[Header] Photo failed to load:', user.photo);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    onLoad={() => console.log('[Header] Photo loaded successfully')}
+                  />
                 ) : (
                   <span className="text-xs">{sessionEmoji}</span>
                 )}
