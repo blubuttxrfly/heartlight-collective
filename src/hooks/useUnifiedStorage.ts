@@ -257,25 +257,51 @@ export function useUnifiedStorage() {
 
   /* ── Update Profile ── */
   const updateProfile = useCallback(async (profile: CreatorRecord) => {
+    console.log('[UnifiedStorage] updateProfile called for CES:', profile.cesNumber, 'Name:', profile.name);
+    console.log('[UnifiedStorage] Profile data:', { 
+      cesNumber: profile.cesNumber, 
+      name: profile.name,
+      photo: profile.photo ? 'has photo' : 'no photo',
+      contactMethods: profile.contactMethods ? 'has contacts' : 'no contacts',
+      portfolioItems: profile.portfolioItems?.length || 0,
+    });
+    
     // Always save to localStorage
-    local.updateProfile(profile)
+    local.updateProfile(profile);
+    console.log('[UnifiedStorage] Profile saved to localStorage');
+    
+    // Verify localStorage save
+    const localSaved = local.findProfileByCES(profile.cesNumber || '');
+    console.log('[UnifiedStorage] localStorage verification:', localSaved ? 'FOUND' : 'NOT FOUND', localSaved?.name);
 
     // Try Supabase if configured
     if (isSupabaseConfigured()) {
       try {
+        console.log('[UnifiedStorage] Attempting Supabase update...');
+        const row = recordToRow(profile);
+        console.log('[UnifiedStorage] Supabase row data:', { 
+          ces_number: row.ces_number, 
+          name: row.name,
+          photo_url: row.photo_url ? 'has photo' : 'no photo',
+        });
+        
         const { error: supaError } = await supabase
           .from('profiles')
-          .update(recordToRow(profile) as any)
+          .update(row as any)
           .eq('ces_number', profile.cesNumber ?? '')
 
         if (supaError) {
-          console.warn('[UnifiedStorage] Supabase update failed:', supaError.message)
+          console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
+          throw new Error(`Supabase update failed: ${supaError.message}`);
+        } else {
+          console.log('[UnifiedStorage] Supabase update SUCCESS');
         }
       } catch (err: any) {
-        console.warn('[UnifiedStorage] Supabase update error:', err.message)
+        console.error('[UnifiedStorage] Supabase update error:', err.message);
+        // Don't throw - localStorage save succeeded
       }
     }
-  }, [local])
+  }, [local]);
 
   /* ── Get Profiles by Stewardship Status ── */
   const getProfilesByStewardship = useCallback(async (status: string): Promise<CreatorRecord[]> => {
