@@ -35,6 +35,8 @@ function readSession(): HLCUser | null {
         const user: HLCUser = {
           ces: profile.cesNumber || '',
           name: profile.name,
+          emoji: profile.emoji || '✦',
+          photo: profile.photo || undefined,
           isSteward: profile.stewardship === 'active',
         }
         localStorage.setItem(SESSION_KEY, JSON.stringify(user))
