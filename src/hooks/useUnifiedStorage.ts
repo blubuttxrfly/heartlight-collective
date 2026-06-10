@@ -310,11 +310,19 @@ export function useUnifiedStorage() {
     try {
       if (isSupabaseConfigured()) {
         console.log('[UnifiedStorage] Querying Supabase for stewardship:', status);
-        const { data, error: qErr } = await supabase
+        
+        // Add timeout to prevent hanging
+        const queryPromise = supabase
           .from('profiles')
           .select('*')
           .eq('stewardship', status)
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: false });
+        
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Supabase query timeout after 10s')), 10000);
+        });
+        
+        const { data, error: qErr } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
         console.log('[UnifiedStorage] Supabase query result:', {
           hasData: !!data,
@@ -339,8 +347,8 @@ export function useUnifiedStorage() {
       } else {
         console.warn('[UnifiedStorage] Supabase NOT configured');
       }
-    } catch (err) {
-      console.error('[UnifiedStorage] Stewardship query exception:', err);
+    } catch (err: any) {
+      console.error('[UnifiedStorage] Stewardship query exception:', err.message, err);
     }
 
     // Fallback: filter localStorage by stewardship
