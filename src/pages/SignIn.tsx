@@ -156,6 +156,7 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={loading}
+              onClick={() => console.log('[SignIn] Button clicked!')}
               className="w-full py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
             >
               {loading ? 'Opening Portal...' : 'Enter Co-Creation Space'}
