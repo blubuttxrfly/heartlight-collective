@@ -1,8 +1,8 @@
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Mail, Phone, Instagram, Youtube, Spotify, Discord, Telegram, Link as LinkIcon } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, Link as LinkIcon } from 'lucide-react'
+import { FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram, FaThreads } from 'react-icons/fa'
 import { SiSignal } from 'react-icons/si'
-import { FaThreads } from 'react-icons/fa6'
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 import { useState, useEffect } from 'react'
 import type { CreatorRecord } from '../types/ces'
@@ -10,12 +10,12 @@ import type { CreatorRecord } from '../types/ces'
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   email: Mail,
   phone: Phone,
-  instagram: Instagram,
-  youtube: Youtube,
+  instagram: FaInstagram,
+  youtube: FaYoutube,
   threads: FaThreads,
-  spotify: Spotify,
-  discord: Discord,
-  telegram: Telegram,
+  spotify: FaSpotify,
+  discord: FaDiscord,
+  telegram: FaTelegram,
   signal: SiSignal,
 }
 

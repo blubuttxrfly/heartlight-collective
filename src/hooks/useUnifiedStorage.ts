@@ -108,12 +108,14 @@ export function useUnifiedStorage() {
 
   /* ── Validate Sign-In (CES + Passphrase) ── */
   const validateSignIn = useCallback(async (ces: string, passphrase: string): Promise<CreatorRecord | null> => {
+    console.log('[UnifiedStorage] validateSignIn called:', { ces, hasPassphrase: !!passphrase });
     setLoading(true)
     setError(null)
 
     try {
       // Try Supabase first
       if (isSupabaseConfigured()) {
+        console.log('[UnifiedStorage] Supabase is configured, attempting Supabase sign-in...');
         const { data, error: qErr } = await supabase
           .from('profiles')
           .select('*')
@@ -121,23 +123,42 @@ export function useUnifiedStorage() {
           .eq('ces_passphrase_hash', passphrase)
           .single()
 
+        console.log('[UnifiedStorage] Supabase query result:', { 
+          hasData: !!data, 
+          hasError: !!qErr, 
+          error: qErr?.message || null,
+          profileName: data?.name,
+          cesNumber: data?.ces_number 
+        });
+
         if (!qErr && data) {
+          console.log('[UnifiedStorage] Supabase sign-in SUCCESS');
           setLoading(false)
           return rowToRecord(data)
         }
+        
+        if (qErr) {
+          console.warn('[UnifiedStorage] Supabase sign-in error:', qErr);
+        }
+      } else {
+        console.warn('[UnifiedStorage] Supabase NOT configured, falling back to localStorage');
       }
 
       // Fall back to localStorage
       const localProfile = local.findProfileByCES(ces)
+      console.log('[UnifiedStorage] localStorage lookup:', { found: !!localProfile });
       if (localProfile?.passphrase === passphrase) {
+        console.log('[UnifiedStorage] localStorage sign-in SUCCESS');
         setLoading(false)
         return localProfile
       }
 
+      console.log('[UnifiedStorage] Sign-in FAILED - no matching profile found');
       setLoading(false)
       return null
     } catch (err: any) {
-      setError(err.message || 'Sign-in failed.')
+      console.error('[UnifiedStorage] validateSignIn exception:', err);
+      setError(err?.message || 'Sign-in failed.')
       setLoading(false)
       return null
     }
