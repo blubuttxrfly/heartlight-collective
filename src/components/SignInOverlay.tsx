@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react';
-import { useStorage } from '../lib/storage';
 import { useSession } from '../lib/session';
+import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { cesEncrypt } from '../lib/ces';
 
 interface SignInOverlayProps {
@@ -13,7 +13,7 @@ interface SignInOverlayProps {
 
 export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
   const navigate = useNavigate();
-  const { findProfileByCES, addSecurityLog } = useStorage();
+  const unified = useUnifiedStorage();
   const { signIn } = useSession();
   const [step, setStep] = useState<'ces' | 'passphrase' | 'success' | 'error'>('ces');
   const [ces, setCes] = useState('');
@@ -21,7 +21,8 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [attempts, setAttempts] = useState(0);
-  const [profile, setProfile] = useState<ReturnType<typeof findProfileByCES>>(undefined);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
   const reset = () => {
     setStep('ces');
@@ -37,14 +38,23 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
     onClose();
   };
 
-  const handleCesSubmit = () => {
+  const handleCesSubmit = async () => {
+    console.log('[SignInOverlay] handleCesSubmit called with CES:', ces);
     const clean = ces.trim();
     if (clean.length !== 9 || !/^\d{9}$/.test(clean)) {
       setErrorMsg('A C.E.S. is 9 digits. Please enter your full signature.');
       return;
     }
 
-    const found = findProfileByCES(clean);
+    setLoading(true);
+    console.log('[SignInOverlay] Searching for profile in Supabase and localStorage...');
+    
+    // Try to find profile using unified storage (checks Supabase first, then localStorage)
+    const found = unified.findProfileByCES(clean);
+    console.log('[SignInOverlay] Profile found?', !!found, found?.name);
+    
+    setLoading(false);
+    
     if (!found) {
       setErrorMsg('That C.E.S. was not found. You can create a new profile below.');
       setAttempts((a) => a + 1);
@@ -56,7 +66,8 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
     setStep('passphrase');
   };
 
-  const handlePassphraseSubmit = () => {
+  const handlePassphraseSubmit = async () => {
+    console.log('[SignInOverlay] handlePassphraseSubmit called');
     if (!profile) return;
     const pp = passphrase.trim();
     if (pp.length < 6) {
@@ -64,29 +75,20 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
       return;
     }
 
-    if (pp !== profile.passphrase) {
+    console.log('[SignInOverlay] Validating passphrase with unified storage...');
+    
+    // Use unified validateSignIn to check passphrase (works with Supabase)
+    const validatedProfile = await unified.validateSignIn(profile.cesNumber, pp);
+    
+    if (!validatedProfile) {
       setErrorMsg('Passphrase does not match. Please try again.');
       setAttempts((a) => a + 1);
-      // Log failed attempt
-      addSecurityLog({
-        timestamp: new Date().toISOString(),
-        cesEncrypted: cesEncrypt(ces),
-        type: 'signin_failed',
-        status: 'failure',
-        message: `Failed sign-in attempt ${attempts + 1} for C.E.S. ${ces}`,
-      });
       return;
     }
 
     // Success
-    signIn(profile);
-    addSecurityLog({
-      timestamp: new Date().toISOString(),
-      cesEncrypted: cesEncrypt(ces),
-      type: 'signin_success',
-      status: 'success',
-      message: `Successful sign-in for ${profile.name} (C.E.S. ${ces})`,
-    });
+    console.log('[SignInOverlay] Sign-in successful for:', validatedProfile.name);
+    signIn(validatedProfile);
     setStep('success');
     setTimeout(() => {
       handleClose();
