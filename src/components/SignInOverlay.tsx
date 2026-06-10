@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react';
 import { useSession } from '../lib/session';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
-import { cesEncrypt } from '../lib/ces';
 
 interface SignInOverlayProps {
   open: boolean;
@@ -20,17 +19,14 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [attempts, setAttempts] = useState(0);
   const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
 
   const reset = () => {
     setStep('ces');
     setCes('');
     setPassphrase('');
     setErrorMsg('');
-    setAttempts(0);
-    setProfile(undefined);
+    setProfile(null);
   };
 
   const handleClose = () => {
@@ -46,18 +42,14 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
       return;
     }
 
-    setLoading(true);
     console.log('[SignInOverlay] Searching for profile in Supabase and localStorage...');
     
     // Try to find profile using unified storage (checks Supabase first, then localStorage)
-    const found = unified.findProfileByCES(clean);
+    const found = await unified.findProfileByCES(clean);
     console.log('[SignInOverlay] Profile found?', !!found, found?.name);
-    
-    setLoading(false);
     
     if (!found) {
       setErrorMsg('That C.E.S. was not found. You can create a new profile below.');
-      setAttempts((a) => a + 1);
       return;
     }
 
@@ -82,7 +74,6 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
     
     if (!validatedProfile) {
       setErrorMsg('Passphrase does not match. Please try again.');
-      setAttempts((a) => a + 1);
       return;
     }
 
