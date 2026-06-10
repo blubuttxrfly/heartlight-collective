@@ -54,9 +54,14 @@ export default function Header() {
               onClick={() => setShowDropdown(!showDropdown)}
               className="flex items-center gap-2 px-3 py-2 rounded-full border border-gold-400/20 bg-gold-400/5 hover:bg-gold-400/10 transition-all"
             >
-              <span className="w-7 h-7 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-sm">
-                {sessionEmoji}
-              </span>
+              {/* Profile Photo or Emoji */}
+              <div className="w-7 h-7 rounded-full border border-lavender/10 overflow-hidden bg-void-900 flex items-center justify-center text-sm">
+                {user?.photo ? (
+                  <img src={user.photo} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xs">{sessionEmoji}</span>
+                )}
+              </div>
               <span className="text-xs text-lavender/80 hidden sm:inline max-w-[100px] truncate">{user?.name}</span>
               <ChevronDown className="w-3 h-3 text-lavender/40" />
               {isSteward && <Shield className="w-3 h-3 text-gold-400" />}

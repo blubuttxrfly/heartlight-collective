@@ -14,6 +14,8 @@ const SESSION_KEY = 'hlc_session_v2' // bumped for new unified format
 export interface HLCUser {
   ces: string                    // 9-digit C.E.S.
   name: string
+  emoji: string                  // Profile emoji
+  photo?: string                 // Profile photo URL
   isSteward: boolean
   fromSupabase?: boolean          // true if validated against cloud
 }
@@ -67,6 +69,8 @@ export function useSession() {
     const u: HLCUser = {
       ces: profile.cesNumber || '',
       name: profile.name,
+      emoji: profile.emoji || '✦',
+      photo: profile.photo || undefined,
       isSteward: profile.stewardship === 'active',
     }
     writeSession(u)
