@@ -16,25 +16,34 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[SignIn] handleSubmit triggered');
     e.preventDefault()
     setError('')
     setSuccess(false)
 
     const normalized = ces.trim().replace(/\D/g, '')
+    console.log('[SignIn] Normalized CES:', normalized, 'Original:', ces);
+    console.log('[SignIn] Passphrase length:', passphrase.length);
+    
     if (normalized.length !== 9) {
+      console.log('[SignIn] Validation failed: CES not 9 digits');
       setError('C.E.S. must be exactly 9 digits.')
       return
     }
     if (passphrase.length < 6) {
+      console.log('[SignIn] Validation failed: Passphrase too short');
       setError('Passphrase must be at least 6 characters.')
       return
     }
 
     setLoading(true)
+    console.log('[SignIn] Calling unified.validateSignIn with:', normalized);
 
     try {
       // Try Supabase first, then localStorage
       const profile = await unified.validateSignIn(normalized, passphrase)
+      console.log('[SignIn] validateSignIn returned:', profile ? 'SUCCESS' : 'NULL');
+      
       if (!profile) {
         setError('C.E.S. not found or passphrase does not match. Please check your credentials or create a profile.')
         setLoading(false)
@@ -42,6 +51,7 @@ export default function SignIn() {
       }
 
       // Success — sign in
+      console.log('[SignIn] Calling signIn with profile:', profile.cesNumber, profile.name);
       await signIn(profile)
       unified.clearError()
       setSuccess(true)
@@ -49,6 +59,7 @@ export default function SignIn() {
         navigate('/edit-profile')
       }, 1200)
     } catch (err: any) {
+      console.error('[SignIn] Exception in handleSubmit:', err);
       setError(err.message || 'Something went wrong.')
     } finally {
       setLoading(false)
