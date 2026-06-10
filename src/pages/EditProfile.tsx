@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Save, ArrowLeft, User, Sparkles, Camera, X, Upload, Plus, Trash2 } from 'lucide-react';
+import { Save, ArrowLeft, User, Sparkles, Camera, X, Upload, Trash2 } from 'lucide-react';
 import {
   FaEnvelope, FaPhone, FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram,
 } from 'react-icons/fa';
@@ -443,7 +443,7 @@ export default function EditProfile() {
             <p className="text-xs text-lavender/50">Choose how beings can connect with you</p>
             
             <div className="space-y-3">
-              {CONTACT_FIELDS.map(({ key, label, placeholder }) => {
+              {CONTACT_FIELDS.map(({ key, placeholder }) => {
                 const Icon = CONTACT_ICON_MAP[key];
                 return (
                   <div key={key} className="flex items-center gap-3">
