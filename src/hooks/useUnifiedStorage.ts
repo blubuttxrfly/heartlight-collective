@@ -305,28 +305,51 @@ export function useUnifiedStorage() {
 
   /* ── Get Profiles by Stewardship Status ── */
   const getProfilesByStewardship = useCallback(async (status: string): Promise<CreatorRecord[]> => {
+    console.log('[UnifiedStorage] getProfilesByStewardship called for status:', status);
     setLoading(true)
     try {
       if (isSupabaseConfigured()) {
+        console.log('[UnifiedStorage] Querying Supabase for stewardship:', status);
         const { data, error: qErr } = await supabase
           .from('profiles')
           .select('*')
           .eq('stewardship', status)
           .order('created_at', { ascending: false })
 
+        console.log('[UnifiedStorage] Supabase query result:', {
+          hasData: !!data,
+          dataLength: data?.length || 0,
+          hasError: !!qErr,
+          error: qErr?.message || null,
+          errorCode: (qErr as any)?.code || null,
+          fullError: qErr,
+        });
+
         if (!qErr && data && data.length > 0) {
+          console.log('[UnifiedStorage] Supabase returned', data.length, 'profiles');
           setLoading(false)
           return data.map((r: any) => rowToRecord(r))
         }
+        
+        if (qErr) {
+          console.error('[UnifiedStorage] Supabase stewardship query FAILED:', qErr);
+        } else {
+          console.log('[UnifiedStorage] Supabase returned no results for stewardship:', status);
+        }
+      } else {
+        console.warn('[UnifiedStorage] Supabase NOT configured');
       }
     } catch (err) {
-      console.warn('[UnifiedStorage] Stewardship query failed, using localStorage')
+      console.error('[UnifiedStorage] Stewardship query exception:', err);
     }
 
-    setLoading(false)
     // Fallback: filter localStorage by stewardship
+    console.log('[UnifiedStorage] Falling back to localStorage');
+    setLoading(false)
     const allLocal = local.getProfiles()
-    return allLocal.filter((p) => p.stewardship === status)
+    const filtered = allLocal.filter((p) => p.stewardship === status)
+    console.log('[UnifiedStorage] localStorage returned', filtered.length, 'profiles');
+    return filtered
   }, [local, setLoading])
 
   /* ── Move Profile (with Supabase sync) ── */

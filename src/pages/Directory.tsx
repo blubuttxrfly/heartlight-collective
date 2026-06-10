@@ -15,12 +15,15 @@ export default function Directory() {
   }, []);
 
   const loadProfiles = async () => {
+    console.log('[Directory] Loading profiles...');
     setLoading(true);
     try {
+      console.log('[Directory] Calling unified.getApproved()...');
       const all = await unified.getApproved();
+      console.log('[Directory] Profiles loaded:', all.length, all.map(p => ({ name: p.name, ces: p.cesNumber, stewardship: p.stewardship })));
       setProfiles(all);
-    } catch (err) {
-      console.error('Failed to load profiles:', err);
+    } catch (err: any) {
+      console.error('[Directory] Failed to load profiles:', err.message);
     } finally {
       setLoading(false);
     }
