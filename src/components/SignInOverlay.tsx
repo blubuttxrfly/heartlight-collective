@@ -84,15 +84,12 @@ export default function SignInOverlay({ open, onClose }: SignInOverlayProps) {
     // Save session to localStorage
     signIn(validatedProfile);
     
-    // Force a small delay to ensure localStorage is written and Header re-renders
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    console.log('[SignInOverlay] Session saved, closing overlay...');
+    console.log('[SignInOverlay] Session saved, showing success...');
     setStep('success');
+    
+    // Close overlay after success message (no page reload needed)
     setTimeout(() => {
       handleClose();
-      // Force page reload to ensure Header picks up new session
-      window.location.reload();
     }, 1500);
   };
 
