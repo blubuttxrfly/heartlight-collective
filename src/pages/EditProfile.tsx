@@ -70,9 +70,14 @@ export default function EditProfile() {
   useEffect(() => {
     if (!user?.ces) return;
     
+    let isMounted = true;
+    
     const loadProfile = async () => {
+      console.log('[EditProfile] Loading profile for:', user.ces);
       const p = await unified.findProfileByCES(user.ces);
-      if (p) {
+      console.log('[EditProfile] Profile loaded:', p?.name);
+      
+      if (isMounted && p) {
         setProfile(p);
         setName(p.name);
         setPronouns(p.pronouns || '');
@@ -94,7 +99,12 @@ export default function EditProfile() {
     };
     
     loadProfile();
-  }, [user?.ces, unified]);
+    
+    // Cleanup: prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.ces]); // Remove 'unified' from dependencies to prevent re-fetching
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
