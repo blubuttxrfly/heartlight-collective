@@ -25,26 +25,70 @@ export default function Profile() {
   const unified = useUnifiedStorage()
   const [profile, setProfile] = useState<CreatorRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!ces) return
+    if (!ces) {
+      setError('No C.E.S. provided in URL')
+      setLoading(false)
+      return
+    }
+    
+    let isMounted = true
+    
     const loadProfile = async () => {
       try {
+        console.log('[Profile] Loading profile for CES:', ces)
+        setLoading(true)
+        setError(null)
+        
         const found = await unified.findProfileByCES(ces)
-        setProfile(found || null)
-      } catch (err) {
+        
+        if (isMounted) {
+          setProfile(found || null)
+          if (!found) {
+            setError('Profile not found')
+          }
+        }
+      } catch (err: any) {
         console.error('Failed to load profile:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load profile')
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
+    
     loadProfile()
-  }, [ces, unified])
+    
+    // Cleanup: prevent state updates after unmount
+    return () => {
+      isMounted = false
+    }
+  }, [ces]) // Remove 'unified' from dependencies to prevent re-fetching
 
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <p className="text-lavender/50">Loading profile...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 py-16 max-w-md mx-auto text-center">
+        <h1 className="font-serif text-2xl text-cream mb-4">Profile Not Found</h1>
+        <p className="text-lavender/50 mb-6">{error}</p>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+        >
+          Return Home
+        </Link>
       </div>
     )
   }
