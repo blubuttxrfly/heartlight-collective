@@ -95,14 +95,39 @@ export const ASTROLOGY_SIGNS = [
 export const CONTACT_FIELDS = [
   { key: 'email',     label: 'Email',     placeholder: 'you@example.com',           icon: 'email' },
   { key: 'phone',     label: 'Phone',     placeholder: '+1 (000) 000-0000',       icon: 'phone' },
-  { key: 'instagram', label: 'Instagram', placeholder: '@handle',                 icon: 'instagram' },
-  { key: 'youtube',   label: 'YouTube',   placeholder: 'channel or @handle',      icon: 'youtube' },
-  { key: 'threads',   label: 'Threads',   placeholder: '@handle',                 icon: 'threads' },
-  { key: 'spotify',   label: 'Spotify',   placeholder: 'Artist or profile URL',   icon: 'spotify' },
-  { key: 'discord',   label: 'Discord',   placeholder: 'username',                icon: 'discord' },
-  { key: 'telegram',  label: 'Telegram',  placeholder: '@handle or +number',    icon: 'telegram' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'yourusername',              icon: 'instagram' },
+  { key: 'youtube',   label: 'YouTube',   placeholder: 'yourchannel',               icon: 'youtube' },
+  { key: 'threads',   label: 'Threads',   placeholder: 'yourusername',              icon: 'threads' },
+  { key: 'spotify',   label: 'Spotify',   placeholder: 'yourusername',              icon: 'spotify' },
+  { key: 'discord',   label: 'Discord',   placeholder: 'yourusername',              icon: 'discord' },
+  { key: 'telegram',  label: 'Telegram',  placeholder: 'yourusername',              icon: 'telegram' },
   { key: 'signal',    label: 'Signal',    placeholder: '+1 (000) 000-0000',       icon: 'signal' },
 ] as const;
+
+/* ─── Helper: construct proper social media URLs ─── */
+export function getContactUrl(key: string, value: string): string {
+  // Email and phone are special cases
+  if (key === 'email') return `mailto:${value}`
+  if (key === 'phone') return `tel:${value}`
+  
+  // If already a full URL, return as-is
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value
+  }
+  
+  // Construct platform-specific URLs
+  const platformUrls: Record<string, string> = {
+    instagram: `https://instagram.com/${value}`,
+    youtube: `https://youtube.com/${value}`,
+    threads: `https://threads.net/${value}`,
+    spotify: `https://open.spotify.com/${value.startsWith('user/') ? value : `user/${value}`}`,
+    discord: `https://discord.com/users/${value}`,
+    telegram: `https://t.me/${value}`,
+    signal: `https://signal.me/#p/${value}`,
+  }
+  
+  return platformUrls[key] || `https://${value}`
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  Marketplace Constants (Wave B+)
