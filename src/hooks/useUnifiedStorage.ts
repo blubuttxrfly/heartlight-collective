@@ -178,7 +178,7 @@ export function useUnifiedStorage() {
     console.log('[UnifiedStorage] Profile saved to localStorage');
     
     // Verify it was saved
-    const saved = local.findProfileByCES(profile.cesNumber);
+    const saved = local.findProfileByCES(profile.cesNumber || '');
     console.log('[UnifiedStorage] Verification - profile found:', !!saved, saved?.cesNumber);
 
     // Try Supabase if configured
