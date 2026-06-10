@@ -72,6 +72,9 @@ export function useSession() {
     writeSession(u)
     setUser(u)
     console.log('[useSession] Session saved, new user state:', u)
+    
+    // Dispatch custom event to notify other components (like Header)
+    window.dispatchEvent(new CustomEvent('hlc-session-change', { detail: u }))
   }, [])
 
   /* ── Sign out ── */
