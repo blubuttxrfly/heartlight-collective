@@ -114,8 +114,13 @@ export function useUnifiedStorage() {
 
     try {
       // Try Supabase first
-      if (isSupabaseConfigured()) {
+      const supabaseConfigured = isSupabaseConfigured();
+      console.log('[UnifiedStorage] Supabase configured?', supabaseConfigured);
+      
+      if (supabaseConfigured) {
         console.log('[UnifiedStorage] Supabase is configured, attempting Supabase sign-in...');
+        console.log('[UnifiedStorage] Querying for ces_number:', ces);
+        
         const { data, error: qErr } = await supabase
           .from('profiles')
           .select('*')
@@ -127,8 +132,11 @@ export function useUnifiedStorage() {
           hasData: !!data, 
           hasError: !!qErr, 
           error: qErr?.message || null,
+          errorCode: (qErr as any)?.code || null,
           profileName: data?.name,
-          cesNumber: data?.ces_number 
+          cesNumber: data?.ces_number,
+          stewardship: data?.stewardship,
+          fullError: qErr
         });
 
         if (!qErr && data) {
@@ -139,6 +147,7 @@ export function useUnifiedStorage() {
         
         if (qErr) {
           console.warn('[UnifiedStorage] Supabase sign-in error:', qErr);
+          console.warn('[UnifiedStorage] Error details:', JSON.stringify(qErr, null, 2));
         }
       } else {
         console.warn('[UnifiedStorage] Supabase NOT configured, falling back to localStorage');
