@@ -4,6 +4,7 @@ import { ArrowLeft, Mail, Phone, Link as LinkIcon } from 'lucide-react'
 import { FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { FaThreads } from 'react-icons/fa6'
 import { SiSignal } from 'react-icons/si'
+import { getContactUrl } from '../lib/constants'
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 import { useState, useEffect } from 'react'
 import type { CreatorRecord } from '../types/ces'
@@ -210,15 +211,7 @@ export default function Profile() {
                 return (
                   <a
                     key={key}
-                    href={
-                      key === 'email'
-                        ? `mailto:${value}`
-                        : key === 'phone'
-                        ? `tel:${value}`
-                        : value.startsWith('http')
-                        ? value
-                        : `https://${value}`
-                    }
+                    href={getContactUrl(key, value)}
                     target={key !== 'email' && key !== 'phone' ? '_blank' : undefined}
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-void-800/60 border border-lavender/10 text-lavender/60 hover:text-cream hover:border-gold-400/30 transition-all"
