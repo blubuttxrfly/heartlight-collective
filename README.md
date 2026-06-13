@@ -1,4 +1,4 @@
-# Heartlight Collective & Wish Exchange 🌍♾️❤️
+# Heartlight Collective & Wish Exchange 💗🌍💫
 
 **A conscious co-creator community for Earth-conscious initiatives that continually cycle within itself with & for our Earth.**
 
@@ -62,15 +62,15 @@ Fulfillment Tracked in Flow Dashboard
 
 ---
 
-## The 1% — One of ALL
+## 99% Earth-conscious Dedication 💗
 
-The Heartlight Collective dedicates **99% of all profits** back to Earth-conscious initiatives, climate action, sovereign communities, and ALL the Living. The **1% covers operational costs** — honoring how we are One of ALL, not extracting from the web we serve.
+The Heartlight Collective dedicates **99% of all profits** flows back to Earth-conscious initiatives, climate action, sovereign communities, and ALL the Living. The **1% covers operational costs**. Essentially this means profits flow directly back into co-creating a better future here on our Earth.
 
 This is our unanimous living agreement. It is visible in every exchange, tracked in the Flow, and woven into our charter.
 
 ---
 
-## Smart Matching System
+## Smart Matching System 🔀
 
 The Exchange uses a **hybrid matching approach** to connect beings with resonant opportunities:
 
@@ -84,7 +84,7 @@ The Exchange uses a **hybrid matching approach** to connect beings with resonant
 
 ---
 
-## Mutual Aid Fund Structure
+## Mutual Aid Fund Structure 🌐
 
 ### Tier 1: Direct Mutual Aid (Default, Immediate)
 
@@ -101,7 +101,7 @@ Established beings gain access to the collective pool. The 33-day threshold ensu
 
 ---
 
-## Exchange Pathways
+## Exchange Pathways ♾️
 
 Every exchange is an act of sacred reciprocity. Choose the pathway that feels most resonant:
 
