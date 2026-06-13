@@ -190,7 +190,7 @@ export default function CreateProfile() {
   }, [step, name, passphrase, agreeTerms, isCesComplete]);
 
   // ── Submit ──
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     console.log('[CreateProfile] handleSubmit called');
     const used = new Set(getProfiles().map((p) => p.cesNumber || '').filter(Boolean));
     // Validate CES is not already taken
@@ -238,9 +238,13 @@ export default function CreateProfile() {
     };
 
     console.log('[CreateProfile] Calling unified.createProfile with queue="approved"');
-    unified.createProfile(record, 'approved');
-    console.log('[CreateProfile] Profile creation called, setting submitted state');
-    setSubmitted(true);
+    try {
+      await unified.createProfile(record, 'approved');
+      console.log('[CreateProfile] Profile creation completed');
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error('[CreateProfile] Profile creation failed:', err);
+    }
   }, [name, pronouns, title, location, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 
   // ── Steps ──
@@ -780,7 +784,7 @@ export default function CreateProfile() {
           </button>
         ) : (
           <button
-            onClick={handleSubmit}
+            onClick={async () => { await handleSubmit(); }}
             disabled={!canProceed()}
             className={`px-6 py-2.5 rounded-full text-sm transition-all ${
               canProceed()

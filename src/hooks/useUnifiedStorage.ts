@@ -339,14 +339,22 @@ export function useUnifiedStorage() {
           console.log('[UnifiedStorage] Supabase returned', data.length, 'profiles');
           setLoading(false)
           const localProfiles = local.getProfiles()
+          console.log('[UnifiedStorage] localStorage profiles:', localProfiles.length, localProfiles.map(p => ({
+            name: p.name,
+            ces: p.cesNumber,
+            tags: p.tags || [],
+            stewardship: p.stewardship,
+          })));
           // Build a map of Supabase CES numbers for deduping
           const supaCesSet = new Set<string>()
           const merged = (data || []).map((r: any) => {
             const rec = rowToRecord(r)
             supaCesSet.add(rec.cesNumber)
             const localMatch = localProfiles.find((p) => p.cesNumber === rec.cesNumber)
+            console.log('[UnifiedStorage] Merging', rec.cesNumber, 'localMatch tags:', localMatch?.tags || 'none', 'supabase tags:', rec.tags || 'none');
             // Merge: prefer localStorage tags if Supabase doesn't have them
             if (localMatch && (!rec.tags || rec.tags.length === 0) && localMatch.tags && localMatch.tags.length > 0) {
+              console.log('[UnifiedStorage] Using localStorage tags for', rec.cesNumber);
               return { ...rec, tags: localMatch.tags }
             }
             return rec
