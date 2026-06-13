@@ -123,7 +123,6 @@ export default function Exchange() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedWish, setSelectedWish] = useState(null)
-  const [showPostPrompt, setShowPostPrompt] = useState(false)
 
   const categories = useMemo(() => {
     const cats = new Set(wishes.map(w => w.category))

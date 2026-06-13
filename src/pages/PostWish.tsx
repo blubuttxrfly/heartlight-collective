@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Sparkles, Heart, Clock, MapPin, Wand2 } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const CATEGORIES = [
