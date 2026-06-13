@@ -53,7 +53,6 @@ export default function PostWish() {
   const [fundsRequired, setFundsRequired] = useState('')
   const [fundsAvailable, setFundsAvailable] = useState('')
   const [timeCommitment, setTimeCommitment] = useState('')
-  const [selectedCodes, setSelectedCodes] = useState([1, 3, 6, 12])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -62,12 +61,6 @@ export default function PostWish() {
       prev.includes(resource) 
         ? prev.filter(r => r !== resource)
         : [...prev, resource]
-    )
-  }
-
-  const toggleCode = (num) => {
-    setSelectedCodes(prev => 
-      prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]
     )
   }
 
@@ -90,7 +83,6 @@ export default function PostWish() {
       fundsRequired: fundsRequired ? Math.round(parseFloat(fundsRequired) * 100) : undefined,
       fundsAvailable: fundsAvailable ? Math.round(parseFloat(fundsAvailable) * 100) : undefined,
       timeCommitment,
-      selectedCodes,
       status: 'open',
       postedByCes: 'local_user',
       postedByName: 'Atlas Island Being',
@@ -366,31 +358,6 @@ export default function PostWish() {
               >
                 <div className="font-medium">{a.label}</div>
                 <div className="text-xs text-lavender/40 mt-0.5">{a.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm text-lavender/60 mb-2">
-            Which 12 Codes Guide This {labelText}?
-          </label>
-          <div className="text-xs text-lavender/30 mb-3">
-            Selected: {selectedCodes.join(', ')}
-          </div>
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
-            {Array.from({ length: 12 }, (_, i) => i + 1).map(num => (
-              <button
-                key={num}
-                type="button"
-                onClick={() => toggleCode(num)}
-                className={`px-2 py-2 rounded-lg border text-sm transition-all ${
-                  selectedCodes.includes(num)
-                    ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
-                    : 'border-lavender/10 text-lavender/40 hover:border-lavender/30'
-                }`}
-              >
-                Code {num}
               </button>
             ))}
           </div>
