@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
+import { CREATOR_TAGS } from '../lib/constants';
 import type { CreatorRecord } from '../types/ces';
 
 export default function Directory() {
   const unified = useUnifiedStorage();
   const [profiles, setProfiles] = useState<CreatorRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'accepting' | 'closed'>('all');
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadProfiles();
@@ -29,14 +30,20 @@ export default function Directory() {
     }
   };
 
-  const filteredProfiles = profiles.filter((p) => {
-    if (filter === 'all') return true;
-    return p.wishAvailability === filter;
-  });
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
 
-  const visibleProfiles = filteredProfiles.filter(
-    (p) => p.cesNumber !== '111111111'
-  );
+  const visibleProfiles = profiles.filter((p) => {
+    if (p.cesNumber === '111111111') return false;
+    if (selectedTags.size === 0) return true;
+    return (p.tags || []).some((t) => selectedTags.has(t));
+  });
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
@@ -53,35 +60,29 @@ export default function Directory() {
       {/* Filter */}
       <div className="flex justify-center gap-3 mb-8">
         <button
-          onClick={() => setFilter('all')}
+          onClick={() => setSelectedTags(new Set())}
           className={`px-4 py-2 rounded-full text-sm border transition-all ${
-            filter === 'all'
+            selectedTags.size === 0
               ? 'border-gold-400/40 bg-gold-400/10 text-gold-300'
               : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
           }`}
         >
-          All Creators
+          All
         </button>
-        <button
-          onClick={() => setFilter('accepting')}
-          className={`px-4 py-2 rounded-full text-sm border transition-all ${
-            filter === 'accepting'
-              ? 'border-green-400/40 bg-green-400/10 text-green-300'
-              : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
-          }`}
-        >
-          🌱 Accepting Wishes
-        </button>
-        <button
-          onClick={() => setFilter('closed')}
-          className={`px-4 py-2 rounded-full text-sm border transition-all ${
-            filter === 'closed'
-              ? 'border-orange-400/40 bg-orange-400/10 text-orange-300'
-              : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
-          }`}
-        >
-          🍂 Not Accepting
-        </button>
+        {CREATOR_TAGS.map((tag) => (
+          <button
+            key={tag.archetype}
+            onClick={() => toggleTag(tag.archetype)}
+            className={`px-4 py-2 rounded-full text-sm border transition-all whitespace-nowrap ${
+              selectedTags.has(tag.archetype)
+                ? 'border-gold-400/40 bg-gold-400/10 text-gold-300'
+                : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
+            }`}
+          >
+            <span className="mr-1">{tag.emoji}</span>
+            {tag.archetype}
+          </button>
+        ))}
       </div>
 
       {/* Loading State */}
@@ -156,19 +157,21 @@ export default function Directory() {
               </div>
             )}
 
-            {/* Wish Availability Badge */}
-            <div className="flex items-center justify-between mb-4">
-              <span
-                className={`text-xs px-3 py-1 rounded-full ${
-                  profile.wishAvailability === 'accepting'
-                    ? 'bg-green-400/10 text-green-300'
-                    : 'bg-orange-400/10 text-orange-300'
-                }`}
-              >
-                {profile.wishAvailability === 'accepting'
-                  ? '🌱 Accepting Wishes'
-                  : '🍂 Not Accepting'}
-              </span>
+            {/* Wish Availability + Tags */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {profile.wishAvailability === 'accepting' && (
+                <span className="text-xs px-3 py-1 rounded-full bg-green-400/10 text-green-300 border border-green-400/20">
+                  🌱 Accepting
+                </span>
+              )}
+              {(profile.tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60"
+                >
+                  {tag}
+                </span>
+              ))}
               {profile.guideGuardianStatus === 'active' && (
                 <span className="text-xs px-3 py-1 rounded-full bg-gold-400/10 text-gold-300 border border-gold-400/20">
                   🛡️ Guide & Guardian
