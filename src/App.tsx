@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Exchange from './pages/Exchange'
+import PostWish from './pages/PostWish'
 import Flow from './pages/Flow'
 import Charter from './pages/Charter'
 import Codes from './pages/Codes'
@@ -23,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/exchange" element={<Exchange />} />
+          <Route path="/post-wish" element={<PostWish />} />
           <Route path="/flow" element={<Flow />} />
           <Route path="/directory" element={<Directory />} />
           <Route path="/charter" element={<Charter />} />
