@@ -112,17 +112,17 @@ const pillars = [
   {
     icon: Heart,
     title: 'Exchange',
-    description: 'Exchange gifts, offerings, services, and resources through aligned exchanges.',
+    description: 'The Wish Exchange — where co-creation is initiated. Browse wishes, share gifts, and connect through smart matching.',
     href: '/exchange',
     hue: {
-      text: 'text-gold-400',
-      textLight: 'text-gold-300',
-      textDark: 'text-gold-500',
-      border: 'border-gold-400/30',
-      borderHover: 'hover:border-gold-400/70',
-      bg: 'bg-gold-400/5',
-      bgHover: 'hover:bg-gold-400/10',
-      glow: 'group-hover:shadow-gold-400/15',
+      text: 'text-red-400',
+      textLight: 'text-red-300',
+      textDark: 'text-red-500',
+      border: 'border-red-400/30',
+      borderHover: 'hover:border-red-400/70',
+      bg: 'bg-red-400/5',
+      bgHover: 'hover:bg-red-400/10',
+      glow: 'group-hover:shadow-red-400/15',
     },
   },
   {
@@ -371,6 +371,42 @@ export default function Home() {
           >
             Read the Charter <ArrowRight className="w-4 h-4" />
           </Link>
+        </motion.div>
+      </section>
+
+      {/* 99% Earth-Conscious Dedication */}
+      <section className="text-center py-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="rounded-2xl border border-green-400/20 bg-green-400/5 p-8"
+        >
+          <Globe className="w-8 h-8 text-green-400 mx-auto mb-4" />
+          <h3 className="font-serif text-2xl text-cream mb-3">Earth-Conscious Dedication</h3>
+          <p className="text-lavender/70 max-w-2xl mx-auto mb-6">
+            The Heartlight Collective is a unanimous agreement dedication to <span className="text-green-400 font-medium">99% of profits</span> flowing directly back to our Earth, homes, sovereign interdependent communities, and ALL the Living. Through the Heartlight Wish Exchange, funds are directed toward Earth-conscious initiatives, climate action projects, community resilience, and aligned exchanges that serve the Greatest & Highest Good.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+            <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4">
+              <div className="text-3xl mb-2">🌍</div>
+              <div className="text-sm text-cream mb-1">Earth Initiatives</div>
+              <div className="text-xs text-lavender/50">Climate action, renewable energy, regeneration</div>
+            </div>
+            <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4">
+              <div className="text-3xl mb-2">🏠</div>
+              <div className="text-sm text-cream mb-1">Sovereign Homes</div>
+              <div className="text-xs text-lavender/50">Community spaces, housing, mutual aid</div>
+            </div>
+            <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4">
+              <div className="text-3xl mb-2">♾️</div>
+              <div className="text-sm text-cream mb-1">ALL the Living</div>
+              <div className="text-xs text-lavender/50">Biodiversity, ecosystems, collective flourishing</div>
+            </div>
+          </div>
+          <div className="text-xs text-lavender/40">
+            1% covers operational costs. 99% returns to Earth and community. This is our living agreement.
+          </div>
         </motion.div>
       </section>
     </div>
