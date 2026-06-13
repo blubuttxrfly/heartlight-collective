@@ -10,6 +10,7 @@ import { SiSignal } from 'react-icons/si';
 import { useSession } from '../lib/session';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { ACCESSIBILITY_PRESETS, ASTROLOGY_SIGNS, CONTACT_FIELDS } from '../lib/constants';
+import CreatorTagSelector from '../components/CreatorTagSelector';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -46,6 +47,7 @@ export default function EditProfile() {
   const [bio, setBio] = useState('');
   const [photo, setPhoto] = useState('');
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
+  const [tags, setTags] = useState<string[]>([]);
   
   // Contact Methods
   const [contactMethods, setContactMethods] = useState<ContactMethods>({
@@ -87,6 +89,7 @@ export default function EditProfile() {
         setMoonPlacement(p.moonPlacement || '');
         setBio(p.bio || '');
         setPhoto(p.photo || '');
+        setTags(p.tags || []);
         setWishAvailability(p.wishAvailability === 'closed' ? 'closed' : 'accepting');
         setContactMethods(p.contactMethods || { email: '', phone: '', instagram: '', youtube: '', threads: '', spotify: '', discord: '', telegram: '', signal: '' });
         setContactVisibility(p.contactVisibility || { email: false, phone: false, instagram: false, youtube: false, threads: false, spotify: false, discord: false, telegram: false, signal: false });
@@ -204,6 +207,7 @@ export default function EditProfile() {
         moonPlacement: moonPlacement.trim(),
         bio: bio.trim(),
         photo,
+        tags,
         wishAvailability,
         directoryWishStatus: wishAvailability,
         contactMethods,
@@ -444,6 +448,14 @@ export default function EditProfile() {
                 rows={4}
                 className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors resize-none"
               />
+            </div>
+
+            {/* Creator Role Tags */}
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                Your Archetypes
+              </label>
+              <CreatorTagSelector selectedTags={tags} onChange={setTags} />
             </div>
           </div>
 
