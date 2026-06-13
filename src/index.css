@@ -152,6 +152,248 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ═══════════════════════════════════════════════════════════════ */
+html[data-theme="light"] {
+  --bg-primary: #f5f2ff;
+  --bg-secondary: #eae5f5;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-input: rgba(255, 255, 255, 0.7);
+  --text-primary: #1a0a2f;
+  --text-secondary: #3d2a5a;
+  --text-muted: #6b5580;
+  --text-subtle: #8a7095;
+  --border-default: rgba(107, 80, 150, 0.15);
+  --border-hover: rgba(107, 80, 150, 0.35);
+}
+
+html[data-theme="light"] body {
+  background-color: #f5f2ff;
+  color: #1a0a2f;
+}
+
+html[data-theme="light"] .bg-heartlight-gradient {
+  background: linear-gradient(
+    180deg,
+    #f5f2ff 0%,
+    #ede8fa 20%,
+    #e5dff5 44%,
+    #ddd5ee 70%,
+    #d5caee 88%,
+    #cec0e6 100%
+  );
+  background-size: 100% 200%;
+}
+
+html[data-theme="light"] .bg-heartlight-gradient::before {
+  opacity: 0.25;
+  /* Lighten the stars by using a white overlay */
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba(120, 80, 180, 0.5), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(120, 80, 180, 0.4), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(120, 80, 180, 0.45), transparent),
+    radial-gradient(2px 2px at 160px 90px, rgba(120, 80, 180, 0.35), transparent),
+    radial-gradient(1px 1px at 230px 50px, rgba(120, 80, 180, 0.5), transparent),
+    radial-gradient(2px 2px at 300px 120px, rgba(120, 80, 180, 0.4), transparent),
+    radial-gradient(1px 1px at 370px 80px, rgba(120, 80, 180, 0.45), transparent),
+    radial-gradient(2px 2px at 450px 150px, rgba(120, 80, 180, 0.35), transparent),
+    radial-gradient(1px 1px at 520px 60px, rgba(120, 80, 180, 0.5), transparent),
+    radial-gradient(2px 2px at 600px 180px, rgba(120, 80, 180, 0.4), transparent),
+    radial-gradient(1px 1px at 100px 200px, rgba(120, 80, 180, 0.45), transparent),
+    radial-gradient(2px 2px at 250px 250px, rgba(120, 80, 180, 0.35), transparent),
+    radial-gradient(1px 1px at 400px 300px, rgba(120, 80, 180, 0.5), transparent),
+    radial-gradient(2px 2px at 550px 280px, rgba(120, 80, 180, 0.4), transparent),
+    radial-gradient(1px 1px at 700px 350px, rgba(120, 80, 180, 0.45), transparent),
+    radial-gradient(2px 2px at 150px 400px, rgba(120, 80, 180, 0.35), transparent),
+    radial-gradient(1px 1px at 350px 450px, rgba(120, 80, 180, 0.5), transparent),
+    radial-gradient(2px 2px at 500px 500px, rgba(120, 80, 180, 0.4), transparent),
+    radial-gradient(1px 1px at 650px 420px, rgba(120, 80, 180, 0.45), transparent),
+    radial-gradient(2px 2px at 800px 380px, rgba(120, 80, 180, 0.35), transparent);
+}
+
+/* Scrollbar in light mode */
+html[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #eae5f5;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #c0b0d5;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #d946ef;
+}
+
+html[data-theme="light"] ::selection {
+  background: rgba(217, 70, 239, 0.25);
+  color: #1a0a2f;
+}
+
+/* ─── Override Tailwind v4 @theme variables for light mode ─── */
+/* When html has data-theme="light", we override the CSS custom properties
+   that Tailwind's @theme block generates, so ALL utility classes adapt. */
+html[data-theme="light"] {
+  /* Core text colors */
+  --color-cream: #1a0a2f;
+  --color-lavender: #6b5580;
+  /* Void shades become light surface tones */
+  --color-void-950: #f5f2ff;
+  --color-void-900: #ffffff;
+  --color-void-800: rgba(255, 255, 255, 0.85);
+  --color-void-700: #eae5f5;
+  /* Keep accent colors vivid but shift where needed */
+  --color-magenta-500: #d4007a;
+  --color-magenta-400: #b8006a;
+  --color-magenta-300: #a020e0;
+  --color-magenta-200: #9a1cd0;
+  --color-gold-400: #c8922b;
+  --color-gold-300: #8a6a20;
+  --color-orichalcum: #a07020;
+  --color-heartlight-green: #8ab030;
+  /* Selection */
+  --selection-background: rgba(217, 70, 239, 0.25);
+  --selection-foreground: #1a0a2f;
+}
+
+/* ─── Theme Toggle Button ─── */
+
+/* ─── Light mode: boost faint opacity-based colors for legibility ─── */
+html[data-theme="light"] .text-lavender\/20,
+html[data-theme="light"] .text-lavender\/30,
+html[data-theme="light"] .text-lavender\/40,
+html[data-theme="light"] .text-lavender\/50,
+html[data-theme="light"] .text-lavender\/60 {
+  color: rgba(61, 42, 90, var(--tw-text-opacity, 0.75)) !important;
+}
+
+html[data-theme="light"] .text-cream\/60,
+html[data-theme="light"] .text-cream\/70,
+html[data-theme="light"] .text-cream\/80 {
+  color: rgba(26, 10, 47, var(--tw-text-opacity, 0.75)) !important;
+}
+
+html[data-theme="light"] .text-gold-400\/80,
+html[data-theme="light"] .text-magenta-400\/80,
+html[data-theme="light"] .text-green-400\/80,
+html[data-theme="light"] .text-red-400\/80,
+html[data-theme="light"] .text-orange-400\/80,
+html[data-theme="light"] .text-blue-400\/80 {
+  --tw-text-opacity: 1 !important;
+}
+
+html[data-theme="light"] .border-lavender\/5,
+html[data-theme="light"] .border-lavender\/10 {
+  border-color: rgba(107, 80, 150, 0.25) !important;
+}
+
+html[data-theme="light"] .border-lavender\/20 {
+  border-color: rgba(107, 80, 150, 0.35) !important;
+}
+
+html[data-theme="light"] .bg-void-800\/30,
+html[data-theme="light"] .bg-void-800\/40,
+html[data-theme="light"] .bg-void-800\/50 {
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+html[data-theme="light"] .bg-void-900 {
+  background: #f0ecfa !important;
+}
+
+html[data-theme="light"] .bg-void-900\/95 {
+  background: rgba(240, 236, 250, 0.95) !important;
+}
+
+html[data-theme="light"] .bg-black\/70 {
+  background: rgba(20, 10, 40, 0.5) !important;
+}
+
+/* Boost very faint tinted backgrounds in light mode */
+html[data-theme="light"] [class*="bg-gold-400/5"],
+html[data-theme="light"] [class*="bg-gold-400/10"],
+html[data-theme="light"] [class*="bg-magenta-400/5"],
+html[data-theme="light"] [class*="bg-magenta-400/10"],
+html[data-theme="light"] [class*="bg-green-400/5"],
+html[data-theme="light"] [class*="bg-green-400/10"],
+html[data-theme="light"] [class*="bg-red-400/5"],
+html[data-theme="light"] [class*="bg-red-400/10"],
+html[data-theme="light"] [class*="bg-orange-400/5"],
+html[data-theme="light"] [class*="bg-orange-400/10"],
+html[data-theme="light"] [class*="bg-blue-400/5"],
+html[data-theme="light"] [class*="bg-blue-400/10"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Darken tinted borders in light mode so they show up */
+html[data-theme="light"] [class*="border-gold-400/20"],
+html[data-theme="light"] [class*="border-gold-400/25"],
+html[data-theme="light"] [class*="border-gold-400/30"] {
+  border-color: rgba(200, 146, 43, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-magenta-400/20"],
+html[data-theme="light"] [class*="border-magenta-400/25"],
+html[data-theme="light"] [class*="border-magenta-400/30"] {
+  border-color: rgba(184, 0, 106, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-green-400/20"],
+html[data-theme="light"] [class*="border-green-400/25"],
+html[data-theme="light"] [class*="border-green-400/30"] {
+  border-color: rgba(34, 197, 94, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-red-400/20"],
+html[data-theme="light"] [class*="border-red-400/25"],
+html[data-theme="light"] [class*="border-red-400/30"] {
+  border-color: rgba(239, 68, 68, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-orange-400/20"],
+html[data-theme="light"] [class*="border-orange-400/25"],
+html[data-theme="light"] [class*="border-orange-400/30"] {
+  border-color: rgba(249, 115, 22, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-blue-400/20"],
+html[data-theme="light"] [class*="border-blue-400/25"],
+html[data-theme="light"] [class*="border-blue-400/30"] {
+  border-color: rgba(59, 130, 246, 0.45) !important;
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(250, 209, 68, 0.25);
+  background: rgba(26, 8, 31, 0.6);
+  color: #fad144;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.theme-toggle:hover {
+  background: rgba(250, 209, 68, 0.15);
+  border-color: rgba(250, 209, 68, 0.5);
+  transform: scale(1.1);
+}
+
+html[data-theme="light"] .theme-toggle {
+  border-color: rgba(100, 80, 160, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+  color: #6b5580;
+}
+
+html[data-theme="light"] .theme-toggle:hover {
+  background: rgba(100, 80, 160, 0.12);
+  border-color: rgba(100, 80, 160, 0.5);
+}
+
 /* Base body styles — Alice throughout */
 body {
   background-color: #2d1b4e;

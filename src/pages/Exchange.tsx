@@ -173,7 +173,11 @@ export default function Exchange() {
           <div className="w-16 h-16 rounded-full bg-magenta-500/10 border border-magenta-400/20 flex items-center justify-center mx-auto mb-4">
             <Wand2 className="w-8 h-8 text-magenta-400" />
           </div>
-          <h1 className="font-serif text-3xl text-cream mb-2">Wish Exchange Portal</h1>
+          <h1 className="font-serif text-3xl mb-2">
+            <span className="text-cream">Wish </span>
+            <span className="text-gold-400">Exchange</span>
+            <span className="text-cream"> Portal</span>
+          </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
             Where co-creation is initiated. Browse wishes and gifts that resonate with you. 
             Feel into alignment before claiming.

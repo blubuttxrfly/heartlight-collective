@@ -12,6 +12,17 @@
     <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>Heartlight Collective · Atlas Island</title>
+    <script>
+      (function() {
+        const stored = localStorage.getItem('hlc-theme');
+        const theme = stored === 'light' || stored === 'dark' ? stored :
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        // Keep mobile browser toolbar in sync with page theme
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = theme === 'dark' ? '#2a0a2f' : '#f5f2ff';
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
