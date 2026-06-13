@@ -152,7 +152,7 @@ export default function Exchange() {
     list.sort((a, b) => {
       const urgencyDiff = urgencyOrder[a.urgency] - urgencyOrder[b.urgency]
       if (urgencyDiff !== 0) return urgencyDiff
-      return new Date(b.createdAt) - new Date(a.createdAt)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 
     return list
