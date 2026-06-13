@@ -367,3 +367,51 @@ export interface ExchangeJourney {
   createdAt: string;
   updatedAt: string;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  Wish Exchange Types (Green Hackathon 2026)
+//  Wish → Exchange → Quest → Fulfillment
+// ═══════════════════════════════════════════════════════════════
+
+export type WishCategory =
+  | 'Tech & Development'
+  | 'Creative & Design'
+  | 'Writing & Content'
+  | 'Healing & Wellness'
+  | 'Astrology & Guidance'
+  | 'Music & Sound'
+  | 'Events & Facilitation'
+  | 'Mutual Aid'
+  | 'Climate Action'
+  | 'Co-Creation Partnership'
+  | 'Other';
+
+export type WishUrgency = 'low' | 'medium' | 'high' | 'time-sensitive';
+
+export type WishStatus =
+  | 'open'              // Available to claim
+  | 'claimed'           // Someone resonated, quest forming
+  | 'in_quest'          // Active ExchangeJourney
+  | 'fulfillment'       // In review, signing off
+  | 'complete'          // Fulfilled, gratitude exchanged
+  | 'closed';           // Closed without fulfillment
+
+export interface Wish {
+  id: string;
+  wishingCes: string;           // C.E.S. of the one who posted
+  wishingName: string;
+  title: string;                // "Need help with React + Supabase integration"
+  description: string;          // Full context, what success looks like
+  category: WishCategory;
+  urgency: WishUrgency;
+  status: WishStatus;
+  selectedCodes: number[];      // Which of the 12 Codes guide this wish
+  claimedByCes?: string;        // C.E.S. of fulfiller (once claimed)
+  claimedByName?: string;
+  claimedAt?: string;
+  questJourneyId?: string;      // Links to ExchangeJourney once active
+  fulfillmentNotes?: string;
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
