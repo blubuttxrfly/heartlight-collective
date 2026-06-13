@@ -335,12 +335,15 @@ export function useUnifiedStorage() {
           fullError: qErr,
         });
 
-        if (!qErr && data && data.length > 0) {
+        if (!qErr && data) {
           console.log('[UnifiedStorage] Supabase returned', data.length, 'profiles');
           setLoading(false)
           const localProfiles = local.getProfiles()
-          const merged = data.map((r: any) => {
+          // Build a map of Supabase CES numbers for deduping
+          const supaCesSet = new Set<string>()
+          const merged = (data || []).map((r: any) => {
             const rec = rowToRecord(r)
+            supaCesSet.add(rec.cesNumber)
             const localMatch = localProfiles.find((p) => p.cesNumber === rec.cesNumber)
             // Merge: prefer localStorage tags if Supabase doesn't have them
             if (localMatch && (!rec.tags || rec.tags.length === 0) && localMatch.tags && localMatch.tags.length > 0) {
@@ -348,7 +351,14 @@ export function useUnifiedStorage() {
             }
             return rec
           })
-          return merged
+          // Append localStorage profiles that are NOT in Supabase but match stewardship
+          const extraLocal = localProfiles.filter((p) =>
+            p.stewardship === status && !supaCesSet.has(p.cesNumber)
+          )
+          if (extraLocal.length > 0) {
+            console.log('[UnifiedStorage] Appending', extraLocal.length, 'localStorage-only profiles');
+          }
+          return [...merged, ...extraLocal]
         }
         
         if (qErr) {
