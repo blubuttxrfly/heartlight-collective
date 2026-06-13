@@ -173,7 +173,7 @@ export default function Exchange() {
           <div className="w-16 h-16 rounded-full bg-magenta-500/10 border border-magenta-400/20 flex items-center justify-center mx-auto mb-4">
             <Wand2 className="w-8 h-8 text-magenta-400" />
           </div>
-          <h1 className="font-serif text-3xl text-cream mb-2">The Exchange Portal</h1>
+          <h1 className="font-serif text-3xl text-cream mb-2">Wish Exchange Portal</h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
             Where co-creation is initiated. Browse wishes and gifts that resonate with you. 
             Feel into alignment before claiming.
@@ -194,7 +194,7 @@ export default function Exchange() {
           to="/post-wish"
           className="px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" /> Post a Wish
+          <Plus className="w-4 h-4" /> Share a Wish
         </Link>
         <Link
           to="/post-wish"
@@ -267,7 +267,7 @@ export default function Exchange() {
             to="/post-wish"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
           >
-            Post Your Wish <Plus className="w-4 h-4" />
+            Share Your Wish <Plus className="w-4 h-4" />
           </Link>
         </motion.div>
       ) : (
