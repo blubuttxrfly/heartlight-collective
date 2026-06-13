@@ -2,8 +2,6 @@
 
 **The Heartlight of Atlas Island** — smart matching beings with resources, opportunities, and funds.
 
-> The Exchange is the core. All else orbits this living center.
-
 ---
 
 ## Vision
@@ -15,7 +13,7 @@ The Heartlight Wish Exchange is the intelligent matching system of Atlas Island 
 - Opportunities find the beings ready to receive them
 - Funds move through multiple avenues, guided by trust and sovereignty
 
-This is the core of the Heartlight Collective. All other systems orbit this living center.
+This is the core of the Heartlight Collective.
 
 ---
 
