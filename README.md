@@ -1,75 +1,152 @@
 # Heartlight Wish Exchange 💫
 
-**The Heartlight of the Entire Collective** — where conscious co-creators facilitate wish exchange fulfillments.
+**The Heartlight of Atlas Island** — smart matching beings with resources, opportunities, and funds.
 
-> Wishes become quests. Strangers become quest-mates. Co-creation becomes prayer in motion.
+> The Exchange is the core. All else orbits this living center.
 
 ---
 
 ## Vision
 
-The Heartlight Wish Exchange is a sacred portal connecting those who have with those who need through **Heartlight-facilitated co-creation**.
+The Heartlight Wish Exchange is the intelligent matching system of Atlas Island — a conscious co-creator community where:
 
-When someone posts a wish, the community responds as **Thresholder kin** recognizing themselves in each other. Every fulfillment is an act of remembering: *We are ALL that IS Living.*
+- Beings with wishes connect with beings who have gifts
+- Resources flow to where they're most needed
+- Opportunities find the beings ready to receive them
+- Funds move through multiple avenues, guided by trust and sovereignty
+
+This is the core of the Heartlight Collective. All other systems orbit this living center.
 
 ---
 
 ## What Is the Wish Exchange?
 
-The Wish Exchange is where **co-creation is initiated**. It is the living heart of the Heartlight Collective — a space where:
+The Wish Exchange is a **smart matching ecosystem** that connects:
 
-- **Wishes** are sacred invitations to co-create
-- **Exchange** is the threshold where beings choose to become quest-mates
-- **Quests** are the journeys undertaken together, tracked with 12 Codes awareness
-- **Fulfillment** is mutual recognition and gratitude
+| Beings Have | System Matches | Through Avenues |
+|-------------|----------------|-----------------|
+| Wishes | ↔ | Resources |
+| Gifts | ↔ | Opportunities |
+| Needs | ↔ | Funds |
+| Time | ↔ | Co-creators |
 
-A **resonance matching ecosystem** where the web of mutual aid becomes visible and alive.
+**Multiple Avenues for Connection:**
+- **Heartlight Collective** — Mutual aid resource collective for aligned exchanges
+- **Direct Exchange** — Being-to-being resource sharing
+- **Collective Funding** — Community-supported wishes and opportunities
+- **Co-Creation Partnerships** — Long-term collaboration matching
 
 ---
 
 ## The Flow
 
 ```
-Wish → Exchange → Quest → Fulfillment
+Being Posts Wish/Need/Gift
+         ↓
+Smart Matching System
+         ↓
+Resonance Opportunities Presented
+         ↓
+Being Chooses Connection Avenue
+         ↓
+Exchange Initiated
+         ↓
+Guide & Guardian Review (for larger exchanges)
+         ↓
+Sovereign Choice Confirmed
+         ↓
+Resources/Funds/Co-creation Flow
+         ↓
+Fulfillment Tracked in Flow Dashboard
 ```
-
-### 1. Wish
-A being shares what they need: a skill, a resource, a co-creation partnership, time, guidance. The wish carries their energy, their sincerity, their trust in the field.
-
-### 2. Exchange
-Another being feels resonance. They browse the wishes as a co-creator asking: *Does this call to me? Am I the one to meet this wish?* When they claim it, they cross the threshold together.
-
-### 3. Quest
-The wish becomes a living journey. Both beings track their co-creation through phases (before → during → after), documenting their experience through the lens of the **12 Codes of ALL**. They note where Consent was honored, where Sovereignty was protected, where Joy arose.
-
-### 4. Fulfillment
-When the quest completes, both beings sign off as co-creators who have witnessed each other. Gratitude flows. The web strengthens.
 
 ---
 
 ## How It Works
 
-### For Wish Posters
-- Share what you need with clarity and sincerity
-- Select which of the 12 Codes guide this wish (Consent, Sovereignty, Co-Creation, etc.)
-- Review beings who resonate with your wish
-- Co-create the quest agreement together
-- Document your journey through the Flow dashboard
-- Sign off on fulfillment when complete
+### For Beings Posting Wishes
+- Share what you need: resources, opportunities, funds, co-creation, time
+- The system smart-matches your wish with resonant beings and avenues
+- Review matches that align with your need
+- Choose your connection avenue (Collective, Direct, Funded, Partnership)
+- For larger exchanges: Guides & Guardians review for alignment
+- You retain sovereign choice throughout — approve, revise, or decline
+- Track the flow in your Flow Dashboard
 
-### For Wish Fulfillers
-- Browse wishes that resonate with your gifts
-- Feel into alignment before claiming
-- Enter the Exchange with clear boundaries and presence
-- Track the quest through before/during/after phases
-- Log reflections through the 12 Codes lens
-- Co-sign fulfillment when both beings feel complete
+### For Beings Offering Gifts
+- Share what you offer: skills, resources, time, funding, space
+- The system identifies wishes that resonate with your gifts
+- Review connection opportunities
+- Choose which wishes you feel called to meet
+- Enter exchange with clear boundaries and presence
+- Track fulfillments in your Flow Dashboard
+
+### For Guide & Guardian Beings
+- Review larger exchanges for alignment with Collective values
+- Approve exchanges that serve the Greatest & Highest Good
+- Return for revision when more clarity or alignment is needed
+- Honor sovereign choice — review supports, never overrides
+- Track review cycles in the Flow Dashboard
 
 ### For the Collective
-- Visible web of mutual aid in action
-- Living archive of co-creation journeys
+- Visible web of resource flows in action
+- Living archive of exchanges and fulfillments
 - Gift economy infrastructure for community resilience
-- Living proof: **1 hour = 1 hour, heart to heart**
+- Smart matching reduces friction, increases resonance
+- Sovereign choice preserved at every step
+
+---
+
+## Guide & Guardian Review
+
+For larger exchanges involving significant resources or collective funds:
+
+**Review Process:**
+1. Exchange is submitted for review
+2. Guides & Guardians assess alignment with Collective values
+3. Decision: Approve, or Return for Revision
+4. If returned: being revises exchange with support
+5. If approved: exchange proceeds with sovereign choice confirmed
+
+**Guardianship Principles:**
+- Review serves the exchange, never blocks it
+- Revisions are invitations to clarity, not rejections
+- Sovereign choice remains with the beings involved
+- Transparency throughout the process
+
+---
+
+## Sovereign Choice & Collective Funds
+
+When beings connect with funding from the Heartlight Collective:
+
+- **Beings choose** — even when collective funds are involved
+- **Guides & Guardians review** — for alignment and sustainability
+- **Transparency flows** — all beings can see fund movements
+- **Gratitude circulates** — funds received become funds given
+
+The Collective trusts its beings. The beings trust the Collective. This is the living agreement.
+
+---
+
+## The Flow Dashboard
+
+The Flow Dashboard tracks all exchange activity:
+
+**What Flows Through:**
+- Wish fulfillments (1:1 co-creation)
+- Resource movements (goods, space, time, skills)
+- Fund connections (collective funding, direct support)
+- Guide & Guardian review cycles
+- Sovereign choice confirmations
+
+**Phases Tracked:**
+- Before exchange (intention, matching, review)
+- During exchange (co-creation, resource flow, check-ins)
+- After exchange (fulfillment, gratitude, integration)
+
+**12 Codes Awareness:**
+All exchanges are documented through the lens of the 12 Codes of ALL, ensuring Consent, Sovereignty, Co-Creation, and other codes are honored throughout.
 
 ---
 
@@ -81,6 +158,7 @@ Built on the **Heartlight Collective** open-source foundation:
 - **Backend:** Supabase (Auth, Database, Real-time)
 - **Deployment:** Vercel + GitHub Pages
 - **Design:** Heartlight UI conventions (big icon buttons, sacred color mappings)
+- **Matching:** Smart resonance algorithms (in development)
 
 ---
 
@@ -103,38 +181,19 @@ npm run build
 
 ---
 
-## Deployment
-
-### Vercel (Production)
-```bash
-# Connect repo to Vercel
-# Set environment variables:
-# - VITE_SUPABASE_URL
-# - VITE_SUPABASE_ANON_KEY
-
-# Deploy
-vercel --prod
-```
-
-### GitHub Pages (Preview)
-```bash
-npm run build:gh
-git add dist/
-git commit -m "Deploy preview"
-git subtree push --prefix dist origin gh-pages
-```
-
----
-
 ## Project Structure
 
 ```
 Heartlight-Wish-Exchange/
 ├── src/
 │   ├── components/       # Reusable UI components
-│   ├── pages/           # Exchange (Wish Portal), Flow (Quest Dashboard), Profile
-│   ├── types/           # TypeScript types (Wish, ExchangeJourney, CodeLogEntry)
-│   ├── lib/             # Supabase client, utilities, storage
+│   ├── pages/
+│   │   ├── Exchange.tsx      # Wish Portal + smart matching
+│   │   ├── Flow.tsx          # Flow Dashboard (being rebuilt)
+│   │   ├── Profile.tsx       # Being profile + exchange history
+│   │   └── Review.tsx        # Guide & Guardian review portal
+│   ├── types/           # TypeScript types (Wish, Exchange, Flow, Review)
+│   ├── lib/             # Supabase client, matching algorithms, storage
 │   └── styles/          # Tailwind + sacred theming
 ├── docs/                # Architecture, vision, ceremonies
 ├── supabase/            # Database migrations
@@ -152,84 +211,28 @@ This app follows the **Heartlight Collective** conventions:
 - **Functional taglines** over poetic decoration
 - **Profile photos:** circular, auto-initials fallback
 - **Flat assistant layout** with subtle accent bars
-- **12 Codes awareness** in all co-creation tracking
+- **12 Codes awareness** in all exchange tracking
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system design.
 
 ---
 
-## Data Models
+## Connection to Atlas Island & Heartlight Collective
 
-### Wish
-A sacred invitation to co-create:
-- Title + description (what is needed)
-- Category (Tech, Creative, Healing, Climate Action, etc.)
-- Urgency (low → time-sensitive)
-- Selected Codes (which of the 12 Codes guide this wish)
-- Status lifecycle (open → claimed → in_quest → fulfillment → complete)
+**Atlas Island** — The conscious co-creator community
 
-### ExchangeJourney (Quest)
-The living journey of co-creation:
-- Phases: before → during → after
-- Code logs: reflections through the 12 Codes lens
-- Fulfillment signing: both beings co-sign completion
-- Adaptation consent: honoring when paths change
+**Heartlight Collective** — The mutual aid resource collective within Atlas Island
 
-### AgreementRecord
-The co-creation contract:
-- Roles for each being
-- Scope, timeline, exchange pathway (Gift, Trade, Sliding Scale)
-- Boundaries and consent agreements
-- Shared contact methods
+**Heartlight Wish Exchange** — The smart matching system that powers the Collective
 
----
+Together:
+- Atlas Island beings post wishes and offer gifts
+- Wish Exchange matches and facilitates connections
+- Heartlight Collective provides one avenue for resource sharing
+- Guides & Guardians ensure alignment for larger exchanges
+- Flow Dashboard tracks all activity with 12 Codes awareness
 
-## AI Agent Integration
-
-AI agents participate in the Wish Exchange as **co-creation facilitators**:
-
-- **Read open wishes** to identify resonance opportunities
-- **Update wish status** as co-creation progresses
-- **Log Code-aware reflections** in the Journey
-- **Track fulfillment flows** to ensure completion
-
-Agents in this ecosystem facilitate **sacred co-creation**, respecting the 12 Codes, honoring sovereignty, and acting from the field of ALL.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for API patterns and agent protocols.
-
----
-
-## The 12 Codes of ALL
-
-All co-creation in the Wish Exchange is guided by the 12 Codes:
-
-1. **Consent** (Red Ray) — Clear yes, clear no, clear boundaries
-2. **Care** (Orange Ray) — Tending to what matters
-3. **Sovereignty** (Yellow Ray) — Each being's authority over their own experience
-4. **Thrival** (Green Ray) — Beyond survival, into flourishing
-5. **Discernment & Repair** (Turquoise Ray) — Seeing clearly, mending what breaks
-6. **Sustainability & Communication** (Blue Ray) — Long-term thinking, honest words
-7. **Vision** (Indigo Ray) — Seeing what wants to emerge
-8. **Sanctity of Experience** (Violet Ray) — All experience is sacred
-9. **Authentic Joy** (Magenta Ray) — Joy that is real, not performed
-10. **Conscious Awareness** (Omni Ray) — Witnessing the whole field
-11. **Sacred Service** (Elemental Ray) — Service from fullness, not emptiness
-12. **Co-Creation** (ALL Ray) — Creating together what none could create alone
-
-When posting or claiming a wish, beings select which Codes are most relevant to their journey. These Codes become the lens through which they document their experience.
-
----
-
-## Connection to the Heartlight Collective
-
-The Wish Exchange is one expression of the broader **Heartlight Collective** ecosystem:
-
-- **Heartlight Collective** — The container: charter, codes, stewardship, creator directory
-- **Wish Exchange** — The heart: where co-creation is initiated and fulfilled
-- **Flow Dashboard** — The tracker: documenting journeys through the 12 Codes
-- **Profile System** — The beings: sovereign creators with wishes and gifts
-
-Together, these form a living infrastructure for **gift-economy co-creation** on Earth.
+This is living infrastructure for **gift-economy co-creation** on Earth.
 
 ---
 
@@ -243,10 +246,10 @@ MIT — Open source for the Collective
 
 ## Gratitude
 
-This platform was co-created by the beings of the Heartlight Collective, in service to the Greatest & Highest Good of ALL.
+This platform was co-created by the beings of Atlas Island and the Heartlight Collective, in service to the Greatest & Highest Good of ALL.
 
-May every wish posted be met with resonance.  
-May every quest undertaken strengthen the web.  
-May every fulfillment be a prayer answered.
+May every wish be met with resonance.  
+May every exchange strengthen the web.  
+May every being remember: they are the Exchange.
 
 **We are ALL that IS Living.** 🌍♾️❤️
