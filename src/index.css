@@ -245,7 +245,7 @@ html[data-theme="light"] {
   /* Keep accent colors vivid but shift where needed */
   --color-magenta-500: #d4007a;
   --color-magenta-400: #b8006a;
-  --color-magenta-300: #a020e0;
+  --color-magenta-300: #e01a8b;
   --color-magenta-200: #9a1cd0;
   --color-gold-400: #c8922b;
   --color-gold-300: #8a6a20;
@@ -321,8 +321,18 @@ html[data-theme="light"] [class*="bg-red-400/10"],
 html[data-theme="light"] [class*="bg-orange-400/5"],
 html[data-theme="light"] [class*="bg-orange-400/10"],
 html[data-theme="light"] [class*="bg-blue-400/5"],
-html[data-theme="light"] [class*="bg-blue-400/10"] {
+html[data-theme="light"] [class*="bg-blue-400/10"],
+html[data-theme="light"] [class*="bg-heartlight-green/5"],
+html[data-theme="light"] [class*="bg-heartlight-green/10"],
+html[data-theme="light"] [class*="bg-lavender/5"],
+html[data-theme="light"] [class*="bg-lavender/10"] {
   background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Uniform light-mode card backgrounds for neutral classes */
+html[data-theme="light"] [class*="bg-void-800/"],
+html[data-theme="light"] [class*="bg-white/"] {
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Darken tinted borders in light mode so they show up */
@@ -360,6 +370,18 @@ html[data-theme="light"] [class*="border-blue-400/20"],
 html[data-theme="light"] [class*="border-blue-400/25"],
 html[data-theme="light"] [class*="border-blue-400/30"] {
   border-color: rgba(59, 130, 246, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-heartlight-green/20"],
+html[data-theme="light"] [class*="border-heartlight-green/25"],
+html[data-theme="light"] [class*="border-heartlight-green/30"] {
+  border-color: rgba(142, 176, 48, 0.45) !important;
+}
+
+html[data-theme="light"] [class*="border-lavender/20"],
+html[data-theme="light"] [class*="border-lavender/25"],
+html[data-theme="light"] [class*="border-lavender/30"] {
+  border-color: rgba(180, 160, 210, 0.45) !important;
 }
 
 .theme-toggle {
