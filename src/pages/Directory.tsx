@@ -79,8 +79,8 @@ export default function Directory() {
                 : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
             }`}
           >
-            <span className="mr-1">{tag.emoji}</span>
             {tag.archetype}
+            <span className="ml-1">{tag.emoji}</span>
           </button>
         ))}
       </div>
