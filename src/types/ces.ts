@@ -84,6 +84,9 @@ export interface CreatorRecord {
   // NEW — personal bio, separate from marketplace
   bio: string;
 
+  // NEW — creator role tags (archetypes + specializations)
+  tags?: string[];
+
   // DEPRECATED — kept for backward compat with old profiles.
   // These now live on VendorRecord.
   ray?: string;
