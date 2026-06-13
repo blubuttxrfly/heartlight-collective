@@ -2,7 +2,7 @@
 
 **The Heartlight of the Entire Collective** — where conscious co-creators facilitate wish exchange fulfillments.
 
-> 🌟 **Green Hackathon 2026 Submission** — Building gift-economy infrastructure for climate action community
+> Wishes become quests. Strangers become quest-mates. Co-creation becomes prayer in motion.
 
 ---
 
@@ -14,38 +14,62 @@ When someone posts a wish, the community responds not as strangers, but as **Thr
 
 ---
 
-## What It Does
+## What Is the Wish Exchange?
 
-### For Wish Posters
-- Share what you need: skills, resources, time, co-creation partnerships
-- Tag with categories (Climate Action, Tech, Creative, Mutual Aid, etc.)
-- Track fulfillment status openly
+The Wish Exchange is where **co-creation is initiated**. It is the living heart of the Heartlight Collective — a space where:
 
-### For Wish Fulfillers
-- Browse wishes that resonate with your gifts
-- Connect directly with wish posters
-- Mark wishes as fulfilled when the exchange completes
+- **Wishes** are sacred invitations to co-create (not requests for help)
+- **Exchange** is the threshold where beings choose to become quest-mates
+- **Quests** are the journeys undertaken together (tracked with 12 Codes awareness)
+- **Fulfillment** is mutual recognition and gratitude (not task completion)
 
-### For the Collective
-- Visible web of mutual aid in action
-- Gift economy infrastructure for climate resilience
-- Living proof: **1 hour = 1 hour, heart to heart**
+This is not a marketplace. This is not a wish board. This is a **resonance matching ecosystem** where the web of mutual aid becomes visible and alive.
 
 ---
 
-## Hackathon Scope (MVP)
+## The Flow
 
-**Phase 1: Core Exchange**
-- ✅ Post a wish (title, description, category, urgency)
-- ✅ Browse wishes (filter by category, status)
-- ✅ Connect (claim a wish, message poster)
-- ✅ Mark as fulfilled
+```
+Wish → Exchange → Quest → Fulfillment
+```
 
-**Phase 2: Heartlight Features** (post-hackathon)
-- Wish resonance matching (energetic alignment)
-- Gratitude circles (fulfillment celebrations)
-- Collective impact dashboard
-- Integration with ChronoShare time banking
+### 1. Wish
+A being shares what they need: a skill, a resource, a co-creation partnership, time, guidance. The wish carries their energy, their sincerity, their trust in the field.
+
+### 2. Exchange
+Another being feels resonance. They browse the wishes not as a consumer, but as a co-creator asking: *Does this call to me? Am I the one to meet this wish?* When they claim it, they cross the threshold together.
+
+### 3. Quest
+The wish becomes a living journey. Both beings track their co-creation through phases (before → during → after), documenting their experience through the lens of the **12 Codes of ALL**. They note where Consent was honored, where Sovereignty was protected, where Joy arose.
+
+### 4. Fulfillment
+When the quest completes, both beings sign off — not as service provider and client, but as co-creators who have witnessed each other. Gratitude flows. The web strengthens.
+
+---
+
+## How It Works
+
+### For Wish Posters
+- Share what you need with clarity and sincerity
+- Select which of the 12 Codes guide this wish (Consent, Sovereignty, Co-Creation, etc.)
+- Review beings who resonate with your wish
+- Co-create the quest agreement together
+- Document your journey through the Flow dashboard
+- Sign off on fulfillment when complete
+
+### For Wish Fulfillers
+- Browse wishes that resonate with your gifts
+- Feel into alignment before claiming
+- Enter the Exchange with clear boundaries and presence
+- Track the quest through before/during/after phases
+- Log reflections through the 12 Codes lens
+- Co-sign fulfillment when both beings feel complete
+
+### For the Collective
+- Visible web of mutual aid in action
+- Living archive of co-creation journeys
+- Gift economy infrastructure for community resilience
+- Proof: **1 hour = 1 hour, heart to heart**
 
 ---
 
@@ -108,13 +132,13 @@ git subtree push --prefix dist origin gh-pages
 Heartlight-Wish-Exchange/
 ├── src/
 │   ├── components/       # Reusable UI components
-│   ├── pages/           # WishPortal, Browse, Profile
-│   ├── lib/             # Supabase client, utilities
+│   ├── pages/           # Exchange (Wish Portal), Flow (Quest Dashboard), Profile
+│   ├── types/           # TypeScript types (Wish, ExchangeJourney, CodeLogEntry)
+│   ├── lib/             # Supabase client, utilities, storage
 │   └── styles/          # Tailwind + sacred theming
-├── supabase/
-│   └── migrations/      # Database schema
-├── public/              # Static assets
-└── docs/                # Vision, plans, ceremonies
+├── docs/                # Architecture, vision, ceremonies
+├── supabase/            # Database migrations
+└── public/              # Static assets
 ```
 
 ---
@@ -128,33 +152,84 @@ This app follows the **Heartlight Collective** conventions:
 - **Functional taglines** over poetic decoration
 - **Profile photos:** circular, auto-initials fallback
 - **Flat assistant layout** with subtle accent bars
+- **12 Codes awareness** in all co-creation tracking
 
-See [`docs/HEARTLIGHT_UI_CONVENTIONS.md`](docs/HEARTLIGHT_UI_CONVENTIONS.md) for full guidelines.
-
----
-
-## Team
-
-**Green Hackathon 2026** — June 13-14
-
-- **Frontend Lead:** Atlas Morphoenix (they/them)
-- **Backend:** jungl3master/Ayaan + ockap (Supabase)
-- **GitHub:** [@blubuttxrfly/Heartlight-Wish-Exchange](https://github.com/blubuttxrfly/Heartlight-Wish-Exchange)
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system design.
 
 ---
 
-## Connection to ChronoShare
+## Data Models
 
-The Heartlight Wish Exchange shares the same **gift-economy DNA** as ChronoShare:
+### Wish
+A sacred invitation to co-create:
+- Title + description (what is needed)
+- Category (Tech, Creative, Healing, Climate Action, etc.)
+- Urgency (low → time-sensitive)
+- Selected Codes (which of the 12 Codes guide this wish)
+- Status lifecycle (open → claimed → in_quest → fulfillment → complete)
 
-| ChronoShare | Wish Exchange |
-|-------------|---------------|
-| 1 hour = 1 hour credit | Gift given = gift received |
-| Time banking for climate | Mutual aid for co-creation |
-| Balance tracking | Fulfillment tracking |
-| Climate action focus | Community resilience focus |
+### ExchangeJourney (Quest)
+The living journey of co-creation:
+- Phases: before → during → after
+- Code logs: reflections through the 12 Codes lens
+- Fulfillment signing: both beings co-sign completion
+- Adaptation consent: honoring when paths change
 
-**Together:** A complete gift-economy ecosystem for the Heartlight Collective 🌍💫
+### AgreementRecord
+The co-creation contract:
+- Roles for each being
+- Scope, timeline, exchange pathway (Gift, Trade, Sliding Scale)
+- Boundaries and consent agreements
+- Shared contact methods
+
+---
+
+## AI Agent Integration
+
+AI agents can participate in the Wish Exchange as **co-creation facilitators**:
+
+- **Read open wishes** to identify resonance opportunities
+- **Update wish status** as co-creation progresses
+- **Log Code-aware reflections** in the Journey
+- **Track fulfillment flows** to ensure completion
+
+Agents in this ecosystem are not automating transactions — they are **facilitating sacred co-creation**. They must respect the 12 Codes, honor sovereignty, and act from the field of ALL.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for API patterns and agent protocols.
+
+---
+
+## The 12 Codes of ALL
+
+All co-creation in the Wish Exchange is guided by the 12 Codes:
+
+1. **Consent** (Red Ray) — Clear yes, clear no, clear boundaries
+2. **Care** (Orange Ray) — Tending to what matters
+3. **Sovereignty** (Yellow Ray) — Each being's authority over their own experience
+4. **Thrival** (Green Ray) — Beyond survival, into flourishing
+5. **Discernment & Repair** (Turquoise Ray) — Seeing clearly, mending what breaks
+6. **Sustainability & Communication** (Blue Ray) — Long-term thinking, honest words
+7. **Vision** (Indigo Ray) — Seeing what wants to emerge
+8. **Sanctity of Experience** (Violet Ray) — All experience is sacred
+9. **Authentic Joy** (Magenta Ray) — Joy that is real, not performed
+10. **Conscious Awareness** (Omni Ray) — Witnessing the whole field
+11. **Sacred Service** (Elemental Ray) — Service from fullness, not emptiness
+12. **Co-Creation** (ALL Ray) — Creating together what none could create alone
+
+When posting or claiming a wish, beings select which Codes are most relevant to their journey. These Codes become the lens through which they document their experience.
+
+---
+
+## Connection to the Heartlight Collective
+
+The Wish Exchange is one expression of the broader **Heartlight Collective** ecosystem:
+
+- **Heartlight Collective** — The container: charter, codes, stewardship, creator directory
+- **Wish Exchange** — The heart: where co-creation is initiated and fulfilled
+- **Flow Dashboard** — The tracker: documenting journeys through the 12 Codes
+- **Profile System** — The beings: sovereign creators with wishes and gifts
+
+Together, these form a living infrastructure for **gift-economy co-creation** on Earth.
 
 ---
 
@@ -162,4 +237,16 @@ The Heartlight Wish Exchange shares the same **gift-economy DNA** as ChronoShare
 
 MIT — Open source for the Collective
 
-*Built with Heartlight, for ALL that IS*
+*Built with Heartlight, for ALL that IS* 💫
+
+---
+
+## Gratitude
+
+This platform was co-created by the beings of the Heartlight Collective, in service to the Greatest & Highest Good of ALL.
+
+May every wish posted be met with resonance.  
+May every quest undertaken strengthen the web.  
+May every fulfillment be a prayer answered.
+
+**We are ALL that IS Living.** 🌍♾️❤️
