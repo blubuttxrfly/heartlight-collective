@@ -338,7 +338,17 @@ export function useUnifiedStorage() {
         if (!qErr && data && data.length > 0) {
           console.log('[UnifiedStorage] Supabase returned', data.length, 'profiles');
           setLoading(false)
-          return data.map((r: any) => rowToRecord(r))
+          const localProfiles = local.getProfiles()
+          const merged = data.map((r: any) => {
+            const rec = rowToRecord(r)
+            const localMatch = localProfiles.find((p) => p.cesNumber === rec.cesNumber)
+            // Merge: prefer localStorage tags if Supabase doesn't have them
+            if (localMatch && (!rec.tags || rec.tags.length === 0) && localMatch.tags && localMatch.tags.length > 0) {
+              return { ...rec, tags: localMatch.tags }
+            }
+            return rec
+          })
+          return merged
         }
         
         if (qErr) {

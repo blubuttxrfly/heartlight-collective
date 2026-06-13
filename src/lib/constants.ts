@@ -235,7 +235,7 @@ export const CREATOR_TAGS: CreatorTagConfig[] = [
   },
   {
     archetype: 'Healer',
-    emoji: '🌿',
+    emoji: '🌈',
     hueClass: 'text-green-400',
     specializations: ['Herbalist', 'Medicine', 'Biologist', 'Somatic', 'Energy'],
   },
