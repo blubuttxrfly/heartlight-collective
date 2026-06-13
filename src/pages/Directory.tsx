@@ -21,7 +21,12 @@ export default function Directory() {
     try {
       console.log('[Directory] Calling unified.getApproved()...');
       const all = await unified.getApproved();
-      console.log('[Directory] Profiles loaded:', all.length, all.map(p => ({ name: p.name, ces: p.cesNumber, stewardship: p.stewardship })));
+      console.log('[Directory] Profiles loaded:', all.length, all.map(p => ({
+        name: p.name,
+        ces: p.cesNumber,
+        stewardship: p.stewardship,
+        tags: p.tags || [],
+      })));
       setProfiles(all);
     } catch (err: any) {
       console.error('[Directory] Failed to load profiles:', err.message);
@@ -50,7 +55,7 @@ export default function Directory() {
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="font-serif text-4xl text-heartlight-green mb-4">
-          Creator Directory ✦
+          Co-Creator Directory
         </h1>
         <p className="text-lavender/70 text-lg">
           Discover the sovereign beings of the Heartlight Collective
