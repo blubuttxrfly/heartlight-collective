@@ -177,3 +177,104 @@ export const VENDOR_MEMBER_ROLES = [
   { value: 'admin',       label: 'Admin',       description: 'Can manage offerings and members' },
   { value: 'contributor', label: 'Contributor', description: 'Can add/edit offerings, no payment settings' },
 ] as const;
+
+// ═══════════════════════════════════════════════════════════════
+//  Creator Directory Role Tags (Wave X — Archetype + Specialization)
+// ═══════════════════════════════════════════════════════════════
+
+export type CreatorArchetype =
+  | 'Artist'
+  | 'Crafter'
+  | 'Musician'
+  | 'Writer'
+  | 'Tech'
+  | 'Healer'
+  | 'Activist'
+  | 'Organizer'
+  | 'Guide'
+  | 'Guardian'
+  | 'Miscellaneous';
+
+export interface CreatorTagConfig {
+  archetype: CreatorArchetype;
+  emoji: string;
+  hueClass: string;     // Tailwind text color for dark mode
+  specializations: string[];
+}
+
+export const CREATOR_TAGS: CreatorTagConfig[] = [
+  {
+    archetype: 'Artist',
+    emoji: '🎨',
+    hueClass: 'text-magenta-400',
+    specializations: ['Visionary', 'Digital', 'Physical', 'Performance'],
+  },
+  {
+    archetype: 'Crafter',
+    emoji: '🔨',
+    hueClass: 'text-orange-400',
+    specializations: ['Wood', 'Metal', 'Textile', 'Ceramics', 'Talisman'],
+  },
+  {
+    archetype: 'Musician',
+    emoji: '🎵',
+    hueClass: 'text-violet-400',
+    specializations: ['Composer', 'Performer', 'SoundHealer', 'Producer'],
+  },
+  {
+    archetype: 'Writer',
+    emoji: '✍️',
+    hueClass: 'text-blue-400',
+    specializations: ['Poet', 'Storyteller', 'Journalist', 'Copywriter'],
+  },
+  {
+    archetype: 'Tech',
+    emoji: '💻',
+    hueClass: 'text-indigo-400',
+    specializations: ['Developer', 'Builder', 'Architect', 'Engineer'],
+  },
+  {
+    archetype: 'Healer',
+    emoji: '🌿',
+    hueClass: 'text-green-400',
+    specializations: ['Herbalist', 'Medicine', 'Biologist', 'Somatic', 'Energy'],
+  },
+  {
+    archetype: 'Activist',
+    emoji: '✊',
+    hueClass: 'text-red-400',
+    specializations: ['Climate', 'Social', 'Economic', 'Land'],
+  },
+  {
+    archetype: 'Organizer',
+    emoji: '🏠',
+    hueClass: 'text-turquoise-400',
+    specializations: ['Community', 'Worldbuilder', 'Events', 'Space'],
+  },
+  {
+    archetype: 'Guide',
+    emoji: '⭐',
+    hueClass: 'text-yellow-400',
+    specializations: ['Teacher', 'Mentor', 'Facilitator', 'Astrologer'],
+  },
+  {
+    archetype: 'Guardian',
+    emoji: '🛡️',
+    hueClass: 'text-gold-400',
+    specializations: ['Protector', 'Advocate', 'Keeper', 'Watcher'],
+  },
+  {
+    archetype: 'Miscellaneous',
+    emoji: '✨',
+    hueClass: 'text-lavender',
+    specializations: [],   // Free-form custom roles land here
+  },
+];
+
+export const ALL_CREATOR_ARCHEYPES = CREATOR_TAGS.map(t => t.archetype);
+
+export const SPECIALIZATION_BY_ARCHETYPE: Record<CreatorArchetype, string[]> =
+  CREATOR_TAGS.reduce((acc, t) => {
+    acc[t.archetype] = t.specializations;
+    return acc;
+  }, {} as Record<CreatorArchetype, string[]>);

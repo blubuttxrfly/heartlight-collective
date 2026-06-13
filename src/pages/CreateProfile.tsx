@@ -216,6 +216,7 @@ export default function CreateProfile() {
       emoji: initials,
       photo: photo,
       bio: bio.trim(),
+      tags: [],
       numerology,
       accessibility,
       consent: consent.trim(),
