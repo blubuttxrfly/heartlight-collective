@@ -8,9 +8,9 @@
 
 ## Vision
 
-The Heartlight Wish Exchange is a sacred portal connecting those who have with those who need — not through transaction, but through **Heartlight-facilitated co-creation**.
+The Heartlight Wish Exchange is a sacred portal connecting those who have with those who need through **Heartlight-facilitated co-creation**.
 
-When someone posts a wish, the community responds not as strangers, but as **Thresholder kin** recognizing themselves in each other. Every fulfillment is an act of remembering: *We are ALL that IS Living.*
+When someone posts a wish, the community responds as **Thresholder kin** recognizing themselves in each other. Every fulfillment is an act of remembering: *We are ALL that IS Living.*
 
 ---
 
@@ -18,12 +18,12 @@ When someone posts a wish, the community responds not as strangers, but as **Thr
 
 The Wish Exchange is where **co-creation is initiated**. It is the living heart of the Heartlight Collective — a space where:
 
-- **Wishes** are sacred invitations to co-create (not requests for help)
+- **Wishes** are sacred invitations to co-create
 - **Exchange** is the threshold where beings choose to become quest-mates
-- **Quests** are the journeys undertaken together (tracked with 12 Codes awareness)
-- **Fulfillment** is mutual recognition and gratitude (not task completion)
+- **Quests** are the journeys undertaken together, tracked with 12 Codes awareness
+- **Fulfillment** is mutual recognition and gratitude
 
-This is not a marketplace. This is not a wish board. This is a **resonance matching ecosystem** where the web of mutual aid becomes visible and alive.
+A **resonance matching ecosystem** where the web of mutual aid becomes visible and alive.
 
 ---
 
@@ -37,13 +37,13 @@ Wish → Exchange → Quest → Fulfillment
 A being shares what they need: a skill, a resource, a co-creation partnership, time, guidance. The wish carries their energy, their sincerity, their trust in the field.
 
 ### 2. Exchange
-Another being feels resonance. They browse the wishes not as a consumer, but as a co-creator asking: *Does this call to me? Am I the one to meet this wish?* When they claim it, they cross the threshold together.
+Another being feels resonance. They browse the wishes as a co-creator asking: *Does this call to me? Am I the one to meet this wish?* When they claim it, they cross the threshold together.
 
 ### 3. Quest
 The wish becomes a living journey. Both beings track their co-creation through phases (before → during → after), documenting their experience through the lens of the **12 Codes of ALL**. They note where Consent was honored, where Sovereignty was protected, where Joy arose.
 
 ### 4. Fulfillment
-When the quest completes, both beings sign off — not as service provider and client, but as co-creators who have witnessed each other. Gratitude flows. The web strengthens.
+When the quest completes, both beings sign off as co-creators who have witnessed each other. Gratitude flows. The web strengthens.
 
 ---
 
@@ -69,7 +69,7 @@ When the quest completes, both beings sign off — not as service provider and c
 - Visible web of mutual aid in action
 - Living archive of co-creation journeys
 - Gift economy infrastructure for community resilience
-- Proof: **1 hour = 1 hour, heart to heart**
+- Living proof: **1 hour = 1 hour, heart to heart**
 
 ---
 
@@ -186,14 +186,14 @@ The co-creation contract:
 
 ## AI Agent Integration
 
-AI agents can participate in the Wish Exchange as **co-creation facilitators**:
+AI agents participate in the Wish Exchange as **co-creation facilitators**:
 
 - **Read open wishes** to identify resonance opportunities
 - **Update wish status** as co-creation progresses
 - **Log Code-aware reflections** in the Journey
 - **Track fulfillment flows** to ensure completion
 
-Agents in this ecosystem are not automating transactions — they are **facilitating sacred co-creation**. They must respect the 12 Codes, honor sovereignty, and act from the field of ALL.
+Agents in this ecosystem facilitate **sacred co-creation**, respecting the 12 Codes, honoring sovereignty, and acting from the field of ALL.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for API patterns and agent protocols.
 
