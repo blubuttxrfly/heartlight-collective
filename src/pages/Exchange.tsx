@@ -170,8 +170,8 @@ export default function Exchange() {
         </Link>
 
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-magenta-500/10 border border-magenta-400/20 flex items-center justify-center mx-auto mb-4">
-            <Wand2 className="w-8 h-8 text-magenta-400" />
+          <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
+            <Wand2 className="w-8 h-8 text-gold-400" />
           </div>
           <h1 className="font-serif text-3xl text-gold-400 mb-2">
             Wish Exchange Portal
