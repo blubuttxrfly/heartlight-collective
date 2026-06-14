@@ -117,7 +117,7 @@ export default function Charter() {
               The Heartlight Collective is a unanimous agreement dedication to directing <span className="text-green-400 font-medium">99% of all profits</span> back to our Earth, homes, sovereign interdependent communities, and ALL the Living.
             </p>
             <p className="text-sm text-lavender/70 leading-relaxed mb-6 max-w-2xl mx-auto text-center">
-              Through the Heartlight Wish Exchange, funds flow toward Earth-conscious initiatives, climate action projects, community resilience, regenerative systems, and aligned exchanges that serve the Greatest & Highest Good. This is not a donation — this is a sacred reallocation of energy back to the living systems that sustain us all.
+              Through the Heartlight Wish Exchange, funds flow toward Earth-conscious initiatives, climate action projects, community resilience, regenerative systems, and aligned exchanges that serve our Greatest & Highest Good. This is not a donation — this is a sacred reallocation of energy back to the living systems that sustain us all.
             </p>
             <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
               <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4 text-center">

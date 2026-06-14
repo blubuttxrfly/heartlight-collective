@@ -361,36 +361,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Treasury Stats */}
-      <section className="mb-12">
-        <TreasuryCard />
-      </section>
-
-      <LiveDirectorySection />
-
-      {/* Charter Teaser */}
-      <section className="text-center py-8">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="rounded-2xl border border-magenta-500/20 bg-void-800/30 p-8"
-        >
-          <Sparkles className="w-6 h-6 text-gold-400 mx-auto mb-4" />
-          <h3 className="font-serif text-2xl text-cream mb-3">The Heartlight Collective Charter</h3>
-          <p className="text-lavender/70 max-w-xl mx-auto mb-6">
-            A living vow for Atlas Island's seasonal co-creation economy.
-            Grounded in sacred reciprocity, radical transparency, and the Heartlight of ALL that IS.
-          </p>
-          <Link
-            to="/charter"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all"
-          >
-            Read the Charter <ArrowRight className="w-4 h-4" />
-          </Link>
-        </motion.div>
-      </section>
-
       {/* 99% Earth-Conscious Dedication */}
       <section className="text-center py-8">
         <motion.div
@@ -402,7 +372,7 @@ export default function Home() {
           <Globe className="w-8 h-8 text-green-400 mx-auto mb-4" />
           <h3 className="font-serif text-2xl text-cream mb-3">Earth-Conscious Dedication</h3>
           <p className="text-lavender/70 max-w-2xl mx-auto mb-6">
-            The Heartlight Collective is a unanimous agreement dedication to <span className="text-green-400 font-medium">99% of profits</span> flowing directly back to our Earth, homes, sovereign interdependent communities, and ALL the Living. Through the Heartlight Wish Exchange, funds are directed toward Earth-conscious initiatives, climate action projects, community resilience, and aligned exchanges that serve the Greatest & Highest Good.
+            The Heartlight Collective is a unanimous agreement dedication to <span className="text-green-400 font-medium">99% of profits</span> flowing directly back to our Earth, homes, sovereign interdependent communities, and ALL the Living. Through the Heartlight Wish Exchange, funds are directed toward Earth-conscious initiatives, climate action projects, community resilience, and aligned exchanges that serve our Greatest & Highest Good.
           </p>
           <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
             <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4">
@@ -444,6 +414,36 @@ export default function Home() {
               View Open Collective →
             </a>
           </div>
+        </motion.div>
+      </section>
+
+      {/* Treasury Stats */}
+      <section className="mb-12">
+        <TreasuryCard />
+      </section>
+
+      <LiveDirectorySection />
+
+      {/* Charter Teaser */}
+      <section className="text-center py-8">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="rounded-2xl border border-magenta-500/20 bg-void-800/30 p-8"
+        >
+          <Sparkles className="w-6 h-6 text-gold-400 mx-auto mb-4" />
+          <h3 className="font-serif text-2xl text-cream mb-3">The Heartlight Collective Charter</h3>
+          <p className="text-lavender/70 max-w-xl mx-auto mb-6">
+            A living vow for Atlas Island's seasonal co-creation economy.
+            Grounded in sacred reciprocity, radical transparency, and the Heartlight of ALL that IS.
+          </p>
+          <Link
+            to="/charter"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all"
+          >
+            Read the Charter <ArrowRight className="w-4 h-4" />
+          </Link>
         </motion.div>
       </section>
     </div>
