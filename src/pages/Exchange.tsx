@@ -177,8 +177,7 @@ export default function Exchange() {
             Wish Exchange Portal
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
-            Where co-creation is initiated. Browse wishes and gifts that resonate with you. 
-            Feel into alignment before claiming.
+            Cast a Wish, Share a Gift, and Exchange for Fulfillment!
           </p>
         </div>
       </div>
