@@ -2,13 +2,13 @@
 
 > **For Hermes:** Use `subagent-driven-development` skill to implement task-by-task.
 
-**Goal:** Add local/global toggle, continent filtering, and distance-aware discovery to the Wish Exchange Portal.
+**Goal:** Add Local/Global/Universal scope toggle, continent filtering, and distance-aware discovery to the Wish Exchange Portal.
 
-**Architecture:** Structured location data (lat/lng + continent + region + city) on profiles and wishes. Client-side Haversine distance calculation from signed-in being's location. Local/Global toggle filters by radius vs. all. Continent selector uses themed `<select>` matching Heartlight light/dark modes.
+**Architecture:** Structured location data (lat/lng + continent + region + city) on profiles and wishes. Client-side Haversine distance calculation from signed-in being's location. Three-way scope toggle (Local / Global / Universal) filters by radius, by continent, or shows all. Continent selector uses themed `<select>` matching Heartlight light/dark modes.
 
-**Tech Stack:** React + TypeScript + Tailwind, Nominatim/OpenStreetMap for geocoding, Haversine formula for distance, localStorage (Exchange) + Supabase (profiles).
+**Tech Stack:** React + TypeScript + Tailwind, OpenStreetMap Nominatim for geocoding, Haversine formula for distance, localStorage (Exchange) + Supabase (profiles).
 
-**Design:** Match Heartlight Collective aesthetic — `rounded-lg` selects, `border-lavender/10` in dark, warm borders in light, no external fonts.
+**Design:** Match Heartlight Collective aesthetic — themed inputs respect light/dark mode toggle, `rounded-lg` selects, sacred color tokens. No external fonts.
 
 ---
 
@@ -47,6 +47,7 @@ location_raw: string
 location_lat: number | null
 location_lon: number | null
 location_continent: string | null
+scope: 'local' | 'global' | 'universal'  // visibility scope when posted
 ```
 
 ### Continent List (canonical)
@@ -68,8 +69,8 @@ const CONTINENTS = [
 - Add `LocationData` interface to `src/types/ces.ts`
 - Add `CONTINENTS` array + `CONTINENT_EMOJIS` to `src/lib/constants.ts`
 - Add Haversine distance utility to `src/lib/geo.ts`
-- Add `useForwardGeocode` hook (adapted from AUT, Nominatim-backed)
-- Add themed `<LocationSelect>` component (Heartlight-styled dropdown)
+- Add `useForwardGeocode` hook (OpenStreetMap Nominatim-backed, client-cached)
+- Add themed `<LocationSelect>` component (Heartlight-styled dropdown, respects light/dark mode)
 
 **Type-check gate:** `npx tsc --noEmit`
 
@@ -93,39 +94,44 @@ On save: populate all `location_*` fields into the profile record.
 
 ---
 
-### Wave 3: Upgrade Post-a-Wish Location Input
+### Wave 3: Upgrade Post-a-Wish Location + Scope Input
 **Status:** □
 
 **File:** `src/pages/PostWish.tsx`
 
 Add to the wish creation form:
 
-1. **"Where is this wish rooted?"** section
-2. **Location selector** — reuse the same `<LocationSelect>` component from Wave 2
+1. **"Where is this wish rooted?"** section with the `<LocationSelect>` component
+2. **Scope selector:** `Local` | `Global` | `Universal` — when posting a wish, the being chooses who should see it:
+   - **Local** — only beings within their distance radius can discover it
+   - **Global** — beings anywhere on the chosen continent can discover it
+   - **Universal** — all beings everywhere can discover it (default)
 3. **Default to profile location** — if signed in, pre-fill from C.E.S. profile
 4. **"Remote / Anywhere" option** — sets `location_continent: null`, skips geocoding
 
-Store structured location alongside the wish in localStorage.
+Store structured location + `scope` field alongside the wish in localStorage.
 
 **Type-check gate:** `npx tsc --noEmit`
 
 ---
 
-### Wave 4: Exchange Portal — Local/Global Toggle + Continent Filter
+### Wave 4: Exchange Portal — Local/Global/Universal Toggle + Continent Filter
 **Status:** □
 
 **File:** `src/pages/Exchange.tsx`
 
 Add filtering controls:
 
-1. **View toggle:** `Local` | `Global` — button group, styled like category filters
+1. **View toggle:** `Local` | `Global` | `Universal` — three-button group, styled like category filters, Heartlight-themed
 2. **Local radius:** default 100km, configurable via slider or preset buttons (10km / 50km / 100km / 500km)
 3. **Continent filter:** `<select>` dropdown showing all 7 continents + "All Regions" — styled with Heartlight theme tokens (respects light/dark mode)
 4. **Filter logic:**
-   - `Global` + no continent = show all
-   - `Global` + continent = filter by `location_continent`
-   - `Local` = filter by Haversine distance from signed-in being's profile location (requires profile to have lat/lon)
-   - Wishes with no location data appear in Global only
+   - `Universal` + no continent = show all wishes (current behavior)
+   - `Global` + continent = show wishes scoped to that continent or Universal
+   - `Local` = filter by Haversine distance from signed-in being's profile location (requires profile to have lat/lon), plus include Universal wishes
+   - Wishes with `scope: 'local'` only appear in Local mode for nearby beings
+   - Wishes with `scope: 'global'` appear in Global + Universal
+   - Wishes with `scope: 'universal'` appear in all three views
 
 **Type-check gate:** `npx tsc --noEmit`
 
@@ -211,7 +217,8 @@ interface LocationSelectProps {
 
 - [ ] Being can set structured location on C.E.S. profile via search + dropdown
 - [ ] Being can set structured location when posting a wish
-- [ ] Exchange portal shows Local/Global toggle
+- [ ] Exchange portal shows Local/Global/Universal toggle
+- [ ] Local mode filters wishes by distance from signed-in being + shows Universal wishes
 - [ ] Local mode filters wishes by distance from signed-in being
 - [ ] Distance displays on wish cards in Local mode
 - [ ] Continent filter shows as themed `<select>` dropdown
