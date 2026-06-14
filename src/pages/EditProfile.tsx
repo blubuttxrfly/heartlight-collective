@@ -11,7 +11,8 @@ import { useSession } from '../lib/session';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { ACCESSIBILITY_PRESETS, ASTROLOGY_SIGNS, CONTACT_FIELDS } from '../lib/constants';
 import CreatorTagSelector from '../components/CreatorTagSelector';
-import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
+import LocationSelect from '../components/LocationSelect';
+import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData } from '../types/ces';
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   email: FaEnvelope,
@@ -42,6 +43,7 @@ export default function EditProfile() {
   const [pronouns, setPronouns] = useState('');
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [sunPlacement, setSunPlacement] = useState('');
   const [moonPlacement, setMoonPlacement] = useState('');
   const [bio, setBio] = useState('');
@@ -85,6 +87,7 @@ export default function EditProfile() {
         setPronouns(p.pronouns || '');
         setTitle(p.title || '');
         setLocation(p.location || '');
+        setLocationData(p.locationData || null);
         setSunPlacement(p.sunPlacement || '');
         setMoonPlacement(p.moonPlacement || '');
         setBio(p.bio || '');
@@ -203,6 +206,7 @@ export default function EditProfile() {
         pronouns: pronouns.trim().toLowerCase(),
         title: title.trim(),
         location: location.trim(),
+        locationData: locationData || undefined,
         sunPlacement: sunPlacement.trim(),
         moonPlacement: moonPlacement.trim(),
         bio: bio.trim(),
@@ -385,12 +389,11 @@ export default function EditProfile() {
               <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
                 Location
               </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Earth, Solar System"
-                className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
+              <LocationSelect
+                value={locationData}
+                onChange={setLocationData}
+                placeholder="Search city, town, or place…"
+                allowRemote
               />
             </div>
           </div>

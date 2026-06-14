@@ -12,7 +12,8 @@ import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { useStorage } from '../lib/storage';
 import { generateCESNumberValue } from '../lib/ces';
 import CreatorTagSelector from '../components/CreatorTagSelector';
-import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
+import LocationSelect from '../components/LocationSelect';
+import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData } from '../types/ces';
 import {
   ACCESSIBILITY_PRESETS,
   ASTROLOGY_SIGNS,
@@ -72,7 +73,7 @@ export default function CreateProfile() {
   const [name, setName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [title, setTitle] = useState('');
-  const [location, setLocation] = useState('');
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [sun, setSun] = useState('');
   const [moon, setMoon] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
@@ -210,7 +211,8 @@ export default function CreateProfile() {
       name: name.trim(),
       pronouns: pronouns.trim(),
       title: title.trim(),
-      location: location.trim(),
+      location: locationData?.raw || '',
+      locationData: locationData || undefined,
       sunPlacement: sun,
       moonPlacement: moon,
       emoji: initials,
@@ -245,7 +247,7 @@ export default function CreateProfile() {
     } catch (err: any) {
       console.error('[CreateProfile] Profile creation failed:', err);
     }
-  }, [name, pronouns, title, location, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
+  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
 
   // ── Steps ──
   const steps = [
@@ -310,7 +312,13 @@ export default function CreateProfile() {
         <Field label="Name *" value={name} onChange={setName} placeholder="Your name as you wish it to appear" />
         <Field label="Pronouns" value={pronouns} onChange={(v) => setPronouns(v.toLowerCase())} placeholder="e.g. they/them, she/her" />
         <Field label="Title / Role" value={title} onChange={setTitle} placeholder="e.g. Astrologer, Web Developer" />
-        <Field label="Location" value={location} onChange={setLocation} placeholder="City, Region, or Earth" />
+        <LocationSelect
+          label="Location"
+          value={locationData}
+          onChange={setLocationData}
+          placeholder="Search city, town, or place…"
+          allowRemote
+        />
       </div>
     </motion.div>,
 

@@ -121,6 +121,9 @@ export interface CreatorRecord {
   // NEW — Guide & Guardian journey tracking
   guideGuardianStatus: GuideGuardianStatus;
   guideGuardianOptedInAt?: string;
+  
+  // NEW — Structured location data for distance-aware discovery
+  locationData?: LocationData;
 }
 
 export interface AuthorizedStewardEntry {
