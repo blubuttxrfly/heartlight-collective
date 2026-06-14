@@ -177,7 +177,7 @@ export default function Exchange() {
             Wish Exchange Portal
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
-            Cast a Wish, Share a Gift, and Exchange for Fulfillment!
+            Cast a Wish, Share a Gift, and Exchange with Fulfillment!
           </p>
         </div>
       </div>

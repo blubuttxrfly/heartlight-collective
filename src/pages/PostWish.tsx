@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2 } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const CATEGORIES = [
@@ -53,6 +53,7 @@ export default function PostWish() {
   const [fundsRequired, setFundsRequired] = useState('')
   const [fundsAvailable, setFundsAvailable] = useState('')
   const [timeCommitment, setTimeCommitment] = useState('')
+  const [images, setImages] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -83,6 +84,7 @@ export default function PostWish() {
       fundsRequired: fundsRequired ? Math.round(parseFloat(fundsRequired) * 100) : undefined,
       fundsAvailable: fundsAvailable ? Math.round(parseFloat(fundsAvailable) * 100) : undefined,
       timeCommitment,
+      images,
       status: 'open',
       postedByCes: 'local_user',
       postedByName: 'Atlas Island Being',
@@ -216,6 +218,54 @@ export default function PostWish() {
           <p className="text-xs text-lavender/30 mt-1">
             The system reads the nuance of your words to find resonant co-creators. Be specific and sincere.
           </p>
+
+          {/* Image Upload */}
+          <div className="mt-4">
+            <label className="block text-sm text-lavender/60 mb-2">Images <span className="text-lavender/30">(optional)</span></label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              id="wish-images"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || [])
+                files.forEach(file => {
+                  const reader = new FileReader()
+                  reader.onload = (ev) => {
+                    const result = ev.target?.result as string
+                    if (result) setImages(prev => [...prev, result])
+                  }
+                  reader.readAsDataURL(file)
+                })
+                ;(e.target as HTMLInputElement).value = ''
+              }}
+            />
+            <label
+              htmlFor="wish-images"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-lavender/10 bg-void-800/40 text-lavender/60 hover:text-cream hover:border-gold-400/30 cursor-pointer transition-all text-sm"
+            >
+              <Upload className="w-4 h-4" />
+              Upload Images
+            </label>
+            {images.length > 0 && (
+              <div className="flex flex-wrap gap-3 mt-3">
+                {images.map((img, i) => (
+                  <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border border-lavender/10 group">
+                    <img src={img} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove image"
+                    >
+                      <X className="w-5 h-5 text-cream" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
