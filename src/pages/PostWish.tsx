@@ -1,7 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X, MapPin, Globe } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import LocationSelect from '../components/LocationSelect'
+import { useSession } from '../lib/session'
+import { useStorage } from '../lib/storage'
+import { WISH_SCOPE_LABELS } from '../lib/constants'
+import type { LocationData, WishScope } from '../types/ces'
 
 const CATEGORIES = [
   'Tech & Development',
@@ -48,7 +53,8 @@ export default function PostWish() {
   const [selectedResources, setSelectedResources] = useState([])
   const [roles, setRoles] = useState('')
   const [urgency, setUrgency] = useState('low')
-  const [location, setLocation] = useState('')
+  const [locationData, setLocationData] = useState<LocationData | null>(null)
+  const [scope, setScope] = useState<WishScope>('universal')
   const [avenue, setAvenue] = useState('direct')
   const [fundsRequired, setFundsRequired] = useState('')
   const [fundsAvailable, setFundsAvailable] = useState('')
@@ -56,6 +62,19 @@ export default function PostWish() {
   const [images, setImages] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  const { user } = useSession()
+  const { getProfileByCes } = useStorage()
+
+  // Pre-fill location from signed-in user's profile
+  useEffect(() => {
+    if (user?.ces) {
+      const profile = getProfileByCes(user.ces)
+      if (profile?.locationData) {
+        setLocationData(profile.locationData)
+      }
+    }
+  }, [user?.ces, getProfileByCes])
 
   const handleResourceToggle = (resource) => {
     setSelectedResources(prev => 
@@ -79,7 +98,9 @@ export default function PostWish() {
       resources: selectedResources,
       roles: roles.split(',').map(s => s.trim()).filter(Boolean),
       urgency,
-      location,
+      location: locationData?.raw || '',
+      locationData: locationData || null,
+      scope,
       exchangeAvenue: avenue,
       fundsRequired: fundsRequired ? Math.round(parseFloat(fundsRequired) * 100) : undefined,
       fundsAvailable: fundsAvailable ? Math.round(parseFloat(fundsAvailable) * 100) : undefined,
@@ -354,15 +375,54 @@ export default function PostWish() {
           </div>
         </div>
 
+        {/* Location + Scope */}
         <div>
-          <label className="block text-sm text-lavender/60 mb-2">Location / Timezone</label>
-          <input
-            type="text"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            placeholder='New York, EST — or "Remote / Anywhere"'
-            className="w-full px-4 py-3 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none transition-colors"
+          <label className="block text-sm text-lavender/60 mb-2">
+            Where is this {labelText.toLowerCase()} rooted?
+          </label>
+          <LocationSelect
+            value={locationData}
+            onChange={setLocationData}
+            placeholder="Search city, town, or place…"
+            allowRemote
           />
+
+          {/* Scope Selector */}
+          <div className="mt-4">
+            <label className="block text-xs text-lavender/40 mb-2 uppercase tracking-wider">
+              Visibility — Who can discover this {labelText.toLowerCase()}?
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(['local', 'global', 'universal'] as WishScope[]).map(s => {
+                const config = WISH_SCOPE_LABELS[s]
+                const isActive = scope === s
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setScope(s)}
+                    className={`px-4 py-2.5 rounded-xl border text-sm transition-all text-left ${
+                      isActive
+                        ? s === 'local'
+                          ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                          : s === 'global'
+                          ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
+                          : 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                        : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {s === 'local' && <MapPin className="w-3.5 h-3.5" />}
+                      {s === 'global' && <Globe className="w-3.5 h-3.5" />}
+                      {s === 'universal' && <Sparkles className="w-3.5 h-3.5" />}
+                      <span className="font-medium">{config.label}</span>
+                    </div>
+                    <div className="text-xs mt-0.5 pl-6 opacity-70">{config.description}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
