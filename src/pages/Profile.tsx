@@ -162,6 +162,23 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Tags */}
+        {profile.tags && profile.tags.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-serif text-xl text-cream mb-4">Roles</h2>
+            <div className="flex flex-wrap gap-2 max-w-full">
+              {profile.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="px-3 py-1 rounded-full bg-gold-400/10 border border-gold-400/20 text-gold-300 text-sm whitespace-nowrap"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Bio */}
         {profile.bio && (
           <div className="mb-8">

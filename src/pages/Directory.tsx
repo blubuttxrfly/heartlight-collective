@@ -63,10 +63,10 @@ export default function Directory() {
       </div>
 
       {/* Filter */}
-      <div className="flex justify-center gap-3 mb-8">
+      <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-full">
         <button
           onClick={() => setSelectedTags(new Set())}
-          className={`px-4 py-2 rounded-full text-sm border transition-all ${
+          className={`px-4 py-2 rounded-full text-sm border transition-all whitespace-nowrap ${
             selectedTags.size === 0
               ? 'border-gold-400/40 bg-gold-400/10 text-gold-300'
               : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
@@ -163,7 +163,7 @@ export default function Directory() {
             )}
 
             {/* Wish Availability + Tags */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4 max-w-full">
               {profile.wishAvailability === 'accepting' && (
                 <span className="text-xs px-3 py-1 rounded-full bg-green-400/10 text-green-300 border border-green-400/20">
                   🌱 Accepting
@@ -172,7 +172,7 @@ export default function Directory() {
               {(profile.tags || []).map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60"
+                  className="text-xs px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60 whitespace-nowrap"
                 >
                   {tag}
                 </span>
