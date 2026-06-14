@@ -418,3 +418,28 @@ export interface Wish {
   createdAt: string;
   updatedAt: string;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  Location-Aware Discovery Types (Wave Y)
+// ═══════════════════════════════════════════════════════════════
+
+export type WishScope = 'local' | 'global' | 'universal';
+
+export interface LocationData {
+  raw: string;              // Display name, e.g. "Burlington, Vermont, United States"
+  lat: number;
+  lon: number;
+  city: string | null;
+  region: string | null;    // state/province
+  country: string | null;
+  continent: string | null;
+}
+
+/** Partial location for wishes that only specify continent (no precise coords) */
+export interface WishLocation {
+  raw: string;
+  lat: number | null;
+  lon: number | null;
+  continent: string | null;
+  scope: WishScope;
+}

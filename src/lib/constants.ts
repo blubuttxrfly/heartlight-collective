@@ -271,10 +271,48 @@ export const CREATOR_TAGS: CreatorTagConfig[] = [
   },
 ];
 
-export const ALL_CREATOR_ARCHEYPES = CREATOR_TAGS.map(t => t.archetype);
+export const ALL_CREATOR_ARCHETYPES = CREATOR_TAGS.map(t => t.archetype);
 
 export const SPECIALIZATION_BY_ARCHETYPE: Record<CreatorArchetype, string[]> =
   CREATOR_TAGS.reduce((acc, t) => {
     acc[t.archetype] = t.specializations;
     return acc;
   }, {} as Record<CreatorArchetype, string[]>);
+
+// ═══════════════════════════════════════════════════════════════
+//  Location-Aware Discovery Constants (Wave Y)
+// ═══════════════════════════════════════════════════════════════
+
+export const CONTINENTS = [
+  'Africa',
+  'Antarctica',
+  'Asia',
+  'Europe',
+  'North America',
+  'Oceania',
+  'South America',
+] as const;
+
+export type Continent = typeof CONTINENTS[number];
+
+export const CONTINENT_EMOJIS: Record<Continent, string> = {
+  'Africa': '🌍',
+  'Antarctica': '🧊',
+  'Asia': '🌏',
+  'Europe': '🏰',
+  'North America': '🌎',
+  'Oceania': '🌺',
+  'South America': '🌿',
+};
+
+export const WISH_SCOPE_LABELS: Record<string, { label: string; description: string }> = {
+  local:     { label: 'Local',     description: 'Only beings nearby can discover this wish' },
+  global:    { label: 'Global',    description: 'Beings anywhere on this continent can discover it' },
+  universal: { label: 'Universal', description: 'All beings everywhere can discover it' },
+};
+
+/** Default radius for Local discovery, in kilometers */
+export const DEFAULT_LOCAL_RADIUS_KM = 100;
+
+/** Radius presets for Local discovery */
+export const LOCAL_RADIUS_PRESETS = [10, 50, 100, 500] as const;
