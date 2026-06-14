@@ -82,7 +82,7 @@ function CodeCard({ code, index }: { code: typeof CODES[0]; index: number }) {
           <span className="w-2 h-2 rounded-full inline-block" style={{ background: code.color }} />
           <span className="text-xs uppercase tracking-widest font-sans" style={{ color: code.color }}>{code.ray}</span>
         </div>
-        <p className="font-serif italic text-base text-white/80 leading-relaxed p-3 rounded-lg bg-white/5 border-l-[3px] mb-4"
+        <p className="font-serif italic text-base text-cream leading-relaxed p-3 rounded-lg bg-void-900/40 border-l-[3px] mb-4"
           style={{ borderColor: code.color + '60' }}
         >
           "{code.mantra}"
