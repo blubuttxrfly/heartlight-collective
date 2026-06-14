@@ -34,9 +34,9 @@ export default function Footer() {
             Exchange
           </Link>
           <span>·</span>
-          <Link to="/" className="hover:text-gold-400 transition-colors">
+          <a href="https://opencollective.com/heartlight-collective" target="_blank" rel="noopener noreferrer" className="hover:text-gold-400 transition-colors">
             Collective
-          </Link>
+          </a>
           <span>·</span>
           <Link to="/flow" className="hover:text-gold-400 transition-colors">
             Flow
