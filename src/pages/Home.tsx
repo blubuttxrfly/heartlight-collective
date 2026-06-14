@@ -81,7 +81,8 @@ const pillars = [
     icon: Globe,
     title: 'Collective',
     description: 'Resources, grants, scholarships, and opportunity mutual aid collective.',
-    href: '/',
+    href: 'https://opencollective.com/heartlight-collective',
+    external: true,
     hue: {
       text: 'text-magenta-400',
       textLight: 'text-magenta-300',
@@ -145,6 +146,20 @@ const pillars = [
 
 function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: number }) {
   const Icon = pillar.icon
+  const content = (
+    <>
+      <Icon
+        className={`
+          w-16 h-16 mx-auto mb-4 ${pillar.hue.text}
+          transition-transform duration-300
+          group-hover:scale-110 group-hover:drop-shadow-lg
+        `}
+        strokeWidth={1.5}
+      />
+      <h3 className={`font-serif text-2xl md:text-3xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
+      <p className="text-lavender/60 text-sm leading-relaxed flex-1">{pillar.description}</p>
+    </>
+  )
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -152,31 +167,33 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
       transition={{ duration: 0.5, delay: 0.2 + index * 0.12 }}
       className="h-full"
     >
-      <Link
-        to={pillar.href}
-        className={`
-          group block rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
-          ${pillar.hue.bg} ${pillar.hue.bgHover}
-          transition-all duration-300
-          p-7 text-center h-full flex flex-col
-        `}
-      >
-        {/* Big icon — the visual heart of the button */}
-        <Icon
+      {'external' in pillar && pillar.external ? (
+        <a
+          href={pillar.href}
+          target="_blank"
+          rel="noopener noreferrer"
           className={`
-            w-16 h-16 mx-auto mb-4 ${pillar.hue.text}
-            transition-transform duration-300
-            group-hover:scale-110 group-hover:drop-shadow-lg
+            group block rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
+            ${pillar.hue.bg} ${pillar.hue.bgHover}
+            transition-all duration-300
+            p-7 text-center h-full flex flex-col
           `}
-          strokeWidth={1.5}
-        />
-
-        {/* Title in matching hue */}
-        <h3 className={`font-serif text-2xl md:text-3xl ${pillar.hue.textLight} mb-2`}>{pillar.title}</h3>
-
-        {/* Description */}
-        <p className="text-lavender/60 text-sm leading-relaxed flex-1">{pillar.description}</p>
-      </Link>
+        >
+          {content}
+        </a>
+      ) : (
+        <Link
+          to={pillar.href}
+          className={`
+            group block rounded-2xl border-2 ${pillar.hue.border} ${pillar.hue.borderHover}
+            ${pillar.hue.bg} ${pillar.hue.bgHover}
+            transition-all duration-300
+            p-7 text-center h-full flex flex-col
+          `}
+        >
+          {content}
+        </Link>
+      )}
     </motion.div>
   )
 }
@@ -406,6 +423,26 @@ export default function Home() {
           </div>
           <div className="text-xs text-lavender/40">
             1% covers operational costs. 99% returns to Earth and community. This is our living agreement.
+          </div>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <a
+              href="https://opencollective.com/heartlight-collective"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-green-400/30 text-green-300 hover:bg-green-400/10 transition-all text-sm"
+            >
+              <Heart className="w-4 h-4" />
+              Become a Sovereign Supporter
+            </a>
+            <a
+              href="https://opencollective.com/heartlight-collective"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/30 transition-all text-sm"
+            >
+              <Globe className="w-4 h-4" />
+              View Open Collective →
+            </a>
           </div>
         </motion.div>
       </section>
