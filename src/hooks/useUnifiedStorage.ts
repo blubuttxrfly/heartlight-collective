@@ -17,7 +17,7 @@ interface UnifiedStorageState {
 
 /* ═══ Helper: map CreatorRecord → Supabase profile row ═══ */
 function recordToRow(profile: CreatorRecord): Record<string, unknown> {
-  return {
+  const row: Record<string, unknown> = {
     ces_number: profile.cesNumber,
     name: profile.name,
     pronouns: profile.pronouns || '',
@@ -44,7 +44,8 @@ function recordToRow(profile: CreatorRecord): Record<string, unknown> {
     numerology: profile.numerology || [],
     guide_guardian_status: profile.guideGuardianStatus || 'not_opted_in',
     guide_guardian_opted_in_at: profile.guideGuardianOptedInAt || null,
-  }
+  };
+  return row;
 }
 
 /* ═══ Helper: map Supabase row → CreatorRecord ═══ */
@@ -192,7 +193,7 @@ export function useUnifiedStorage() {
     const saved = local.findProfileByCES(profile.cesNumber || '');
     console.log('[UnifiedStorage] Verification - profile found:', !!saved, saved?.cesNumber);
 
-    // Try Supabase if configured
+    // Try Supabase if configured — with fallback retry for missing columns
     if (isSupabaseConfigured()) {
       try {
         const { error: supaError } = await supabase
@@ -200,7 +201,21 @@ export function useUnifiedStorage() {
           .insert(recordToRow(profile) as any)
 
         if (supaError) {
-          console.warn('[UnifiedStorage] Supabase insert failed:', supaError.message)
+          // If a column is missing (e.g., tags), retry with only known-safe fields
+          const msg = supaError.message?.toLowerCase() || '';
+          if (msg.includes('column') && msg.includes('does not exist')) {
+            console.warn('[UnifiedStorage] Supabase missing column — retrying without tags:', supaError.message);
+            const safeRow = recordToRow(profile);
+            delete safeRow.tags;
+            const { error: retryErr } = await supabase.from('profiles').insert(safeRow as any);
+            if (retryErr) {
+              console.warn('[UnifiedStorage] Supabase retry insert failed:', retryErr.message);
+            } else {
+              console.log('[UnifiedStorage] Supabase insert succeeded after retry (tags omitted)');
+            }
+          } else {
+            console.warn('[UnifiedStorage] Supabase insert failed:', supaError.message);
+          }
         }
       } catch (err: any) {
         console.warn('[UnifiedStorage] Supabase unavailable:', err.message)
@@ -293,8 +308,25 @@ export function useUnifiedStorage() {
           .eq('ces_number', profile.cesNumber ?? '')
 
         if (supaError) {
-          console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
-          throw new Error(`Supabase update failed: ${supaError.message}`);
+          // If a column is missing (e.g., tags), retry with only known-safe fields
+          const msg = supaError.message?.toLowerCase() || '';
+          if (msg.includes('column') && msg.includes('does not exist')) {
+            console.warn('[UnifiedStorage] Supabase missing column — retrying without tags:', supaError.message);
+            const safeRow = recordToRow(profile);
+            delete safeRow.tags;
+            const { error: retryErr } = await supabase
+              .from('profiles')
+              .update(safeRow as any)
+              .eq('ces_number', profile.cesNumber ?? '');
+            if (retryErr) {
+              console.error('[UnifiedStorage] Supabase retry update FAILED:', retryErr);
+            } else {
+              console.log('[UnifiedStorage] Supabase update succeeded after retry (tags omitted)');
+            }
+          } else {
+            console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
+            throw new Error(`Supabase update failed: ${supaError.message}`);
+          }
         } else {
           console.log('[UnifiedStorage] Supabase update SUCCESS');
         }
