@@ -107,17 +107,53 @@ export default function Charter() {
         </div>
       </motion.section>
 
+      {/* Heartlight Collective & Earth Dedication */}
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mb-12">
+        <SectionTitle icon="🌍">The Heartlight Collective & Earth Dedication</SectionTitle>
+        <div className="rounded-2xl border border-green-400/20 bg-green-400/5 p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(74,222,128,0.07),transparent_65%)] pointer-events-none" />
+          <div className="relative z-10">
+            <p className="font-serif italic text-lg text-green-300 leading-relaxed mb-6 max-w-2xl mx-auto text-center">
+              The Heartlight Collective is a unanimous agreement dedication to directing <span className="text-green-400 font-medium">99% of all profits</span> back to our Earth, homes, sovereign interdependent communities, and ALL the Living.
+            </p>
+            <p className="text-sm text-lavender/70 leading-relaxed mb-6 max-w-2xl mx-auto text-center">
+              Through the Heartlight Wish Exchange, funds flow toward Earth-conscious initiatives, climate action projects, community resilience, regenerative systems, and aligned exchanges that serve the Greatest & Highest Good. This is not a donation — this is a sacred reallocation of energy back to the living systems that sustain us all.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+              <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4 text-center">
+                <div className="text-3xl mb-2">🌍</div>
+                <div className="text-sm text-cream mb-1">Earth Initiatives</div>
+                <div className="text-xs text-lavender/50">Climate action, renewable energy, regeneration & healing</div>
+              </div>
+              <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4 text-center">
+                <div className="text-3xl mb-2">🏠</div>
+                <div className="text-sm text-cream mb-1">Sovereign Homes</div>
+                <div className="text-xs text-lavender/50">Community spaces, housing, mutual aid & interdependence</div>
+              </div>
+              <div className="rounded-xl border border-green-400/10 bg-void-800/40 p-4 text-center">
+                <div className="text-3xl mb-2">♾️</div>
+                <div className="text-sm text-cream mb-1">ALL the Living</div>
+                <div className="text-xs text-lavender/50">Biodiversity, ecosystems, collective flourishing & thrival</div>
+              </div>
+            </div>
+            <p className="text-xs text-lavender/40 text-center">
+              1% covers operational costs. 99% returns to Earth and community. This is our living agreement, honored by every Co-Creator in the Heartlight Exchange.
+            </p>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mb-12">
         <SectionTitle icon="🦋">Heartlight Co-Creators</SectionTitle>
         <BodyText>Heartlight Co-Creators are Atlastizens whose occupation is co-creating for ALL through reciprocity. Recipients may select a Co-Creator directly via Core Energetic Signatures, and Co-Creators respond through resonance and capacity for that season.</BodyText>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="mb-12">
         <SectionTitle icon="🎁">Exchange Pathways</SectionTitle>
         <BodyText>Every exchange is an act of sacred reciprocity. Heartlight Exchange pathways flow through five forms; choose the one that feels most resonant for each co-creation.</BodyText>
         <div className="grid gap-3 mt-6">
           {pathways.map((p, i) => (
-            <motion.div key={p.title} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 + i * 0.08 }} className="flex gap-4 items-start p-4 rounded-xl border border-gold-400/10 bg-void-800/30">
+            <motion.div key={p.title} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.9 + i * 0.08 }} className="flex gap-4 items-start p-4 rounded-xl border border-gold-400/10 bg-void-800/30">
               <span className="text-xl flex-shrink-0 mt-0.5">{p.icon}</span>
               <div>
                 <h3 className="font-serif text-base text-cream mb-1">{p.title}</h3>
@@ -128,7 +164,7 @@ export default function Charter() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }} className="mb-12">
         <SectionTitle icon="🌐">Offerings That Travel Worldwide</SectionTitle>
         <div className="grid md:grid-cols-2 gap-6 mt-6">
           <div className="rounded-2xl border border-magenta-500/15 bg-void-800/30 p-6">
@@ -156,12 +192,12 @@ export default function Charter() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }} className="mb-12">
         <SectionTitle icon="🤍">Accessibility Promise</SectionTitle>
         <BodyText>Offerings may be created in multiple formats whenever it supports the receiver: text, audio, captioned video, sensory-friendly pacing, simplified steps, multiple time-zone windows.</BodyText>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }} className="mb-12">
         <SectionTitle icon="🔒">Privacy Assurance</SectionTitle>
         <BodyText>The Privacy Assurance is sacred to the thrival and harmony of every co-creator in the Heartlight Exchange. Letters, personal stories, and creative details stay held within the sacred container shared by the receiver and their chosen Co-Creator. Consent governs every moment of sharing before, during, and after the exchange.</BodyText>
         <div className="mt-4">
@@ -169,7 +205,7 @@ export default function Charter() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 }} className="mb-12">
         <SectionTitle icon="💎">The 12 Codes of ALL</SectionTitle>
         <BodyText>The 12 Codes of ALL are the living values that Atlas Island and the Heartlight Exchange uphold. Each Code is held by a Ray frequency and carries its own mantra of practice.</BodyText>
         <div className="mt-4">
@@ -177,12 +213,12 @@ export default function Charter() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 }} className="mb-12">
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.4 }} className="mb-12">
         <SectionTitle icon="✨">Stewardship</SectionTitle>
         <BodyText>A small circle of Stewards holds the directory, Codes, scholarships, seasonal announcements, and gentle conflict resolution through care and clarity.</BodyText>
       </motion.section>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }} className="text-center py-8 max-w-xl mx-auto">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.5 }} className="text-center py-8 max-w-xl mx-auto">
         <p className="font-serif italic text-lavender/50 mb-6 leading-relaxed">Join the Heartlight Exchange to share your Core Energetic Signature. Let's make our dreams and wishes come true!</p>
         <Link to="/exchange" className="inline-block px-8 py-3 rounded-full border border-gold-400/40 text-gold-300 hover:bg-gold-400/10 transition-all font-serif">Create Your Core Energetic Signature</Link>
       </motion.div>
