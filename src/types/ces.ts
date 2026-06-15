@@ -424,7 +424,7 @@ export type ExchangeJourneyStatus =
   | 'complete'
   | 'adapted';
 
-export type JourneyPhase = 'before' | 'during' | 'after';
+export type JourneyPhase = 'before' | 'quests' | 'during' | 'after';
 
 export interface CodeLogEntry {
   id: string;

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine } from 'lucide-react'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
-import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney } from '../../types/ces'
+import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion } from '../../types/ces'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 
 const EXCHANGE_ROLES: ExchangeRole[] = [
@@ -56,8 +56,16 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
 
   const latestVersion = agreement.versions[agreement.versions.length - 1]
   const isProposed = agreement.status === 'proposed'
-  const isAgreed = agreement.status === 'agreed'
+  const isAgreed = agreement.status === 'agreed' || agreement.status === 'active'
   const bothConsented = agreement.requesterConsented && agreement.providerConsented
+  const isParty = isRequester(currentCes) || isProvider(currentCes)
+  const pendingUpdate = agreement.pendingUpdate
+  const hasPendingUpdate = Boolean(pendingUpdate)
+  const isPendingApprover = pendingUpdate ? !pendingUpdate.approvedBy.includes(currentCes) : false
+
+  const [amendMode, setAmendMode] = useState(false)
+  const [amendSummary, setAmendSummary] = useState('')
+  const [amendNote, setAmendNote] = useState('')
 
   const vendor = useMemo(() => (agreement.vendorId ? findVendorById(agreement.vendorId) : undefined), [agreement.vendorId, findVendorById])
   const enabledPaymentMethods = useMemo(
@@ -156,8 +164,117 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     updateExchangeAgreement(next)
   }
 
+  function handleProposeAmendment() {
+    if (!agreement.mainQuest.title.trim()) {
+      setError('The main quest needs a title so both beings know what is being co-created.')
+      return
+    }
+    if (!amendSummary.trim()) {
+      setError('Please describe what is changing in this amendment.')
+      return
+    }
+
+    const now = new Date().toISOString()
+    const previousVersion = latestVersion?.version ?? 0
+    const version: AgreementVersion = {
+      version: previousVersion + 1,
+      updatedAt: now,
+      updatedByCes: currentCes,
+      updatedByName: user?.name || 'Unknown being',
+      changeSummary: amendSummary.trim(),
+      approvedBy: [currentCes],
+    }
+
+    const next: ExchangeAgreement = {
+      ...agreement,
+      status: 'proposed',
+      pendingUpdate: version,
+      updatedAt: now,
+    }
+
+    setAgreement(next)
+    updateExchangeAgreement(next)
+    setAmendMode(false)
+    setAmendSummary('')
+    setAmendNote('')
+  }
+
+  function handleApproveAmendment() {
+    if (!pendingUpdate) return
+    const now = new Date().toISOString()
+    const approvedBy = Array.from(new Set([...pendingUpdate.approvedBy, currentCes]))
+    const otherCes = isRequester(currentCes) ? agreement.providerCes : agreement.requesterCes
+    const fullyApproved = approvedBy.includes(agreement.requesterCes) && approvedBy.includes(agreement.providerCes)
+
+    if (!fullyApproved) {
+      // Partial approval: just update pendingUpdate approvedBy
+      const next: ExchangeAgreement = {
+        ...agreement,
+        pendingUpdate: { ...pendingUpdate, approvedBy },
+        updatedAt: now,
+      }
+      setAgreement(next)
+      updateExchangeAgreement(next)
+      return
+    }
+
+    // Fully approved: copy pendingUpdate into versions, clear pendingUpdate, restore active
+    const next: ExchangeAgreement = {
+      ...agreement,
+      status: 'active',
+      versions: [...agreement.versions, { ...pendingUpdate, approvedBy }],
+      pendingUpdate: undefined,
+      updatedAt: now,
+    }
+
+    setAgreement(next)
+    updateExchangeAgreement(next)
+
+    // Sync updated quests to linked journey
+    try {
+      const raw = localStorage.getItem('hlc_exchange_journeys') || '[]'
+      const journeys: ExchangeJourney[] = JSON.parse(raw)
+      const nextJourneys = journeys.map((j) => {
+        if (j.agreementId !== agreement.id) return j
+        return {
+          ...j,
+          mainQuest: agreement.mainQuest,
+          sideQuests: agreement.sideQuests,
+          updatedAt: now,
+        }
+      })
+      localStorage.setItem('hlc_exchange_journeys', JSON.stringify(nextJourneys))
+    } catch (err) {
+      console.warn('Failed to sync amendment to journey:', err)
+    }
+  }
+
+  function handleEditAndResubmitAmendment() {
+    if (!pendingUpdate || !amendSummary.trim()) {
+      setError('Please update the change summary before resubmitting.')
+      return
+    }
+    const now = new Date().toISOString()
+    const version: AgreementVersion = {
+      ...pendingUpdate,
+      updatedAt: now,
+      updatedByCes: currentCes,
+      updatedByName: user?.name || 'Unknown being',
+      changeSummary: amendSummary.trim(),
+      approvedBy: [currentCes],
+    }
+    const next: ExchangeAgreement = {
+      ...agreement,
+      pendingUpdate: version,
+      updatedAt: now,
+    }
+    setAgreement(next)
+    updateExchangeAgreement(next)
+    setAmendMode(false)
+    setAmendSummary('')
+  }
+
   function handleRequestChanges() {
-    // Mark provider has not consented and keep status proposed.
     const now = new Date().toISOString()
     const next: ExchangeAgreement = {
       ...agreement,
@@ -167,7 +284,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     }
     setAgreement(next)
     updateExchangeAgreement(next)
-    alert('The provider has requested changes. The requester can refine the proposal.')
+    alert('Changes requested. The proposing being can refine the amendment and resubmit.')
   }
 
   function persistJourneyLocally(journey: ExchangeJourney) {
@@ -454,91 +571,248 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-lavender/10">
-          {!isProposed ? (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-lavender/10 bg-void-800/30 p-3">
-                <label className="text-xs text-lavender/50 mb-1 block">Change Summary (optional)</label>
-                <input
-                  value={changeSummary}
-                  onChange={(e) => setChangeSummary(e.target.value)}
-                  placeholder="Briefly describe what changed in this proposal"
-                  className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                />
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handlePropose}
-                className="w-full py-3.5 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center justify-center gap-2"
-              >
-                <ArrowRight className="w-4 h-4" /> Propose Agreement
-              </motion.button>
-              <p className="text-xs text-lavender/40 text-center">
-                Proposing records version 1 and signals your initial consent as requester.
-              </p>
+        {/* Version ledger */}
+        {agreement.versions.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-lavender/10">
+            <h4 className="text-xs uppercase tracking-widest text-lavender/40 font-sans mb-3 flex items-center gap-2">
+              <ScrollText className="w-3.5 h-3.5" /> Agreement Update Ledger
+            </h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {agreement.versions.map((v) => (
+                <div
+                  key={v.version}
+                  className="rounded-lg border border-lavender/10 bg-void-800/30 p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-cream font-medium">Version {v.version}</span>
+                    <span className="text-[10px] text-lavender/40">{new Date(v.updatedAt).toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-lavender/60 mb-2">{v.changeSummary}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] text-lavender/40">by {v.updatedByName}</span>
+                    {v.approvedBy.includes(agreement.requesterCes) && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-400/10 text-green-300 border border-green-400/20">Requester approved</span>
+                    )}
+                    {v.approvedBy.includes(agreement.providerCes) && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-400/10 text-blue-300 border border-blue-400/20">Provider approved</span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <ConsentBadge
-                  label="Requester"
-                  consented={agreement.requesterConsented}
-                  name={agreement.requesterName}
-                />
-                <ConsentBadge
-                  label="Provider"
-                  consented={agreement.providerConsented}
-                  name={agreement.providerName}
-                />
-              </div>
+          </div>
+        )}
 
-              {isProvider(currentCes) && !agreement.providerConsented && (
-                <>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleApproveConsent}
-                    className="w-full py-3.5 rounded-xl bg-green-400/10 border border-green-400/30 text-green-300 hover:bg-green-400/20 transition-all inline-flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" /> Approve & Consent
-                  </motion.button>
-                  <button
-                    onClick={handleRequestChanges}
-                    className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
-                  >
-                    Request Changes
-                  </button>
-                </>
-              )}
-
-              {isProvider(currentCes) && agreement.providerConsented && (
-                <p className="text-center text-xs text-green-400 flex items-center justify-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> You have consented. Awaiting the requester to sign.
-                </p>
-              )}
-
-              {bothConsented && isRequester(currentCes) && (
+        <div className="mt-8 pt-6 border-t border-lavender/10">
+          {/* Initial proposal / consent / sign flow */}
+          {!isAgreed ? (
+            !isProposed ? (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-lavender/10 bg-void-800/30 p-3">
+                  <label className="text-xs text-lavender/50 mb-1 block">Change Summary (optional)</label>
+                  <input
+                    value={changeSummary}
+                    onChange={(e) => setChangeSummary(e.target.value)}
+                    placeholder="Briefly describe what changed in this proposal"
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={handleSign}
-                  className="w-full py-3.5 rounded-xl bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center justify-center gap-2"
+                  onClick={handlePropose}
+                  className="w-full py-3.5 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center justify-center gap-2"
                 >
-                  <FileSignature className="w-4 h-4" /> Sign Agreement & Begin Journey
+                  <ArrowRight className="w-4 h-4" /> Propose Agreement
                 </motion.button>
+                <p className="text-xs text-lavender/40 text-center">
+                  Proposing records version 1 and signals your initial consent as requester.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-4 mb-4">
+                  <ConsentBadge
+                    label="Requester"
+                    consented={agreement.requesterConsented}
+                    name={agreement.requesterName}
+                  />
+                  <ConsentBadge
+                    label="Provider"
+                    consented={agreement.providerConsented}
+                    name={agreement.providerName}
+                  />
+                </div>
+
+                {isProvider(currentCes) && !agreement.providerConsented && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleApproveConsent}
+                      className="w-full py-3.5 rounded-xl bg-green-400/10 border border-green-400/30 text-green-300 hover:bg-green-400/20 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle className="w-4 h-4" /> Approve & Consent
+                    </motion.button>
+                    <button
+                      onClick={handleRequestChanges}
+                      className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
+                    >
+                      Request Changes
+                    </button>
+                  </>
+                )}
+
+                {isProvider(currentCes) && agreement.providerConsented && (
+                  <p className="text-center text-xs text-green-400 flex items-center justify-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> You have consented. Awaiting the requester to sign.
+                  </p>
+                )}
+
+                {bothConsented && isRequester(currentCes) && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSign}
+                    className="w-full py-3.5 rounded-xl bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center justify-center gap-2"
+                  >
+                    <FileSignature className="w-4 h-4" /> Sign Agreement & Begin Journey
+                  </motion.button>
+                )}
+
+                {bothConsented && !isRequester(currentCes) && (
+                  <p className="text-center text-xs text-lavender/50">
+                    Both beings have consented. The requester may now sign and begin the journey.
+                  </p>
+                )}
+
+                {!isProvider(currentCes) && !isRequester(currentCes) && (
+                  <p className="text-center text-xs text-lavender/50">
+                    You are viewing this agreement as a witness.
+                  </p>
+                )}
+              </div>
+            )
+          ) : (
+            /* Active / agreed agreement: amendment flow */
+            <div className="space-y-3">
+              {hasPendingUpdate && (
+                <div className="rounded-lg border border-gold-400/20 bg-gold-400/5 p-3 mb-3">
+                  <p className="text-sm text-gold-300 mb-1 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" /> Amendment pending approval
+                  </p>
+                  <p className="text-xs text-lavender/60 mb-2">{pendingUpdate!.changeSummary}</p>
+                  <p className="text-xs text-lavender/40">
+                    Proposed by {pendingUpdate!.updatedByName} on {new Date(pendingUpdate!.updatedAt).toLocaleString()}
+                  </p>
+                </div>
               )}
 
-              {bothConsented && !isRequester(currentCes) && (
-                <p className="text-center text-xs text-lavender/50">
-                  Both beings have consented. The requester may now sign and begin the journey.
-                </p>
-              )}
+              {amendMode ? (
+                <>
+                  <div className="rounded-lg border border-lavender/10 bg-void-800/30 p-3">
+                    <label className="text-xs text-lavender/50 mb-1 block">Amendment Summary *</label>
+                    <textarea
+                      value={amendSummary}
+                      onChange={(e) => setAmendSummary(e.target.value)}
+                      placeholder="What is changing in this amendment?"
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none mb-2"
+                    />
+                    <label className="text-xs text-lavender/50 mb-1 block">Note for co-creator (optional)</label>
+                    <input
+                      value={amendNote}
+                      onChange={(e) => setAmendNote(e.target.value)}
+                      placeholder="Any context for the other being..."
+                      className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  {hasPendingUpdate ? (
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleEditAndResubmitAmendment}
+                        className="w-full py-3.5 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center justify-center gap-2"
+                      >
+                        <ArrowRight className="w-4 h-4" /> Edit & Resubmit Amendment
+                      </motion.button>
+                      <button
+                        onClick={() => setAmendMode(false)}
+                        className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleProposeAmendment}
+                        className="w-full py-3.5 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center justify-center gap-2"
+                      >
+                        <ArrowRight className="w-4 h-4" /> Propose Amendment
+                      </motion.button>
+                      <button
+                        onClick={() => setAmendMode(false)}
+                        className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isParty && !hasPendingUpdate && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setAmendMode(true)}
+                      className="w-full py-3.5 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center justify-center gap-2"
+                    >
+                      <PenLine className="w-4 h-4" /> Propose Amendment
+                    </motion.button>
+                  )}
 
-              {!isProvider(currentCes) && !isRequester(currentCes) && (
-                <p className="text-center text-xs text-lavender/50">
-                  You are viewing this agreement as a witness.
-                </p>
+                  {isParty && hasPendingUpdate && isPendingApprover && (
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleApproveAmendment}
+                        className="w-full py-3.5 rounded-xl bg-green-400/10 border border-green-400/30 text-green-300 hover:bg-green-400/20 transition-all inline-flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Approve & Apply Amendment
+                      </motion.button>
+                      <button
+                        onClick={() => setAmendMode(true)}
+                        className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
+                      >
+                        Edit & Resubmit
+                      </button>
+                      <button
+                        onClick={handleRequestChanges}
+                        className="w-full py-3 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all"
+                      >
+                        Request Changes
+                      </button>
+                    </>
+                  )}
+
+                  {isParty && hasPendingUpdate && !isPendingApprover && (
+                    <p className="text-center text-xs text-gold-400 flex items-center justify-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> You approved this amendment. Awaiting the other being.
+                    </p>
+                  )}
+
+                  {!isParty && (
+                    <p className="text-center text-xs text-lavender/50">
+                      You are viewing this agreement as a witness.
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
