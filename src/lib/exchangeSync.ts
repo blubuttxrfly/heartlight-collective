@@ -1,0 +1,578 @@
+// ─────────────────────────────────────────────────────────────
+//  Heartlight Collective — Supabase Sync Layer for Exchange Entities
+//  Open collective transparency by default; privacy assured by sovereign beings.
+//  Dual-mode: localStorage is the cache; Supabase is the shared collective memory.
+// ─────────────────────────────────────────────────────────────
+
+import { supabase, isSupabaseConfigured } from './supabase';
+import type {
+  ExchangeAgreement,
+  ExchangeRequest,
+  ExchangeCalendar,
+  VendorRecord,
+  VendorInvite,
+  VendorJoinRequest,
+  CollectivePetition,
+  ExchangeAlert,
+  AgreementRecord,
+  Wish,
+} from '../types/ces';
+
+export type ExchangeEntityKey =
+  | 'exchangeAgreements'
+  | 'exchangeRequests'
+  | 'vendors'
+  | 'vendorInvites'
+  | 'vendorJoinRequests'
+  | 'collectivePetitions'
+  | 'exchangeAlerts'
+  | 'agreements'
+  | 'exchangeCalendars'
+  | 'wishes';
+
+/* ═══════════════════════════════════════════════════════════════
+   Row mappers: app entity ↔ Supabase row
+   ═══════════════════════════════════════════════════════════════ */
+
+export function exchangeAgreementToRow(ag: ExchangeAgreement): Record<string, unknown> {
+  return {
+    id: ag.id,
+    offering_id: ag.offeringId || null,
+    vendor_id: ag.vendorId || null,
+    wish_id: ag.wishId || null,
+    requester_ces: ag.requesterCes,
+    requester_name: ag.requesterName,
+    provider_ces: ag.providerCes,
+    provider_name: ag.providerName,
+    message: ag.message,
+    requester_role: ag.requesterRole,
+    provider_role: ag.providerRole,
+    parties: ag.parties || [],
+    main_quest: ag.mainQuest,
+    main_quest_directive: ag.mainQuestDirective || null,
+    main_quests: ag.mainQuests || null,
+    side_quests: ag.sideQuests,
+    proposed_price_cents: ag.proposedPriceCents ?? null,
+    agreed_price_cents: ag.agreedPriceCents ?? null,
+    payment_method: ag.paymentMethod || null,
+    communication_prefs: ag.communicationPrefs || '',
+    scheduled_meetings: ag.scheduledMeetings || [],
+    status: ag.status,
+    requester_consented: ag.requesterConsented,
+    provider_consented: ag.providerConsented,
+    collective_funding_requested: ag.collectiveFundingRequested,
+    collective_funding_approved: ag.collectiveFundingApproved ?? null,
+    safety_reports: ag.safetyReports || null,
+    versions: ag.versions || [],
+    pending_update: ag.pendingUpdate || null,
+    created_at: ag.createdAt,
+    updated_at: ag.updatedAt,
+  };
+}
+
+export function rowToExchangeAgreement(row: any): ExchangeAgreement {
+  return {
+    id: String(row.id),
+    offeringId: row.offering_id || undefined,
+    vendorId: row.vendor_id || undefined,
+    wishId: row.wish_id || undefined,
+    requesterCes: String(row.requester_ces),
+    requesterName: String(row.requester_name),
+    providerCes: String(row.provider_ces),
+    providerName: String(row.provider_name),
+    message: String(row.message || ''),
+    requesterRole: String(row.requester_role) as ExchangeAgreement['requesterRole'],
+    providerRole: String(row.provider_role) as ExchangeAgreement['providerRole'],
+    parties: Array.isArray(row.parties) ? row.parties : undefined,
+    mainQuest: row.main_quest,
+    mainQuestDirective: row.main_quest_directive || undefined,
+    mainQuests: row.main_quests || undefined,
+    sideQuests: Array.isArray(row.side_quests) ? row.side_quests : [],
+    proposedPriceCents: row.proposed_price_cents ?? undefined,
+    agreedPriceCents: row.agreed_price_cents ?? undefined,
+    paymentMethod: row.payment_method || undefined,
+    communicationPrefs: row.communication_prefs || undefined,
+    scheduledMeetings: Array.isArray(row.scheduled_meetings) ? row.scheduled_meetings : [],
+    status: String(row.status) as ExchangeAgreement['status'],
+    requesterConsented: Boolean(row.requester_consented),
+    providerConsented: Boolean(row.provider_consented),
+    collectiveFundingRequested: Boolean(row.collective_funding_requested),
+    collectiveFundingApproved: row.collective_funding_approved ?? undefined,
+    safetyReports: row.safety_reports || undefined,
+    versions: Array.isArray(row.versions) ? row.versions : [],
+    pendingUpdate: row.pending_update || undefined,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function exchangeCalendarToRow(cal: ExchangeCalendar): Record<string, unknown> {
+  return {
+    ces: cal.ces,
+    availability_blocks: cal.availabilityBlocks || [],
+    scheduled_meetings: cal.scheduledMeetings || [],
+    updated_at: cal.updatedAt,
+    created_at: new Date().toISOString(),
+  };
+}
+
+export function rowToExchangeCalendar(row: any): ExchangeCalendar {
+  return {
+    ces: String(row.ces),
+    availabilityBlocks: Array.isArray(row.availability_blocks) ? row.availability_blocks : [],
+    scheduledMeetings: Array.isArray(row.scheduled_meetings) ? row.scheduled_meetings : [],
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function vendorToRow(v: VendorRecord): Record<string, unknown> {
+  return {
+    id: v.id,
+    name: v.name,
+    slug: v.slug,
+    description: v.description,
+    logo_url: v.logoUrl || null,
+    owner_ces: v.ownerCes,
+    owner_name: v.ownerName,
+    members: v.members || [],
+    payment_methods: v.paymentMethods || [],
+    status: v.status,
+    collective_funded: v.collectiveFunded,
+    created_at: v.createdAt,
+    updated_at: v.updatedAt,
+  };
+}
+
+export function rowToVendor(row: any): VendorRecord {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    slug: String(row.slug),
+    description: String(row.description || ''),
+    logoUrl: row.logo_url || undefined,
+    ownerCes: String(row.owner_ces),
+    ownerName: String(row.owner_name),
+    members: Array.isArray(row.members) ? row.members : [],
+    offerings: [], // offerings are stored in separate table; merged later
+    paymentMethods: Array.isArray(row.payment_methods) ? row.payment_methods : [],
+    status: String(row.status) as VendorRecord['status'],
+    collectiveFunded: Boolean(row.collective_funded),
+    joinRequests: [], // joined separately
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function exchangeAlertToRow(a: ExchangeAlert): Record<string, unknown> {
+  return {
+    id: a.id,
+    exchange_id: a.exchangeId,
+    exchange_title: a.exchangeTitle,
+    type: a.type,
+    from_ces: a.fromCes,
+    from_name: a.fromName,
+    to_ces: a.toCes || null,
+    message: a.message,
+    status: a.status,
+    created_at: a.createdAt,
+    reviewed_by: a.reviewedBy || null,
+    reviewed_at: a.reviewedAt || null,
+    metadata: a.metadata || null,
+  };
+}
+
+export function rowToExchangeAlert(row: any): ExchangeAlert {
+  return {
+    id: String(row.id),
+    exchangeId: String(row.exchange_id),
+    exchangeTitle: String(row.exchange_title),
+    type: String(row.type) as ExchangeAlert['type'],
+    fromCes: String(row.from_ces),
+    fromName: String(row.from_name),
+    toCes: row.to_ces || undefined,
+    message: String(row.message),
+    status: String(row.status) as ExchangeAlert['status'],
+    createdAt: String(row.created_at),
+    reviewedBy: row.reviewed_by || undefined,
+    reviewedAt: row.reviewed_at || undefined,
+    metadata: row.metadata || undefined,
+  };
+}
+
+export function vendorInviteToRow(i: VendorInvite): Record<string, unknown> {
+  return {
+    id: i.id,
+    vendor_id: i.vendorId,
+    vendor_name: i.vendorName,
+    invited_by_ces: i.invitedByCes,
+    invited_by_name: i.invitedByName,
+    invitee_ces: i.inviteeCes,
+    invitee_name: i.inviteeName,
+    role: i.role,
+    message: i.message || null,
+    status: i.status,
+    created_at: i.createdAt,
+    responded_at: i.respondedAt || null,
+  };
+}
+
+export function rowToVendorInvite(row: any): VendorInvite {
+  return {
+    id: String(row.id),
+    vendorId: String(row.vendor_id),
+    vendorName: String(row.vendor_name),
+    invitedByCes: String(row.invited_by_ces),
+    invitedByName: String(row.invited_by_name),
+    inviteeCes: String(row.invitee_ces),
+    inviteeName: String(row.invitee_name),
+    role: String(row.role) as VendorInvite['role'],
+    message: row.message || undefined,
+    status: String(row.status) as VendorInvite['status'],
+    createdAt: String(row.created_at),
+    respondedAt: row.responded_at || undefined,
+  };
+}
+
+export function vendorJoinRequestToRow(r: VendorJoinRequest): Record<string, unknown> {
+  return {
+    id: r.id,
+    vendor_id: r.vendorId,
+    requester_ces: r.requesterCes,
+    requester_name: r.requesterName,
+    message: r.message || null,
+    status: r.status,
+    requested_at: r.requestedAt,
+    responded_at: r.respondedAt || null,
+    responded_by_ces: r.respondedByCes || null,
+  };
+}
+
+export function rowToVendorJoinRequest(row: any): VendorJoinRequest {
+  return {
+    id: String(row.id),
+    vendorId: String(row.vendor_id),
+    requesterCes: String(row.requester_ces),
+    requesterName: String(row.requester_name),
+    message: row.message || undefined,
+    status: String(row.status) as VendorJoinRequest['status'],
+    requestedAt: String(row.requested_at),
+    respondedAt: row.responded_at || undefined,
+    respondedByCes: row.responded_by_ces || undefined,
+  };
+}
+
+export function collectivePetitionToRow(p: CollectivePetition): Record<string, unknown> {
+  return {
+    id: p.id,
+    exchange_request_id: p.exchangeRequestId,
+    requester_ces: p.requesterCes,
+    requester_name: p.requesterName,
+    provider_ces: p.providerCes,
+    provider_name: p.providerName,
+    offering_title: p.offeringTitle,
+    amount_cents: p.amountCents,
+    message: p.message,
+    status: p.status,
+    steward_notes: p.stewardNotes || null,
+    reviewed_by_ces: p.reviewedByCes || null,
+    reviewed_by_name: p.reviewedByName || null,
+    created_at: p.createdAt,
+    reviewed_at: p.reviewedAt || null,
+    funded_at: p.fundedAt || null,
+  };
+}
+
+export function rowToCollectivePetition(row: any): CollectivePetition {
+  return {
+    id: String(row.id),
+    exchangeRequestId: String(row.exchange_request_id),
+    requesterCes: String(row.requester_ces),
+    requesterName: String(row.requester_name),
+    providerCes: String(row.provider_ces),
+    providerName: String(row.provider_name),
+    offeringTitle: String(row.offering_title),
+    amountCents: Number(row.amount_cents),
+    message: String(row.message),
+    status: String(row.status) as CollectivePetition['status'],
+    stewardNotes: row.steward_notes || undefined,
+    reviewedByCes: row.reviewed_by_ces || undefined,
+    reviewedByName: row.reviewed_by_name || undefined,
+    createdAt: String(row.created_at),
+    reviewedAt: row.reviewed_at || undefined,
+    fundedAt: row.funded_at || undefined,
+  };
+}
+
+export function exchangeRequestToRow(r: ExchangeRequest): Record<string, unknown> {
+  return {
+    id: r.id,
+    offering_id: r.offeringId,
+    vendor_id: r.vendorId,
+    requester_ces: r.requesterCes,
+    requester_name: r.requesterName,
+    provider_ces: r.providerCes,
+    provider_name: r.providerName,
+    message: r.message,
+    price_type: r.priceType,
+    payment_method: r.paymentMethod || null,
+    status: r.status,
+    collective_petition_id: r.collectivePetitionId || null,
+    consent_acknowledged: r.consentAcknowledged,
+    created_at: r.createdAt,
+    updated_at: r.updatedAt,
+  };
+}
+
+export function rowToExchangeRequest(row: any): ExchangeRequest {
+  return {
+    id: String(row.id),
+    offeringId: String(row.offering_id),
+    vendorId: String(row.vendor_id),
+    requesterCes: String(row.requester_ces),
+    requesterName: String(row.requester_name),
+    providerCes: String(row.provider_ces),
+    providerName: String(row.provider_name),
+    message: String(row.message),
+    priceType: String(row.price_type) as ExchangeRequest['priceType'],
+    paymentMethod: row.payment_method || undefined,
+    status: String(row.status) as ExchangeRequest['status'],
+    collectivePetitionId: row.collective_petition_id || undefined,
+    consentAcknowledged: Boolean(row.consent_acknowledged),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function wishToRow(w: Wish): Record<string, unknown> {
+  const anyWish = w as any;
+  return {
+    id: w.id,
+    type: anyWish.type || 'wish',
+    title: w.title,
+    description: w.description,
+    author_ces: anyWish.postedByCes || anyWish.authorCes || anyWish.wishingCes || 'unknown',
+    author_name: anyWish.postedByName || anyWish.authorName || anyWish.wishingName || 'Atlas Island Being',
+    scope: anyWish.scope || 'universal',
+    category: w.category || null,
+    tags: anyWish.skills?.length ? anyWish.skills : [],
+    location: anyWish.location || null,
+    lat: anyWish.locationData?.lat ?? null,
+    lng: anyWish.locationData?.lon ?? null,
+    price_cents: anyWish.fundsRequired || null,
+    price_type: anyWish.priceType || null,
+    payment_method: anyWish.paymentMethod || null,
+    images: anyWish.images || [],
+    status: w.status || 'open',
+    claimed_by_ces: w.claimedByCes || null,
+    claimed_by_name: w.claimedByName || null,
+    collective_funding_requested: anyWish.exchangeAvenue === 'collective' || anyWish.collectiveFundingRequested || false,
+    created_at: w.createdAt,
+    updated_at: w.updatedAt,
+  };
+}
+
+export function rowToWish(row: any): Wish {
+  return {
+    id: String(row.id),
+    wishingCes: String(row.author_ces || 'unknown'),
+    wishingName: String(row.author_name || 'Atlas Island Being'),
+    title: String(row.title),
+    description: String(row.description || ''),
+    category: row.category ? String(row.category) : ('' as Wish['category']),
+    urgency: String(row.urgency || 'low') as Wish['urgency'],
+    status: String(row.status || 'open') as Wish['status'],
+    selectedCodes: row.selected_codes || [],
+    claimedByCes: row.claimed_by_ces || undefined,
+    claimedByName: row.claimed_by_name || undefined,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+    // Extended fields used by PostWish / Exchange pages
+    type: String(row.type || 'wish'),
+    postedByCes: String(row.author_ces || 'unknown'),
+    postedByName: String(row.author_name || 'Atlas Island Being'),
+    scope: String(row.scope || 'universal'),
+    skills: row.tags || [],
+    resources: row.resources || [],
+    roles: row.roles || [],
+    images: row.images || [],
+    location: row.location || '',
+    locationData: row.lat && row.lng ? { raw: row.location || '', lat: row.lat, lon: row.lng, city: null, region: null, country: null, continent: null } : (row.location_data || null),
+    exchangeAvenue: row.collective_funding_requested ? 'collective' : 'direct',
+    fundsRequired: row.price_cents || undefined,
+    timeCommitment: row.time_commitment || '',
+    isContinualOffering: row.type === 'offer' && row.is_continual_offering,
+  } as unknown as Wish;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Sync operations
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface SyncResult<T> {
+  success: boolean;
+  error?: string;
+  data?: T;
+}
+
+function log(op: string, msg: string) {
+  console.log(`[ExchangeSync] ${op}: ${msg}`);
+}
+
+async function upsert(table: string, row: Record<string, unknown>): Promise<SyncResult<null>> {
+  if (!isSupabaseConfigured()) return { success: true };
+  try {
+    const { error } = await supabase.from(table).upsert(row, { onConflict: 'id' });
+    if (error) {
+      log('upsert', `${table} failed: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+    log('upsert', `${table} succeeded for ${row.id}`);
+    return { success: true };
+  } catch (err: any) {
+    log('upsert', `${table} exception: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+}
+
+async function removeById(table: string, id: string): Promise<SyncResult<null>> {
+  if (!isSupabaseConfigured()) return { success: true };
+  try {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) {
+      log('delete', `${table} failed: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+    log('delete', `${table} removed ${id}`);
+    return { success: true };
+  } catch (err: any) {
+    log('delete', `${table} exception: ${err.message}`);
+    return { success: false, error: err.message };
+  }
+}
+
+async function fetchAll<T>(table: string, mapper: (row: any) => T): Promise<T[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data, error } = await supabase.from(table).select('*');
+    if (error) {
+      log('fetch', `${table} failed: ${error.message}`);
+      return [];
+    }
+    return (data || []).map(mapper);
+  } catch (err: any) {
+    log('fetch', `${table} exception: ${err.message}`);
+    return [];
+  }
+}
+
+export async function syncExchangeAgreement(ag: ExchangeAgreement) {
+  return upsert('exchange_agreements', exchangeAgreementToRow(ag));
+}
+
+export async function deleteExchangeAgreement(id: string) {
+  return removeById('exchange_agreements', id);
+}
+
+export async function syncExchangeCalendar(cal: ExchangeCalendar) {
+  return upsert('exchange_calendars', exchangeCalendarToRow(cal));
+}
+
+export async function syncVendor(v: VendorRecord) {
+  return upsert('vendors', vendorToRow(v));
+}
+
+export async function deleteVendor(id: string) {
+  return removeById('vendors', id);
+}
+
+export async function syncExchangeAlert(a: ExchangeAlert) {
+  return upsert('exchange_alerts', exchangeAlertToRow(a));
+}
+
+export async function syncVendorInvite(i: VendorInvite) {
+  return upsert('vendor_invites', vendorInviteToRow(i));
+}
+
+export async function syncVendorJoinRequest(r: VendorJoinRequest) {
+  return upsert('vendor_join_requests', vendorJoinRequestToRow(r));
+}
+
+export async function syncCollectivePetition(p: CollectivePetition) {
+  return upsert('collective_petitions', collectivePetitionToRow(p));
+}
+
+export async function syncExchangeRequest(r: ExchangeRequest) {
+  return upsert('exchange_requests', exchangeRequestToRow(r));
+}
+
+export async function syncWish(w: Wish | Record<string, unknown>) {
+  return upsert('wishes', wishToRow(w as Wish));
+}
+
+export async function deleteWish(id: string) {
+  return removeById('wishes', id);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Hydration: pull collective memory from Supabase into localStorage shape
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface HydratedExchangeState {
+  exchangeAgreements: ExchangeAgreement[];
+  exchangeRequests: ExchangeRequest[];
+  vendors: VendorRecord[];
+  vendorInvites: VendorInvite[];
+  vendorJoinRequests: VendorJoinRequest[];
+  collectivePetitions: CollectivePetition[];
+  exchangeAlerts: ExchangeAlert[];
+  exchangeCalendars: ExchangeCalendar[];
+  wishes: Wish[];
+}
+
+export async function hydrateExchangeState(requireSession = false): Promise<Partial<HydratedExchangeState>> {
+  if (!isSupabaseConfigured()) {
+    log('hydrate', 'Supabase not configured; using localStorage only');
+    return {};
+  }
+  if (requireSession) {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      log('hydrate', 'No active session; skipping Supabase hydration');
+      return {};
+    }
+  }
+  log('hydrate', 'Pulling collective exchange memory from Supabase...');
+  const [
+    exchangeAgreements,
+    exchangeRequests,
+    vendors,
+    vendorInvites,
+    vendorJoinRequests,
+    collectivePetitions,
+    exchangeAlerts,
+    exchangeCalendars,
+    wishes,
+  ] = await Promise.all([
+    fetchAll('exchange_agreements', rowToExchangeAgreement),
+    fetchAll('exchange_requests', rowToExchangeRequest),
+    fetchAll('vendors', rowToVendor),
+    fetchAll('vendor_invites', rowToVendorInvite),
+    fetchAll('vendor_join_requests', rowToVendorJoinRequest),
+    fetchAll('collective_petitions', rowToCollectivePetition),
+    fetchAll('exchange_alerts', rowToExchangeAlert),
+    fetchAll('exchange_calendars', rowToExchangeCalendar),
+    fetchAll('wishes', rowToWish),
+  ]);
+  log('hydrate', `Loaded: ${exchangeAgreements.length} agreements, ${vendors.length} vendors, ${exchangeCalendars.length} calendars, ${wishes.length} wishes`);
+  return {
+    exchangeAgreements,
+    exchangeRequests,
+    vendors,
+    vendorInvites,
+    vendorJoinRequests,
+    collectivePetitions,
+    exchangeAlerts,
+    exchangeCalendars,
+    wishes,
+  };
+}

@@ -7,6 +7,18 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert } from '../types/ces';
 import { seedDevData } from './seedData';
+import {
+  syncVendor,
+  deleteVendor,
+  syncExchangeAgreement,
+  syncExchangeRequest,
+  syncVendorInvite,
+  syncVendorJoinRequest,
+  syncCollectivePetition,
+  syncExchangeAlert,
+  syncExchangeCalendar,
+  hydrateExchangeState,
+} from './exchangeSync';
 
 const STORAGE_PREFIX = 'hlc_';
 
@@ -169,6 +181,43 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     return seeded;
   });
 
+  // Hydrate from Supabase on mount (open collective transparency)
+  useEffect(() => {
+    hydrateExchangeState(true).then((hydrated) => {
+      if (!hydrated || Object.keys(hydrated).length === 0) return;
+
+      // Merge non-localStorage entities into StorageProvider state
+      setState((prev) => ({
+        ...prev,
+        exchangeAgreements: hydrated.exchangeAgreements?.length ? hydrated.exchangeAgreements : prev.exchangeAgreements,
+        exchangeRequests: hydrated.exchangeRequests?.length ? hydrated.exchangeRequests : prev.exchangeRequests,
+        vendors: hydrated.vendors?.length ? hydrated.vendors : prev.vendors,
+        vendorInvites: hydrated.vendorInvites?.length ? hydrated.vendorInvites : prev.vendorInvites,
+        vendorJoinRequests: hydrated.vendorJoinRequests?.length ? hydrated.vendorJoinRequests : prev.vendorJoinRequests,
+        collectivePetitions: hydrated.collectivePetitions?.length ? hydrated.collectivePetitions : prev.collectivePetitions,
+        exchangeAlerts: hydrated.exchangeAlerts?.length ? hydrated.exchangeAlerts : prev.exchangeAlerts,
+      }));
+
+      // Calendars live in their own localStorage key
+      if (hydrated.exchangeCalendars?.length) {
+        try {
+          localStorage.setItem('hlc_exchange_calendars', JSON.stringify(hydrated.exchangeCalendars));
+        } catch (err) {
+          console.warn('Failed to hydrate calendars to localStorage:', err);
+        }
+      }
+
+      // Wishes live in their own localStorage key
+      if (hydrated.wishes?.length) {
+        try {
+          localStorage.setItem('hlw_wishes', JSON.stringify(hydrated.wishes));
+        } catch (err) {
+          console.warn('Failed to hydrate wishes to localStorage:', err);
+        }
+      }
+    });
+  }, []);
+
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -270,6 +319,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendors: [...prev.vendors, vendor],
     }));
+    syncVendor(vendor);
   }, []);
 
   const updateVendor = useCallback((vendor: VendorRecord) => {
@@ -277,6 +327,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendors: prev.vendors.map((v) => (v.id === vendor.id ? vendor : v)),
     }));
+    syncVendor(vendor);
   }, []);
 
   const removeVendor = useCallback((id: string) => {
@@ -284,6 +335,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendors: prev.vendors.filter((v) => v.id !== id),
     }));
+    deleteVendor(id);
   }, []);
 
   const findVendorById = useCallback((id: string) => {
@@ -301,6 +353,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendorInvites: [...prev.vendorInvites, invite],
     }));
+    syncVendorInvite(invite);
   }, []);
 
   const updateVendorInvite = useCallback((invite: VendorInvite) => {
@@ -308,6 +361,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendorInvites: prev.vendorInvites.map((i) => (i.id === invite.id ? invite : i)),
     }));
+    syncVendorInvite(invite);
   }, []);
 
   const getVendorJoinRequests = useCallback((vendorId: string) => {
@@ -319,6 +373,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendorJoinRequests: [...prev.vendorJoinRequests, req],
     }));
+    syncVendorJoinRequest(req);
   }, []);
 
   const updateVendorJoinRequest = useCallback((req: VendorJoinRequest) => {
@@ -326,6 +381,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       vendorJoinRequests: prev.vendorJoinRequests.map((r) => (r.id === req.id ? req : r)),
     }));
+    syncVendorJoinRequest(req);
   }, []);
 
   const getExchangeRequests = useCallback(() => stateRef.current.exchangeRequests, []);
@@ -335,6 +391,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       exchangeRequests: [...prev.exchangeRequests, req],
     }));
+    syncExchangeRequest(req);
   }, []);
 
   const updateExchangeRequest = useCallback((req: ExchangeRequest) => {
@@ -342,23 +399,10 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       exchangeRequests: prev.exchangeRequests.map((r) => (r.id === req.id ? req : r)),
     }));
+    syncExchangeRequest(req);
   }, []);
 
   const getExchangeAgreements = useCallback(() => stateRef.current.exchangeAgreements, []);
-
-  const addExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
-    setState((prev) => ({
-      ...prev,
-      exchangeAgreements: [...prev.exchangeAgreements, ag],
-    }));
-  }, []);
-
-  const updateExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
-    setState((prev) => ({
-      ...prev,
-      exchangeAgreements: prev.exchangeAgreements.map((a) => (a.id === ag.id ? migrateAgreementToParties(ag) : a)),
-    }));
-  }, []);
 
   // ── Wave 6.9 — Multi-being consent, privacy, withdrawal helpers ──
 
@@ -390,76 +434,108 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const addExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
+    const migrated = migrateAgreementToParties(ag);
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: [...prev.exchangeAgreements, migrated],
+    }));
+    syncExchangeAgreement(migrated);
+  }, [migrateAgreementToParties]);
+
+  const updateExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
+    const migrated = migrateAgreementToParties(ag);
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((a) => (a.id === ag.id ? migrated : a)),
+    }));
+    syncExchangeAgreement(migrated);
+  }, [migrateAgreementToParties]);
+
   const getAgreementParties = useCallback((agreementId: string): AgreementParty[] => {
     const ag = stateRef.current.exchangeAgreements.find((a) => a.id === agreementId);
     return migrateAgreementToParties(ag || { id: agreementId } as ExchangeAgreement).parties || [];
   }, []);
 
   const updateAgreementPartyPrivacy = useCallback((agreementId: string, ces: string, assurance: string, agreed: boolean) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
         const next = migrateAgreementToParties(ag);
-        return {
+        updated = {
           ...next,
           parties: (next.parties || []).map((p) =>
             p.ces === ces ? { ...p, privacyAssurance: assurance, privacyAgreed: agreed, joinedAt: p.joinedAt || new Date().toISOString() } : p
           ),
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
-  }, []);
+    if (updated) syncExchangeAgreement(updated);
+  }, [migrateAgreementToParties]);
 
   const addAgreementParty = useCallback((agreementId: string, party: AgreementParty) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
         const next = migrateAgreementToParties(ag);
         if (next.parties?.some((p) => p.ces === party.ces)) return next;
-        return {
+        updated = {
           ...next,
           parties: [...(next.parties || []), { ...party, joinedAt: party.joinedAt || new Date().toISOString() }],
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
-  }, []);
+    if (updated) syncExchangeAgreement(updated);
+  }, [migrateAgreementToParties]);
 
   const removeAgreementParty = useCallback((agreementId: string, ces: string) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
         const next = migrateAgreementToParties(ag);
-        return {
+        updated = {
           ...next,
           parties: (next.parties || []).filter((p) => p.ces !== ces),
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
-  }, []);
+    if (updated) syncExchangeAgreement(updated);
+  }, [migrateAgreementToParties]);
 
   const updateAgreementPartyRole = useCallback((agreementId: string, ces: string, role: import('../types/ces').ExchangeRole) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
         const next = migrateAgreementToParties(ag);
-        return {
+        updated = {
           ...next,
           parties: (next.parties || []).map((p) => (p.ces === ces ? { ...p, role } : p)),
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
-  }, []);
+    if (updated) syncExchangeAgreement(updated);
+  }, [migrateAgreementToParties]);
 
   const submitAgreementWithdrawal = useCallback((agreementId: string, ces: string, withdrawal: AgreementPartyWithdrawal, safetyReport?: SafetyReport) => {
     const now = new Date().toISOString();
+    let updatedAgreement: ExchangeAgreement | undefined;
+    let newAlert: ExchangeAlert | undefined;
     setState((prev) => {
       const nextAgreements = prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
@@ -470,56 +546,55 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
             ? { ...p, withdrawal: { ...withdrawal, requestedAt: withdrawal.requestedAt || now, status: 'submitted' as const }, withdrewAt: undefined }
             : p
         );
-        return {
+        updatedAgreement = {
           ...next,
           parties: updatedParties,
           safetyReports: safetyReport ? [...(next.safetyReports || []), safetyReport] : next.safetyReports,
           updatedAt: now,
         };
+        return updatedAgreement;
       });
 
       const agreement = nextAgreements.find((a) => a.id === agreementId);
       const withdrawingParty = agreement?.parties?.find((p) => p.ces === ces);
-      const nextAlerts = safetyReport
-        ? [
-            ...prev.exchangeAlerts,
-            {
-              id: `alert_${Date.now()}`,
-              exchangeId: agreementId,
-              exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
-              type: 'safety_report' as const,
-              fromCes: ces,
-              fromName: withdrawingParty?.name || 'Unknown being',
-              message: safetyReport.feelsUnsafe
-                ? `Safety report submitted. ${safetyReport.unsafeBeingName || safetyReport.unsafeBeingCes || 'A being'} was named as feeling unsafe. Contact Guide preference: ${safetyReport.contactGuide}.`
-                : 'Safety report submitted.',
-              status: 'open' as const,
-              createdAt: now,
-              metadata: { safetyReport },
-            },
-          ]
-        : [
-            ...prev.exchangeAlerts,
-            {
-              id: `alert_${Date.now()}`,
-              exchangeId: agreementId,
-              exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
-              type: 'withdrawal' as const,
-              fromCes: ces,
-              fromName: withdrawingParty?.name || 'Unknown being',
-              message: `Withdrawal requested. Reason: ${withdrawal.reason}${withdrawal.otherReason ? ` — ${withdrawal.otherReason}` : ''}.`,
-              status: 'open' as const,
-              createdAt: now,
-              metadata: { withdrawal },
-            },
-          ];
+      newAlert = safetyReport
+        ? {
+            id: `alert_${Date.now()}`,
+            exchangeId: agreementId,
+            exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
+            type: 'safety_report' as const,
+            fromCes: ces,
+            fromName: withdrawingParty?.name || 'Unknown being',
+            message: safetyReport.feelsUnsafe
+              ? `Safety report submitted. ${safetyReport.unsafeBeingName || safetyReport.unsafeBeingCes || 'A being'} was named as feeling unsafe. Contact Guide preference: ${safetyReport.contactGuide}.`
+              : 'Safety report submitted.',
+            status: 'open' as const,
+            createdAt: now,
+            metadata: { safetyReport },
+          }
+        : {
+            id: `alert_${Date.now()}`,
+            exchangeId: agreementId,
+            exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
+            type: 'withdrawal' as const,
+            fromCes: ces,
+            fromName: withdrawingParty?.name || 'Unknown being',
+            message: `Withdrawal requested. Reason: ${withdrawal.reason}${withdrawal.otherReason ? ` — ${withdrawal.otherReason}` : ''}.`,
+            status: 'open' as const,
+            createdAt: now,
+            metadata: { withdrawal },
+          };
 
-      return { ...prev, exchangeAgreements: nextAgreements, exchangeAlerts: nextAlerts };
+      return { ...prev, exchangeAgreements: nextAgreements, exchangeAlerts: [...prev.exchangeAlerts, newAlert] };
     });
-  }, []);
+    if (updatedAgreement) syncExchangeAgreement(updatedAgreement);
+    if (newAlert) syncExchangeAlert(newAlert);
+  }, [migrateAgreementToParties]);
 
   const approveAgreementWithdrawal = useCallback((agreementId: string, ces: string, stewardCes?: string) => {
     const now = new Date().toISOString();
+    let updatedAgreement: ExchangeAgreement | undefined;
+    let updatedAlert: ExchangeAlert | undefined;
     setState((prev) => {
       const nextAgreements = prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
@@ -531,22 +606,22 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         );
         const activeParties = updatedParties.filter((p) => !p.withdrewAt);
         const newStatus: ExchangeAgreement['status'] = activeParties.length === 0 ? 'withdrawn' : ag.status;
-        return {
+        updatedAgreement = {
           ...next,
           parties: updatedParties,
           status: newStatus,
           updatedAt: now,
         };
+        return updatedAgreement;
       });
 
-      const agreement = nextAgreements.find((a) => a.id === agreementId);
-      const withdrawingParty = agreement?.parties?.find((p) => p.ces === ces);
-
-      const nextAlerts = prev.exchangeAlerts.map((alert) =>
-        alert.exchangeId === agreementId && alert.type === 'withdrawal' && alert.fromCes === ces
-          ? { ...alert, status: 'resolved' as const, reviewedBy: stewardCes, reviewedAt: now }
-          : alert
-      );
+      const nextAlerts = prev.exchangeAlerts.map((alert) => {
+        if (alert.exchangeId === agreementId && alert.type === 'withdrawal' && alert.fromCes === ces) {
+          updatedAlert = { ...alert, status: 'resolved', reviewedBy: stewardCes, reviewedAt: now };
+          return updatedAlert;
+        }
+        return alert;
+      });
 
       return {
         ...prev,
@@ -554,7 +629,9 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         exchangeAlerts: nextAlerts,
       };
     });
-  }, []);
+    if (updatedAgreement) syncExchangeAgreement(updatedAgreement);
+    if (updatedAlert) syncExchangeAlert(updatedAlert);
+  }, [migrateAgreementToParties]);
 
   const getExchangeAlerts = useCallback(() => stateRef.current.exchangeAlerts, []);
 
@@ -563,6 +640,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       exchangeAlerts: [...prev.exchangeAlerts, alert],
     }));
+    syncExchangeAlert(alert);
   }, []);
 
   const updateExchangeAlert = useCallback((alert: ExchangeAlert) => {
@@ -570,6 +648,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       exchangeAlerts: prev.exchangeAlerts.map((a) => (a.id === alert.id ? alert : a)),
     }));
+    syncExchangeAlert(alert);
   }, []);
 
   const markExchangeAlertReviewed = useCallback((alertId: string, stewardCes: string) => {
@@ -580,11 +659,14 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         a.id === alertId ? { ...a, status: 'reviewed' as const, reviewedBy: stewardCes, reviewedAt: now } : a
       ),
     }));
+    const alert = stateRef.current.exchangeAlerts.find((a) => a.id === alertId);
+    if (alert) syncExchangeAlert({ ...alert, status: 'reviewed', reviewedBy: stewardCes, reviewedAt: now });
   }, []);
 
   // ── Quest / Agreement Versioning (Wave 2+) ──
 
   const updateAgreementQuest = useCallback((agreementId: string, questId: string, updates: Partial<import('../types/ces').QuestItem>) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
@@ -599,27 +681,33 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
           }
         }
         next.updatedAt = new Date().toISOString();
+        updated = next;
         return next;
       }),
     }));
+    if (updated) syncExchangeAgreement(updated);
   }, []);
 
   const addAgreementVersion = useCallback((agreementId: string, version: import('../types/ces').AgreementVersion) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
         if (ag.id !== agreementId) return ag;
-        return {
+        updated = {
           ...ag,
           versions: [...ag.versions, version],
           pendingUpdate: undefined,
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
+    if (updated) syncExchangeAgreement(updated);
   }, []);
 
   const approveAgreementUpdate = useCallback((agreementId: string, cesNumber: string) => {
+    let updated: ExchangeAgreement | undefined;
     setState((prev) => ({
       ...prev,
       exchangeAgreements: prev.exchangeAgreements.map((ag) => {
@@ -630,14 +718,16 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         };
         // If all parties approved (requester + provider), apply the update
         const allApproved = nextPending.approvedBy.includes(ag.requesterCes) && nextPending.approvedBy.includes(ag.providerCes);
-        return {
+        updated = {
           ...ag,
           pendingUpdate: allApproved ? undefined : nextPending,
           versions: allApproved ? [...ag.versions, nextPending] : ag.versions,
           updatedAt: new Date().toISOString(),
         };
+        return updated;
       }),
     }));
+    if (updated) syncExchangeAgreement(updated);
   }, []);
 
   // ── Calendar / Scheduling (Wave 6.75) ──
@@ -668,9 +758,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
 
   const saveExchangeCalendar = useCallback((calendar: ExchangeCalendar) => {
     const calendars = readCalendars();
+    const updated = { ...calendar, updatedAt: new Date().toISOString() };
     const next = calendars.filter((c) => c.ces !== calendar.ces);
-    next.push({ ...calendar, updatedAt: new Date().toISOString() });
+    next.push(updated);
     writeCalendars(next);
+    syncExchangeCalendar(updated);
   }, [readCalendars, writeCalendars]);
 
   const addAvailabilityBlock = useCallback((ces: string, block: AvailabilityBlock) => {
@@ -732,6 +824,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       collectivePetitions: [...prev.collectivePetitions, petition],
     }));
+    syncCollectivePetition(petition);
   }, []);
 
   const updateCollectivePetition = useCallback((petition: CollectivePetition) => {
@@ -739,6 +832,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       collectivePetitions: prev.collectivePetitions.map((p) => (p.id === petition.id ? petition : p)),
     }));
+    syncCollectivePetition(petition);
   }, []);
 
   const value: StorageContextValue = {

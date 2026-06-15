@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
+import { syncWish } from '../lib/exchangeSync'
 import { WISH_SCOPE_LABELS } from '../lib/constants'
 import type { LocationData, WishScope } from '../types/ces'
 
@@ -118,6 +119,7 @@ export default function PostWish() {
     const existing = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
     existing.push(wish)
     localStorage.setItem('hlw_wishes', JSON.stringify(existing))
+    syncWish(wish)
 
     setTimeout(() => {
       setIsSubmitting(false)
