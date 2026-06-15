@@ -306,8 +306,8 @@ export const CONTINENT_EMOJIS: Record<Continent, string> = {
 };
 
 export const WISH_SCOPE_LABELS: Record<string, { label: string; description: string }> = {
-  local:     { label: 'Local',     description: 'Only beings nearby can discover this wish' },
-  global:    { label: 'Global',    description: 'Beings anywhere on this continent can discover it' },
+  local:     { label: 'Local',     description: 'Beings nearby can discover this wish' },
+  global:    { label: 'Regional',  description: 'Beings anywhere on this continent can discover it' },
   universal: { label: 'Universal', description: 'All beings everywhere can discover it' },
 };
 

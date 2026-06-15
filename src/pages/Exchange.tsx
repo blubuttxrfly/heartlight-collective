@@ -1,7 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2 } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useSession } from '../lib/session'
+import { useStorage } from '../lib/storage'
+import { haversineDistance, formatDistance } from '../lib/geo'
+import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../lib/constants'
+import type { WishScope } from '../types/ces'
 
 /* ─── Mock Wishes (initial data) ─── */
 const INITIAL_WISHES = [
@@ -123,6 +128,23 @@ export default function Exchange() {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedWish, setSelectedWish] = useState(null)
+  const [viewScope, setViewScope] = useState<WishScope>('universal')
+  const [selectedContinent, setSelectedContinent] = useState<string>('')
+  const [localRadius, setLocalRadius] = useState(DEFAULT_LOCAL_RADIUS_KM)
+
+  const { user } = useSession()
+  const { getProfileByCes } = useStorage()
+
+  // Load user profile location for distance filtering
+  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  useEffect(() => {
+    if (user?.ces) {
+      const profile = getProfileByCes(user.ces)
+      if (profile?.locationData?.lat && profile?.locationData?.lon) {
+        setUserLocation({ lat: profile.locationData.lat, lon: profile.locationData.lon })
+      }
+    }
+  }, [user?.ces, getProfileByCes])
 
   const categories = useMemo(() => {
     const cats = new Set(wishes.map(w => w.category))
@@ -147,6 +169,39 @@ export default function Exchange() {
       list = list.filter(w => w.category === selectedCategory)
     }
 
+    // Scope filtering: Local / Regional / Universal
+    if (viewScope === 'local') {
+      // Show wishes scoped to 'local' or 'universal' that are within radius
+      list = list.filter(w => {
+        if (w.scope === 'universal' || w.scope === 'local') {
+          // Need precise coordinates to check distance
+          if (w.locationData?.lat && w.locationData?.lon && userLocation) {
+            const dist = haversineDistance(
+              { lat: w.locationData.lat, lon: w.locationData.lon },
+              userLocation
+            )
+            return dist !== null && dist <= localRadius
+          }
+          // Wishes without precise coords but same continent — include if no user location
+          if (!userLocation && w.locationData?.continent && selectedContinent) {
+            return w.locationData.continent === selectedContinent
+          }
+          return w.scope === 'universal' // Always show universal
+        }
+        return false
+      })
+    } else if (viewScope === 'global') {
+      // Show wishes scoped to 'global', 'universal', or matching continent
+      list = list.filter(w => {
+        if (w.scope === 'universal') return true
+        if (selectedContinent && w.locationData?.continent) {
+          return w.locationData.continent === selectedContinent
+        }
+        return w.scope === 'global' || w.scope === 'universal'
+      })
+    }
+    // 'universal' = show all (after category + search filters)
+
     // Sort: urgent first, then by recency
     const urgencyOrder = { 'time-sensitive': 0, 'high': 1, 'medium': 2, 'low': 3 }
     list.sort((a, b) => {
@@ -156,7 +211,7 @@ export default function Exchange() {
     })
 
     return list
-  }, [wishes, search, selectedCategory])
+  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation])
 
   const wishCount = wishes.filter(w => w.type === 'wish').length
   const offerCount = wishes.filter(w => w.type === 'offer').length
@@ -203,6 +258,75 @@ export default function Exchange() {
         >
           <Sparkles className="w-4 h-4" /> Share a Gift
         </Link>
+      </div>
+
+      {/* View Scope Toggle: Local | Regional | Universal */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2 justify-center">
+          {(['local', 'global', 'universal'] as WishScope[]).map(s => {
+            const isActive = viewScope === s
+            const activeClass =
+              s === 'local'
+                ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                : s === 'global'
+                ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
+                : 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+            return (
+              <button
+                key={s}
+                onClick={() => {
+                  setViewScope(s)
+                  if (s === 'universal') setSelectedContinent('')
+                }}
+                className={`px-5 py-2 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
+                  isActive ? activeClass : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                }`}
+              >
+                {s === 'local' && <Navigation className="w-4 h-4" />}
+                {s === 'global' && <Globe className="w-4 h-4" />}
+                {s === 'universal' && <Sparkles className="w-4 h-4" />}
+                {s === 'local' ? 'Local' : s === 'global' ? 'Regional' : 'Universal'}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Radius presets (only in Local view) */}
+        {viewScope === 'local' && (
+          <div className="flex items-center justify-center gap-3 mt-3">
+            <span className="text-xs text-lavender/40">Radius:</span>
+            {LOCAL_RADIUS_PRESETS.map(r => (
+              <button
+                key={r}
+                onClick={() => setLocalRadius(r)}
+                className={`px-3 py-1 rounded-full border text-xs transition-all ${
+                  localRadius === r
+                    ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                    : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                }`}
+              >
+                {r} km
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Continent selector (only in Regional view) */}
+        {viewScope === 'global' && (
+          <div className="flex items-center justify-center gap-3 mt-3">
+            <span className="text-xs text-lavender/40">Region:</span>
+            <select
+              value={selectedContinent}
+              onChange={e => setSelectedContinent(e.target.value)}
+              className="px-3 py-1.5 rounded-lg bg-void-800/60 border border-lavender/10 text-cream text-sm focus:border-gold-400/30 focus:outline-none cursor-pointer"
+            >
+              <option value="">All Regions</option>
+              {CONTINENTS.map(c => (
+                <option key={c} value={c}>{CONTINENT_EMOJIS[c]} {c}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Search + Filters */}
@@ -334,6 +458,26 @@ export default function Exchange() {
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {wish.location}
                   </span>
+                  {viewScope === 'local' && wish.locationData?.lat && wish.locationData?.lon && userLocation && (
+                    <span className="text-green-400">
+                      {(() => {
+                        const dist = haversineDistance(
+                          { lat: wish.locationData.lat, lon: wish.locationData.lon },
+                          userLocation
+                        )
+                        return dist !== null ? `~${formatDistance(dist)}` : null
+                      })()}
+                    </span>
+                  )}
+                  {wish.scope && wish.scope !== 'universal' && (
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                      wish.scope === 'local'
+                        ? 'bg-green-400/10 text-green-400/70'
+                        : 'bg-blue-400/10 text-blue-400/70'
+                    }`}>
+                      {wish.scope === 'local' ? 'Local' : 'Regional'}
+                    </span>
+                  )}
                   {wish.fundsRequired > 0 && (
                     <span className="text-magenta-400">
                       💰 ${(wish.fundsRequired / 100).toFixed(2)} needed
