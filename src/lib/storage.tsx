@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement } from '../types/ces';
+import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting } from '../types/ces';
 
 const STORAGE_PREFIX = 'hlc_';
 
@@ -103,6 +103,15 @@ interface StorageContextValue {
   getCollectivePetitions: () => CollectivePetition[];
   addCollectivePetition: (petition: CollectivePetition) => void;
   updateCollectivePetition: (petition: CollectivePetition) => void;
+  // ── Calendar / Scheduling (Wave 6.75) ──
+  getExchangeCalendar: (ces: string) => ExchangeCalendar | undefined;
+  saveExchangeCalendar: (calendar: ExchangeCalendar) => void;
+  addAvailabilityBlock: (ces: string, block: AvailabilityBlock) => void;
+  removeAvailabilityBlock: (ces: string, blockId: string) => void;
+  addScheduledMeeting: (ces: string, meeting: ScheduledMeeting) => void;
+  updateScheduledMeeting: (ces: string, meetingId: string, updates: Partial<ScheduledMeeting>) => void;
+  removeScheduledMeeting: (ces: string, meetingId: string) => void;
+  getScheduledMeetingsForCes: (ces: string) => ScheduledMeeting[];
 }
 
 const StorageContext = createContext<StorageContextValue | null>(null);
@@ -389,6 +398,91 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  // ── Calendar / Scheduling (Wave 6.75) ──
+  const EXCHANGE_CALENDARS_KEY = 'hlc_exchange_calendars';
+
+  const readCalendars = useCallback((): ExchangeCalendar[] => {
+    try {
+      const raw = localStorage.getItem(EXCHANGE_CALENDARS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as ExchangeCalendar[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const writeCalendars = useCallback((calendars: ExchangeCalendar[]) => {
+    try {
+      localStorage.setItem(EXCHANGE_CALENDARS_KEY, JSON.stringify(calendars));
+    } catch (err) {
+      console.warn('Failed to write exchange calendars to localStorage:', err);
+    }
+  }, []);
+
+  const getExchangeCalendar = useCallback((ces: string): ExchangeCalendar | undefined => {
+    return readCalendars().find((c) => c.ces === ces);
+  }, [readCalendars]);
+
+  const saveExchangeCalendar = useCallback((calendar: ExchangeCalendar) => {
+    const calendars = readCalendars();
+    const next = calendars.filter((c) => c.ces !== calendar.ces);
+    next.push({ ...calendar, updatedAt: new Date().toISOString() });
+    writeCalendars(next);
+  }, [readCalendars, writeCalendars]);
+
+  const addAvailabilityBlock = useCallback((ces: string, block: AvailabilityBlock) => {
+    const existing = getExchangeCalendar(ces);
+    const now = new Date().toISOString();
+    const calendar: ExchangeCalendar = existing
+      ? { ...existing, availabilityBlocks: [...existing.availabilityBlocks, block], updatedAt: now }
+      : { ces, availabilityBlocks: [block], scheduledMeetings: [], updatedAt: now };
+    saveExchangeCalendar(calendar);
+  }, [getExchangeCalendar, saveExchangeCalendar]);
+
+  const removeAvailabilityBlock = useCallback((ces: string, blockId: string) => {
+    const existing = getExchangeCalendar(ces);
+    if (!existing) return;
+    saveExchangeCalendar({
+      ...existing,
+      availabilityBlocks: existing.availabilityBlocks.filter((b) => b.id !== blockId),
+      updatedAt: new Date().toISOString(),
+    });
+  }, [getExchangeCalendar, saveExchangeCalendar]);
+
+  const addScheduledMeeting = useCallback((ces: string, meeting: ScheduledMeeting) => {
+    const existing = getExchangeCalendar(ces);
+    const now = new Date().toISOString();
+    const calendar: ExchangeCalendar = existing
+      ? { ...existing, scheduledMeetings: [...existing.scheduledMeetings, meeting], updatedAt: now }
+      : { ces, availabilityBlocks: [], scheduledMeetings: [meeting], updatedAt: now };
+    saveExchangeCalendar(calendar);
+  }, [getExchangeCalendar, saveExchangeCalendar]);
+
+  const updateScheduledMeeting = useCallback((ces: string, meetingId: string, updates: Partial<ScheduledMeeting>) => {
+    const existing = getExchangeCalendar(ces);
+    if (!existing) return;
+    saveExchangeCalendar({
+      ...existing,
+      scheduledMeetings: existing.scheduledMeetings.map((m) => (m.id === meetingId ? { ...m, ...updates } : m)),
+      updatedAt: new Date().toISOString(),
+    });
+  }, [getExchangeCalendar, saveExchangeCalendar]);
+
+  const removeScheduledMeeting = useCallback((ces: string, meetingId: string) => {
+    const existing = getExchangeCalendar(ces);
+    if (!existing) return;
+    saveExchangeCalendar({
+      ...existing,
+      scheduledMeetings: existing.scheduledMeetings.filter((m) => m.id !== meetingId),
+      updatedAt: new Date().toISOString(),
+    });
+  }, [getExchangeCalendar, saveExchangeCalendar]);
+
+  const getScheduledMeetingsForCes = useCallback((ces: string): ScheduledMeeting[] => {
+    return getExchangeCalendar(ces)?.scheduledMeetings || [];
+  }, [getExchangeCalendar]);
+
   const getCollectivePetitions = useCallback(() => stateRef.current.collectivePetitions, []);
 
   const addCollectivePetition = useCallback((petition: CollectivePetition) => {
@@ -447,6 +541,15 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     getCollectivePetitions,
     addCollectivePetition,
     updateCollectivePetition,
+    // Calendar / Scheduling (Wave 6.75)
+    getExchangeCalendar,
+    saveExchangeCalendar,
+    addAvailabilityBlock,
+    removeAvailabilityBlock,
+    addScheduledMeeting,
+    updateScheduledMeeting,
+    removeScheduledMeeting,
+    getScheduledMeetingsForCes,
   };
 
   return <StorageContext.Provider value={value}>{children}</StorageContext.Provider>;

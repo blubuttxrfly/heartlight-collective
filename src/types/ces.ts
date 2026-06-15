@@ -20,6 +20,41 @@ export type RayKey =
 
 export type WishAvailability = 'accepting' | 'closed';
 
+export type MeetingStatus = 'proposed' | 'confirmed' | 'completed' | 'rescheduled' | 'cancelled';
+
+export interface ScheduledMeeting {
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
+  timeZone: string;
+  location: string;
+  status: MeetingStatus;
+  proposedByCes?: string;
+  proposedByName?: string;
+  confirmedByCes: string[];
+  notes?: string;
+}
+
+export interface AvailabilityBlock {
+  id: string;
+  dayOfWeek?: number;            // 0 = Sunday ... 6 = Saturday
+  date?: string;                 // YYYY-MM-DD for one-off blocks
+  startTime: string;             // HH:mm
+  endTime: string;               // HH:mm
+  timeZone: string;
+  type: 'available' | 'unavailable';
+  recurring: boolean;
+  title?: string;
+}
+
+export interface ExchangeCalendar {
+  ces: string;
+  availabilityBlocks: AvailabilityBlock[];
+  scheduledMeetings: ScheduledMeeting[];
+  updatedAt: string;
+}
+
 export type SeasonKey = 'Winter' | 'Spring' | 'Summer' | 'Fall';
 
 export interface SeasonState {
@@ -391,6 +426,8 @@ export interface ExchangeAgreement {
   agreedPriceCents?: number;
   paymentMethod?: PaymentMethodType;
   communicationPrefs?: string;   // e.g. "Weekly check-ins via Signal"
+  // --- SCHEDULE ---
+  scheduledMeetings: ScheduledMeeting[];
   // --- CONSENT ---
   status: 'draft' | 'proposed' | 'agreed' | 'active' | 'fulfilled' | 'completed' | 'declined';
   requesterConsented: boolean;
@@ -468,6 +505,8 @@ export interface ExchangeJourney {
   // --- QUESTS inherited from Agreement ---
   mainQuest: QuestItem;
   sideQuests: QuestItem[];
+  // --- SCHEDULE inherited from Agreement ---
+  scheduledMeetings: ScheduledMeeting[];
   // --- FULFILLMENT ---
   fulfillmentNotes: string;
   fulfillmentSignedAt: string | null;

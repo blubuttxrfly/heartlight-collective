@@ -1,10 +1,12 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Check, Mail, Smartphone, MessageCircle } from 'lucide-react'
+import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Mail, Smartphone, MessageCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
-import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility } from '../../types/ces'
+import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility, ScheduledMeeting, AvailabilityBlock } from '../../types/ces'
+import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
+import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 
 const EXCHANGE_ROLES: ExchangeRole[] = [
@@ -28,8 +30,28 @@ interface ExchangeAgreementEditorProps {
   onSigned: () => void
 }
 
-function newId(prefix: string): string {
+  function newId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+function toISODateTime(date: string, time: string): string {
+  if (!date || !time) return ''
+  const [hours, minutes] = time.split(':').map(Number)
+  const d = new Date(`${date}T00:00:00`)
+  d.setHours(hours, minutes, 0, 0)
+  return d.toISOString()
+}
+
+function parseDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+function parseTime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toISOString().slice(11, 16)
 }
 
 function emptySideQuest(): QuestItem {
@@ -195,9 +217,10 @@ function PartyContactCard({
 export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, onSigned }: ExchangeAgreementEditorProps) {
   const storage = useStorage()
   const { user } = useSession()
-  const { updateExchangeAgreement, findVendorById, findProfileByCES } = storage
+  const { updateExchangeAgreement, findVendorById, findProfileByCES, getExchangeCalendar, addScheduledMeeting, updateScheduledMeeting } = storage
   const [agreement, setAgreement] = useState<ExchangeAgreement>(() => ({
     ...initialAgreement,
+    scheduledMeetings: initialAgreement.scheduledMeetings || [],
     mainQuest: {
       ...initialAgreement.mainQuest,
       status: normalizeQuestStatus(initialAgreement.mainQuest.status),
@@ -211,6 +234,15 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
   }))
   const [error, setError] = useState('')
   const [changeSummary, setChangeSummary] = useState('')
+  const [scheduleMode, setScheduleMode] = useState<false | 'new' | 'reschedule'>(false)
+  const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null)
+  const [meetingTitle, setMeetingTitle] = useState('')
+  const [meetingStartDate, setMeetingStartDate] = useState('')
+  const [meetingStartTime, setMeetingStartTime] = useState('')
+  const [meetingEndTime, setMeetingEndTime] = useState('')
+  const [meetingTimeZone, setMeetingTimeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
+  const [meetingLocation, setMeetingLocation] = useState('')
+  const [meetingNotes, setMeetingNotes] = useState('')
 
   const isRequester = useCallback((ces?: string) => ces === agreement.requesterCes, [agreement.requesterCes])
   const isProvider = useCallback((ces?: string) => ces === agreement.providerCes, [agreement.providerCes])
@@ -392,7 +424,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     setAgreement(next)
     updateExchangeAgreement(next)
 
-    // Sync updated quests to linked journey
+    // Sync updated quests + scheduled meetings to linked journey
     try {
       const raw = localStorage.getItem('hlc_exchange_journeys') || '[]'
       const journeys: ExchangeJourney[] = JSON.parse(raw)
@@ -400,8 +432,9 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
         if (j.agreementId !== agreement.id) return j
         return {
           ...j,
-          mainQuest: agreement.mainQuest,
-          sideQuests: agreement.sideQuests,
+          mainQuest: next.mainQuest,
+          sideQuests: next.sideQuests,
+          scheduledMeetings: next.scheduledMeetings,
           updatedAt: now,
         }
       })
@@ -460,6 +493,20 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       console.warn('Failed to persist exchange journey locally:', err)
     }
   }
+
+  const syncScheduledMeetingsToJourney = useCallback((agreementId: string, meetings: import('../../types/ces').ScheduledMeeting[]) => {
+    try {
+      const key = 'hlc_exchange_journeys'
+      const raw = localStorage.getItem(key) || '[]'
+      const journeys: ExchangeJourney[] = JSON.parse(raw)
+      const next = journeys.map((j) =>
+        j.agreementId === agreementId ? { ...j, scheduledMeetings: meetings, updatedAt: new Date().toISOString() } : j
+      )
+      localStorage.setItem(key, JSON.stringify(next))
+    } catch (err) {
+      console.warn('Failed to sync scheduled meetings to journey:', err)
+    }
+  }, [])
 
   const handleToggleMainCes = useCallback((ces: string, name: string) => {
     setAgreement((prev) => {
@@ -657,6 +704,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       logs: [],
       mainQuest: agreement.mainQuest,
       sideQuests: agreement.sideQuests,
+      scheduledMeetings: agreement.scheduledMeetings || [],
       fulfillmentNotes: '',
       fulfillmentSignedAt: null,
       fulfillmentSignedBy: [],
@@ -677,8 +725,148 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     onSigned()
   }, [agreement, storage, updateExchangeAgreement, onSigned])
 
-  const providerProfile = findProfileByCES(agreement.providerCes)
+  function resetMeetingForm() {
+    setScheduleMode(false)
+    setEditingMeetingId(null)
+    setMeetingTitle('')
+    setMeetingStartDate('')
+    setMeetingStartTime('')
+    setMeetingEndTime('')
+    setMeetingTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    setMeetingLocation('')
+    setMeetingNotes('')
+  }
+
+  function openNewMeetingForm() {
+    resetMeetingForm()
+    setMeetingTitle(`Session for ${agreement.mainQuest.title || 'our exchange'}`)
+    setScheduleMode('new')
+  }
+
+  function openRescheduleForm(meeting: ScheduledMeeting) {
+    setScheduleMode('reschedule')
+    setEditingMeetingId(meeting.id)
+    setMeetingTitle(meeting.title)
+    setMeetingStartDate(parseDate(meeting.startAt))
+    setMeetingStartTime(parseTime(meeting.startAt))
+    setMeetingEndTime(parseTime(meeting.endAt))
+    setMeetingTimeZone(meeting.timeZone)
+    setMeetingLocation(meeting.location)
+    setMeetingNotes(meeting.notes || '')
+  }
+
+  function handleSaveMeeting() {
+    if (!meetingTitle.trim() || !meetingStartDate || !meetingStartTime || !meetingEndTime) {
+      setError('Please fill in title, date, start time, and end time for the meeting.')
+      return
+    }
+    const startAt = toISODateTime(meetingStartDate, meetingStartTime)
+    const endAt = toISODateTime(meetingStartDate, meetingEndTime)
+    if (!startAt || !endAt || new Date(endAt) <= new Date(startAt)) {
+      setError('The meeting end time must be after the start time.')
+      return
+    }
+
+    const now = new Date().toISOString()
+    let nextMeetings: ScheduledMeeting[]
+
+    if (scheduleMode === 'reschedule' && editingMeetingId) {
+      nextMeetings = agreement.scheduledMeetings.map((m) =>
+        m.id === editingMeetingId
+          ? {
+              ...m,
+              title: meetingTitle.trim(),
+              startAt,
+              endAt,
+              timeZone: meetingTimeZone,
+              location: meetingLocation.trim(),
+              notes: meetingNotes.trim(),
+              status: 'rescheduled' as const,
+              proposedByCes: currentCes,
+              proposedByName: user?.name || 'Unknown being',
+              confirmedByCes: [currentCes],
+            }
+          : m
+      )
+    } else {
+      const newMeeting: ScheduledMeeting = {
+        id: newId('meeting'),
+        title: meetingTitle.trim(),
+        startAt,
+        endAt,
+        timeZone: meetingTimeZone,
+        location: meetingLocation.trim(),
+        status: 'proposed' as const,
+        proposedByCes: currentCes,
+        proposedByName: user?.name || 'Unknown being',
+        confirmedByCes: [currentCes],
+        notes: meetingNotes.trim(),
+      }
+      nextMeetings = [...agreement.scheduledMeetings, newMeeting]
+    }
+
+    const next: ExchangeAgreement = {
+      ...agreement,
+      scheduledMeetings: nextMeetings,
+      updatedAt: now,
+    }
+
+    setAgreement(next)
+    if (isAgreed) {
+      // Active agreements go through amendment flow
+      const previousVersion = latestVersion?.version ?? 0
+      const version: AgreementVersion = {
+        version: previousVersion + 1,
+        updatedAt: now,
+        updatedByCes: currentCes,
+        updatedByName: user?.name || 'Unknown being',
+        changeSummary:
+          scheduleMode === 'reschedule'
+            ? `Rescheduled meeting: ${meetingTitle.trim()}`
+            : `Proposed new meeting: ${meetingTitle.trim()}`,
+        approvedBy: [currentCes],
+      }
+      const withAmendment: ExchangeAgreement = { ...next, pendingUpdate: version, status: 'proposed' }
+      setAgreement(withAmendment)
+      updateExchangeAgreement(withAmendment)
+    } else {
+      updateExchangeAgreement(next)
+    }
+
+    syncScheduledMeetingsToJourney(agreement.id, nextMeetings)
+    resetMeetingForm()
+  }
+
+  function handleConfirmMeeting(meetingId: string) {
+    const nextMeetings = agreement.scheduledMeetings.map((m) =>
+      m.id === meetingId ? { ...m, status: 'confirmed' as const, confirmedByCes: Array.from(new Set([...(m.confirmedByCes || []), currentCes])) } : m
+    )
+    const next: ExchangeAgreement = { ...agreement, scheduledMeetings: nextMeetings, updatedAt: new Date().toISOString() }
+    setAgreement(next)
+    updateExchangeAgreement(next)
+    syncScheduledMeetingsToJourney(agreement.id, nextMeetings)
+  }
+
+  function handleCancelMeeting(meetingId: string) {
+    const nextMeetings = agreement.scheduledMeetings.map((m) => (m.id === meetingId ? { ...m, status: 'cancelled' as const } : m))
+    const next: ExchangeAgreement = { ...agreement, scheduledMeetings: nextMeetings, updatedAt: new Date().toISOString() }
+    setAgreement(next)
+    updateExchangeAgreement(next)
+    syncScheduledMeetingsToJourney(agreement.id, nextMeetings)
+  }
+
+  function handleRemoveMeeting(meetingId: string) {
+    const nextMeetings = agreement.scheduledMeetings.filter((m) => m.id !== meetingId)
+    const next: ExchangeAgreement = { ...agreement, scheduledMeetings: nextMeetings, updatedAt: new Date().toISOString() }
+    setAgreement(next)
+    updateExchangeAgreement(next)
+    syncScheduledMeetingsToJourney(agreement.id, nextMeetings)
+  }
+
+  const providerCalendar = getExchangeCalendar(agreement.providerCes)
+  const providerAvailability = providerCalendar?.availabilityBlocks || []
   const requesterProfile = findProfileByCES(agreement.requesterCes)
+  const providerProfile = findProfileByCES(agreement.providerCes)
 
   return (
     <motion.div
@@ -933,6 +1121,217 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
               />
             </div>
+          </div>
+
+          {/* ─── Schedule Section ─── */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="flex items-center gap-2 text-sm text-lavender/70">
+                <CalendarIcon className="w-4 h-4 text-gold-400" /> Schedule
+              </label>
+              {!scheduleMode && (
+                <button
+                  onClick={openNewMeetingForm}
+                  className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+                >
+                  <Clock className="w-3 h-3" /> Propose Session
+                </button>
+              )}
+            </div>
+
+            {providerAvailability.length > 0 && !scheduleMode && (
+              <div className="mb-3 rounded-lg border border-lavender/10 bg-void-900/40 p-3">
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40 mb-2">Provider Availability 🌿</p>
+                <div className="flex flex-wrap gap-2">
+                  {providerAvailability.map((block) => (
+                    <span key={block.id} className="text-xs px-2 py-1 rounded-full border border-lavender/10 text-lavender/50 bg-void-900/40">
+                      {block.recurring && block.dayOfWeek != null
+                        ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][block.dayOfWeek]
+                        : block.date || 'Any day'}
+                      : {block.startTime}–{block.endTime} {block.timeZone}
+                      {block.type === 'unavailable' && ' · unavailable'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {agreement.scheduledMeetings.length === 0 && !scheduleMode && (
+              <p className="text-xs text-lavender/40 italic">No sessions scheduled yet. Propose a time that honors both beings. 📅</p>
+            )}
+
+            {!scheduleMode && (
+              <div className="space-y-2">
+                {agreement.scheduledMeetings.map((meeting) => (
+                  <div
+                    key={meeting.id}
+                    className={`rounded-lg border p-3 ${
+                      meeting.status === 'confirmed'
+                        ? 'border-green-400/20 bg-green-400/5'
+                        : meeting.status === 'cancelled'
+                          ? 'border-lavender/10 bg-void-900/40 opacity-50'
+                          : meeting.status === 'rescheduled'
+                            ? 'border-magenta-400/20 bg-magenta-400/5'
+                            : 'border-lavender/10 bg-void-900/40'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm text-cream flex items-center gap-2 flex-wrap">
+                          <CalendarDays className="w-3.5 h-3.5 text-lavender/40" />
+                          {meeting.title}
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                              meeting.status === 'confirmed'
+                                ? 'border-green-400/20 text-green-300 bg-green-400/10'
+                                : meeting.status === 'cancelled'
+                                  ? 'border-lavender/10 text-lavender/40 bg-lavender/5'
+                                  : meeting.status === 'rescheduled'
+                                    ? 'border-magenta-400/20 text-magenta-300 bg-magenta-400/10'
+                                    : 'border-gold-400/20 text-gold-300 bg-gold-400/10'
+                            }`}
+                          >
+                            {meeting.status} 🕐
+                          </span>
+                        </p>
+                        <p className="text-xs text-lavender/50 mt-1">{formatMeetingTime(meeting)}</p>
+                        {meeting.location && (
+                          <p className="text-xs text-lavender/50 mt-1 flex items-center gap-1">
+                            <MapPin className="w-3 h-3" /> {meeting.location}
+                          </p>
+                        )}
+                        {meeting.notes && <p className="text-xs text-lavender/40 mt-1">{meeting.notes}</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        {meeting.status !== 'cancelled' && meeting.status !== 'completed' && (
+                          <>
+                            {meeting.status === 'proposed' || meeting.status === 'rescheduled' ? (
+                              <>
+                                {(isRequester(currentCes) || isProvider(currentCes)) && !meeting.confirmedByCes?.includes(currentCes) && (
+                                  <button
+                                    onClick={() => handleConfirmMeeting(meeting.id)}
+                                    className="text-[10px] px-2 py-1 rounded-full bg-green-400/10 border border-green-400/30 text-green-300 hover:bg-green-400/20 transition-all"
+                                  >
+                                    Confirm ✓
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => openRescheduleForm(meeting)}
+                                  className="text-[10px] px-2 py-1 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+                                >
+                                  Reschedule ⏳
+                                </button>
+                              </>
+                            ) : null}
+                            <button
+                              onClick={() => window.open(googleCalendarEventUrl(meeting), '_blank', 'noopener,noreferrer')}
+                              className="text-[10px] px-2 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all"
+                            >
+                              Google 📅
+                            </button>
+                            <button
+                              onClick={() => downloadICS(meeting)}
+                              className="text-[10px] px-2 py-1 rounded-full bg-lavender/10 border border-lavender/30 text-lavender/70 hover:bg-lavender/20 transition-all"
+                            >
+                              .ics 📥
+                            </button>
+                            <button
+                              onClick={() => handleCancelMeeting(meeting.id)}
+                              className="text-[10px] px-2 py-1 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all"
+                            >
+                              Cancel ✕
+                            </button>
+                            <button
+                              onClick={() => handleRemoveMeeting(meeting.id)}
+                              className="text-[10px] px-2 py-1 rounded-full bg-red-400/10 border border-red-400/30 text-red-300 hover:bg-red-400/20 transition-all"
+                            >
+                              Remove 🗑️
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {scheduleMode && (
+              <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-3">
+                <p className="text-sm text-gold-300 flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4" /> {scheduleMode === 'reschedule' ? 'Reschedule Session' : 'Propose New Session'}
+                </p>
+                <input
+                  value={meetingTitle}
+                  onChange={(e) => setMeetingTitle(e.target.value)}
+                  placeholder="Session title"
+                  className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <input
+                    type="date"
+                    value={meetingStartDate}
+                    onChange={(e) => setMeetingStartDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    value={meetingTimeZone}
+                    onChange={(e) => setMeetingTimeZone(e.target.value)}
+                    placeholder="Time zone (e.g. America/New_York)"
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Start</label>
+                    <input
+                      type="time"
+                      value={meetingStartTime}
+                      onChange={(e) => setMeetingStartTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">End</label>
+                    <input
+                      type="time"
+                      value={meetingEndTime}
+                      onChange={(e) => setMeetingEndTime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={meetingLocation}
+                  onChange={(e) => setMeetingLocation(e.target.value)}
+                  placeholder="Location or video link"
+                  className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                />
+                <textarea
+                  value={meetingNotes}
+                  onChange={(e) => setMeetingNotes(e.target.value)}
+                  placeholder="Notes or preparation requests"
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveMeeting}
+                    className="flex-1 py-2 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all text-xs"
+                  >
+                    {scheduleMode === 'reschedule' ? 'Save Reschedule' : 'Propose Session'} ✨
+                  </button>
+                  <button
+                    onClick={resetMeetingForm}
+                    className="px-4 py-2 rounded-lg border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all text-xs"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

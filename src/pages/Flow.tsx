@@ -23,11 +23,17 @@ import {
   ScrollText,
   Activity,
   Users,
+  Calendar,
+  Clock,
+  Plus,
+  X,
+  Download,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
 import { useSession } from '../lib/session.ts'
 import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor.tsx'
+import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../lib/calendar.ts'
 import type {
   ExchangeJourney,
   CodeLogEntry,
@@ -36,6 +42,8 @@ import type {
   AgreementVersion,
   RayKey,
   ExchangeAgreement,
+  AvailabilityBlock,
+  ScheduledMeeting,
 } from '../types/ces'
 
 /* ─── Codes Data (inline for render, synced with Codes.tsx) ─── */
@@ -136,6 +144,7 @@ function applyApprovedAmendment(
         ? { ...sq, status: normalizeQuestStatus(existing.status), verifications: existing.verifications || [] }
         : { ...sq, status: normalizeQuestStatus(sq.status), verifications: sq.verifications || [] }
     }),
+    scheduledMeetings: agreement.scheduledMeetings ?? journey.scheduledMeetings ?? [],
     updatedAt: now,
   }
 
@@ -165,6 +174,7 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
     status: 'active',
     currentPhase: 'during',
     selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    scheduledMeetings: [],
     logs: [
       {
         id: 'log_01',
@@ -265,6 +275,7 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
     status: 'fulfillment_review',
     currentPhase: 'after',
     selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    scheduledMeetings: [],
     logs: [
       {
         id: 'log_10',
@@ -994,7 +1005,7 @@ function QuestTracker({
 }
 
 /* ─── Flow View Types ─── */
-type FlowView = 'dashboard' | 'journeys' | 'vendor-inbox' | 'journey-detail' | 'agreements' | 'exchanges' | 'quest-tracker' | 'present-journal'
+type FlowView = 'dashboard' | 'journeys' | 'vendor-inbox' | 'journey-detail' | 'agreements' | 'exchanges' | 'quest-tracker' | 'present-journal' | 'calendar'
 
 /* ─── Dashboard Card ─── */
 function AspectCard({
@@ -1226,6 +1237,14 @@ export default function Flow() {
               subtitle="Record reflections, presence, and Code awareness as you go"
               color="#3b82f6"
               onClick={() => setView('present-journal')}
+            />
+            <AspectCard
+              icon={Calendar}
+              label="Calendar"
+              count={myAgreements.reduce((acc, a) => acc + (a.scheduledMeetings?.length ?? 0), 0) + journeys.reduce((acc, j) => acc + (j.scheduledMeetings?.length ?? 0), 0)}
+              subtitle="Manage availability and view scheduled meetings across your exchanges"
+              color="#f59e0b"
+              onClick={() => setView('calendar')}
             />
           </div>
 
@@ -1554,6 +1573,18 @@ export default function Flow() {
         </motion.div>
       )}
 
+      {/* ─── CALENDAR VIEW ─── */}
+      {view === 'calendar' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <CalendarPanel
+            currentCes={currentCes}
+            myAgreements={myAgreements}
+            journeys={journeys}
+            onBack={() => setView('dashboard')}
+          />
+        </motion.div>
+      )}
+
       {/* ─── Agreement Editor Modal ─── */}
       {selectedAgreement && (
         <ExchangeAgreementEditor
@@ -1563,6 +1594,413 @@ export default function Flow() {
         />
       )}
     </div>
+  )
+}
+
+/* ─── Calendar Panel ─── */
+function CalendarPanel({
+  currentCes,
+  myAgreements,
+  journeys,
+  onBack,
+}: {
+  currentCes: string
+  myAgreements: ExchangeAgreement[]
+  journeys: ExchangeJourney[]
+  onBack: () => void
+}) {
+  const storage = useStorage()
+
+  const [calendar, setCalendar] = useState(() => {
+    let cal = storage.getExchangeCalendar(currentCes)
+    if (!cal) {
+      cal = { ces: currentCes, availabilityBlocks: [], scheduledMeetings: [], updatedAt: new Date().toISOString() }
+      storage.saveExchangeCalendar(cal)
+    }
+    return cal
+  })
+
+  const refreshCalendar = useCallback(() => {
+    const cal = storage.getExchangeCalendar(currentCes)
+    setCalendar(cal ?? { ces: currentCes, availabilityBlocks: [], scheduledMeetings: [], updatedAt: new Date().toISOString() })
+  }, [storage, currentCes])
+
+  const allMeetings = useMemo(() => {
+    const fromAgreements = myAgreements.flatMap((a) => (a.scheduledMeetings ?? []).map((m) => ({ ...m, sourceId: a.id, sourceTitle: a.mainQuest?.title || 'Agreement', otherName: a.requesterCes === currentCes ? a.providerName : a.requesterName, otherCes: a.requesterCes === currentCes ? a.providerCes : a.requesterCes })))
+    const fromJourneys = journeys.flatMap((j) => (j.scheduledMeetings ?? []).map((m) => ({ ...m, sourceId: j.id, sourceTitle: j.title, otherName: j.wishingCes === currentCes ? j.coCreatorName : j.wishingName, otherCes: j.wishingCes === currentCes ? j.coCreatorCes : j.wishingCes })))
+    // Deduplicate by id, prefer journey entries since they are synced live
+    const map = new Map<string, ScheduledMeeting & { sourceId: string; sourceTitle: string; otherName: string; otherCes: string }>()
+    ;[...fromJourneys, ...fromAgreements].forEach((m) => {
+      if (!map.has(m.id)) map.set(m.id, m)
+    })
+    return Array.from(map.values()).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+  }, [myAgreements, journeys, currentCes])
+
+  const meetingDays = useMemo(() => {
+    const days = new Set<number>()
+    allMeetings.forEach((m) => {
+      const d = new Date(m.startAt)
+      if (!isNaN(d.getTime())) days.add(d.getDate())
+    })
+    return days
+  }, [allMeetings])
+
+  const today = new Date()
+  const [currentMonth, setCurrentMonth] = useState(today)
+  const monthStart = startOfMonth(currentMonth)
+  const monthEnd = endOfMonth(currentMonth)
+  const daysInMonth = eachDayOfInterval(monthStart, monthEnd)
+  const startWeekday = monthStart.getDay()
+  const blankDays = Array.from({ length: startWeekday }, (_, i) => i)
+  const monthLabel = currentMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })
+
+  const [form, setForm] = useState({
+    dayOfWeek: 1,
+    date: '',
+    startTime: '09:00',
+    endTime: '17:00',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    type: 'available' as AvailabilityBlock['type'],
+    recurring: false,
+    title: '',
+  })
+
+  function handleAddBlock(e: React.FormEvent) {
+    e.preventDefault()
+    const block: AvailabilityBlock = {
+      id: `block_${Date.now()}`,
+      dayOfWeek: form.date ? undefined : Number(form.dayOfWeek),
+      date: form.date || undefined,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      timeZone: form.timeZone,
+      type: form.type,
+      recurring: form.recurring,
+      title: form.title || undefined,
+    }
+    storage.addAvailabilityBlock(currentCes, block)
+    refreshCalendar()
+  }
+
+  function handleDeleteBlock(id: string) {
+    storage.removeAvailabilityBlock(currentCes, id)
+    refreshCalendar()
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={onBack} className="text-xs text-lavender/40 hover:text-cream transition-colors">
+          ← Back to Flow Dashboard
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5 mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Calendar className="w-5 h-5 text-gold-400" />
+          <h2 className="font-serif text-xl text-cream">Calendar</h2>
+        </div>
+        <p className="text-sm text-lavender/60">
+          Manage your availability and keep track of scheduled meetings across all your exchanges.
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+        {/* Left column: scheduled meetings + month grid */}
+        <div className="space-y-6">
+          {/* Month grid */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                className="text-xs px-2 py-1 rounded-lg border border-lavender/10 text-lavender/40 hover:text-cream transition-colors"
+              >
+                ← Prev
+              </button>
+              <span className="text-sm font-medium text-cream">{monthLabel}</span>
+              <button
+                onClick={() => setCurrentMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                className="text-xs px-2 py-1 rounded-lg border border-lavender/10 text-lavender/40 hover:text-cream transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-lavender/40 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {blankDays.map((i) => (
+                <div key={`blank-${i}`} className="aspect-square rounded-lg" />
+              ))}
+              {daysInMonth.map((date) => {
+                const isToday = date.toDateString() === today.toDateString()
+                const hasMeeting = meetingDays.has(date.getDate())
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`aspect-square rounded-lg border flex flex-col items-center justify-center text-xs transition-all ${
+                      isToday
+                        ? 'border-gold-400/40 bg-gold-400/10 text-cream'
+                        : 'border-lavender/10 text-lavender/60 hover:border-lavender/20'
+                    }`}
+                  >
+                    <span>{date.getDate()}</span>
+                    {hasMeeting && <span className="w-1 h-1 rounded-full bg-gold-400 mt-1" />}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Scheduled meetings */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-4 h-4 text-gold-400" />
+              <h3 className="font-serif text-lg text-cream">Scheduled Meetings</h3>
+            </div>
+
+            {allMeetings.length === 0 ? (
+              <p className="text-sm text-lavender/40 italic">No scheduled meetings yet. They will appear here once agreed upon in your exchanges. 🌙</p>
+            ) : (
+              <div className="space-y-3">
+                {(['proposed', 'confirmed', 'completed', 'rescheduled', 'cancelled'] as const).map((status) => {
+                  const group = allMeetings.filter((m) => m.status === status)
+                  if (group.length === 0) return null
+                  return (
+                    <div key={status}>
+                      <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                        {status} {status === 'proposed' ? '🌙' : status === 'confirmed' ? '☀' : status === 'completed' ? '✨' : status === 'rescheduled' ? '🌀' : '✕'}
+                      </p>
+                      <div className="space-y-2">
+                        {group.map((m) => (
+                          <div
+                            key={m.id}
+                            className="rounded-xl border border-lavender/10 bg-void-900/40 p-4"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-medium text-cream">{m.title}</span>
+                              {meetingStatusBadge(m.status)}
+                            </div>
+                            <p className="text-xs text-lavender/60 mb-1">{formatMeetingTime(m)} 🕯</p>
+                            {m.location && <p className="text-xs text-lavender/50 mb-1">📍 {m.location}</p>}
+                            <p className="text-xs text-lavender/50 mb-3">
+                              with {m.otherName} · from {m.sourceTitle}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <a
+                                href={googleCalendarEventUrl(m)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all"
+                              >
+                                <Calendar className="w-3 h-3" /> Add to Google Calendar
+                              </a>
+                              <button
+                                onClick={() => downloadICS(m)}
+                                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-lavender/10 border border-lavender/20 text-lavender/70 hover:bg-lavender/20 transition-all"
+                              >
+                                <Download className="w-3 h-3" /> Download .ics
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right column: availability management */}
+        <div className="space-y-6">
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock className="w-4 h-4 text-gold-400" />
+              <h3 className="font-serif text-lg text-cream">Availability Management</h3>
+            </div>
+            <p className="text-xs text-lavender/50 mb-4">
+              Set when you are open to meet. Others can propose times that overlap with your availability blocks.
+            </p>
+
+            <form onSubmit={handleAddBlock} className="space-y-3 mb-5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Day of week</label>
+                  <select
+                    value={form.dayOfWeek}
+                    onChange={(e) => setForm({ ...form, dayOfWeek: Number(e.target.value) })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  >
+                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((d, i) => (
+                      <option key={d} value={i}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Specific date (optional)</label>
+                  <input
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Start</label>
+                  <input
+                    type="time"
+                    value={form.startTime}
+                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">End</label>
+                  <input
+                    type="time"
+                    value={form.endTime}
+                    onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Time zone</label>
+                  <input
+                    type="text"
+                    value={form.timeZone}
+                    onChange={(e) => setForm({ ...form, timeZone: e.target.value })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value as AvailabilityBlock['type'] })}
+                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                  >
+                    <option value="available">Available ✨</option>
+                    <option value="unavailable">Unavailable 🌑</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-xs text-lavender/60">
+                  <input
+                    type="checkbox"
+                    checked={form.recurring}
+                    onChange={(e) => setForm({ ...form, recurring: e.target.checked })}
+                    className="rounded border-lavender/20 bg-void-900/60 text-gold-400 focus:ring-gold-400/30"
+                  />
+                  Recurring weekly 🌀
+                </label>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-lavender/40">Title (optional)</label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. Open office hours"
+                  className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/25 focus:border-gold-400/30 focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-300 text-sm hover:bg-gold-400/20 transition-all"
+              >
+                <Plus className="w-4 h-4 inline-block mr-1.5" /> Add Availability Block
+              </button>
+            </form>
+
+            <div className="space-y-2">
+              {calendar.availabilityBlocks.length === 0 ? (
+                <p className="text-sm text-lavender/40 italic">No availability blocks yet. Add your first so others can find time with you. 🌟</p>
+              ) : (
+                calendar.availabilityBlocks.map((block) => (
+                  <div
+                    key={block.id}
+                    className={`rounded-xl border p-3 flex items-start justify-between ${
+                      block.type === 'available'
+                        ? 'border-green-400/20 bg-green-400/5'
+                        : 'border-magenta-400/20 bg-magenta-400/5'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm text-cream">
+                        {block.title || (block.type === 'available' ? 'Available' : 'Unavailable')} 🌿
+                      </p>
+                      <p className="text-xs text-lavender/60">
+                        {block.date
+                          ? `Date: ${block.date}`
+                          : `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek ?? 0]}`}
+                        {' · '}
+                        {block.startTime} – {block.endTime} ({block.timeZone})
+                        {block.recurring && ' · Recurring'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteBlock(block.id)}
+                      className="text-lavender/30 hover:text-magenta-300 transition-colors"
+                      aria-label="Delete availability block"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function endOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0)
+}
+
+function eachDayOfInterval(start: Date, end: Date): Date[] {
+  const days: Date[] = []
+  const cursor = new Date(start)
+  while (cursor <= end) {
+    days.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return days
+}
+
+function meetingStatusBadge(status: ScheduledMeeting['status']) {
+  const map: Record<ScheduledMeeting['status'], { class: string; label: string }> = {
+    proposed: { class: 'border-magenta-400/20 bg-magenta-400/10 text-magenta-300', label: 'Pending' },
+    confirmed: { class: 'border-green-400/20 bg-green-400/10 text-green-300', label: 'Confirmed' },
+    completed: { class: 'border-gold-400/20 bg-gold-400/10 text-gold-300', label: 'Completed' },
+    rescheduled: { class: 'border-blue-400/20 bg-blue-400/10 text-blue-300', label: 'Rescheduled' },
+    cancelled: { class: 'border-lavender/10 bg-lavender/5 text-lavender/40', label: 'Cancelled' },
+  }
+  const { class: cls, label } = map[status]
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${cls}`}>
+      {label} {status === 'proposed' ? '🌙' : status === 'confirmed' ? '☀' : status === 'completed' ? '✨' : status === 'rescheduled' ? '🌀' : '✕'}
+    </span>
   )
 }
 
