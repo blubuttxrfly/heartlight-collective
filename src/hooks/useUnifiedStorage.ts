@@ -303,7 +303,8 @@ export function useUnifiedStorage() {
         console.log('[UnifiedStorage] Supabase row data:', { 
           ces_number: row.ces_number, 
           name: row.name,
-          photo_url: row.photo_url ? 'has photo' : 'no photo',
+          peer_payment_methods: Array.isArray(row.peer_payment_methods) ? `${row.peer_payment_methods.length} methods` : 'none',
+          location_data: row.location_data ? 'set' : 'none',
         });
         
         const { error: supaError } = await supabase
@@ -312,12 +313,14 @@ export function useUnifiedStorage() {
           .eq('ces_number', profile.cesNumber ?? '')
 
         if (supaError) {
-          // If a column is missing (e.g., tags), retry with only known-safe fields
           const msg = supaError.message?.toLowerCase() || '';
-          if (msg.includes('column') && msg.includes('does not exist')) {
-            console.warn('[UnifiedStorage] Supabase missing column — retrying without tags:', supaError.message);
+          const missingColumnMatch = msg.match(/column ['\"]?([^'\"\s]+)['\"]? of relation ['\"]?profiles['\"]? does not exist/)
+            || msg.match(/could not identify an equality operator.*type\s+([\w_]+)/);
+          if (missingColumnMatch) {
+            const missingCol = missingColumnMatch[1];
+            console.warn(`[UnifiedStorage] Supabase missing column "${missingCol}" — retrying without it:`, supaError.message);
             const safeRow = recordToRow(profile);
-            delete safeRow.tags;
+            delete safeRow[missingCol];
             const { error: retryErr } = await supabase
               .from('profiles')
               .update(safeRow as any)
@@ -325,14 +328,14 @@ export function useUnifiedStorage() {
             if (retryErr) {
               console.error('[UnifiedStorage] Supabase retry update FAILED:', retryErr);
             } else {
-              console.log('[UnifiedStorage] Supabase update succeeded after retry (tags omitted)');
+              console.log('[UnifiedStorage] Supabase update succeeded after retry (column "' + missingCol + '" omitted)');
             }
           } else {
             console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
             throw new Error(`Supabase update failed: ${supaError.message}`);
           }
         } else {
-          console.log('[UnifiedStorage] Supabase update SUCCESS');
+          console.log('[UnifiedStorage] Supabase update SUCCESS (peer_payment_methods + location_data persisted)');
         }
       } catch (err: any) {
         console.error('[UnifiedStorage] Supabase update error:', err.message);
