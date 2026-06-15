@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine } from 'lucide-react'
+import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Check } from 'lucide-react'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
 import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion } from '../../types/ces'
@@ -38,15 +38,46 @@ function emptySideQuest(): QuestItem {
     title: '',
     description: '',
     status: 'open',
+    verifications: [],
     createdAt: now,
   }
+}
+
+function normalizeQuestStatus(status?: QuestItem['status']): QuestItem['status'] {
+  if (!status) return 'open'
+  // backward compatibility: legacy "completed" stays completed; anything else defaults to open
+  return status === 'completed' ? 'completed' : status
+}
+
+function getAssignedNames(quest: QuestItem): string[] {
+  if (quest.assignedToNames && quest.assignedToNames.length > 0) return quest.assignedToNames
+  if (quest.assignedToName) return [quest.assignedToName]
+  return []
+}
+
+function getAssignedCesList(quest: QuestItem): string[] {
+  if (quest.assignedToCesList && quest.assignedToCesList.length > 0) return quest.assignedToCesList
+  if (quest.assignedToCes) return [quest.assignedToCes]
+  return []
 }
 
 export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, onSigned }: ExchangeAgreementEditorProps) {
   const storage = useStorage()
   const { user } = useSession()
   const { updateExchangeAgreement, findVendorById, findProfileByCES } = storage
-  const [agreement, setAgreement] = useState<ExchangeAgreement>(initialAgreement)
+  const [agreement, setAgreement] = useState<ExchangeAgreement>(() => ({
+    ...initialAgreement,
+    mainQuest: {
+      ...initialAgreement.mainQuest,
+      status: normalizeQuestStatus(initialAgreement.mainQuest.status),
+      verifications: initialAgreement.mainQuest.verifications || [],
+    },
+    sideQuests: initialAgreement.sideQuests.map((q) => ({
+      ...q,
+      status: normalizeQuestStatus(q.status),
+      verifications: q.verifications || [],
+    })),
+  }))
   const [error, setError] = useState('')
   const [changeSummary, setChangeSummary] = useState('')
 
@@ -299,7 +330,186 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     }
   }
 
-  function handleSign() {
+  const handleToggleMainCes = useCallback((ces: string, name: string) => {
+    setAgreement((prev) => {
+      const currentCesList = getAssignedCesList(prev.mainQuest)
+      const currentNames = getAssignedNames(prev.mainQuest)
+      const hasCes = currentCesList.includes(ces)
+      const nextCesList = hasCes ? currentCesList.filter((c) => c !== ces) : [...currentCesList, ces]
+      const nextNames = hasCes ? currentNames.filter((n) => n !== name) : [...currentNames, name]
+      return {
+        ...prev,
+        mainQuest: {
+          ...prev.mainQuest,
+          assignedToCes: nextCesList.length === 1 ? nextCesList[0] : undefined,
+          assignedToName: nextNames.length === 1 ? nextNames[0] : undefined,
+          assignedToCesList: nextCesList,
+          assignedToNames: nextNames,
+        },
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }, [])
+
+  const handleToggleMainRole = useCallback((role: ExchangeRole) => {
+    setAgreement((prev) => {
+      const currentRoles = prev.mainQuest.assignedToRoles || []
+      const hasRole = currentRoles.includes(role)
+      const nextRoles = hasRole ? currentRoles.filter((r) => r !== role) : [...currentRoles, role]
+      return {
+        ...prev,
+        mainQuest: { ...prev.mainQuest, assignedToRoles: nextRoles },
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }, [])
+
+  const handleToggleSideCes = useCallback((questId: string, ces: string, name: string) => {
+    updateSideQuest(questId, {})
+    setAgreement((prev) => {
+      const q = prev.sideQuests.find((sq) => sq.id === questId)
+      if (!q) return prev
+      const currentCesList = getAssignedCesList(q)
+      const currentNames = getAssignedNames(q)
+      const hasCes = currentCesList.includes(ces)
+      const nextCesList = hasCes ? currentCesList.filter((c) => c !== ces) : [...currentCesList, ces]
+      const nextNames = hasCes ? currentNames.filter((n) => n !== name) : [...currentNames, name]
+      return {
+        ...prev,
+        sideQuests: prev.sideQuests.map((sq) =>
+          sq.id === questId
+            ? {
+                ...sq,
+                assignedToCes: nextCesList.length === 1 ? nextCesList[0] : undefined,
+                assignedToName: nextNames.length === 1 ? nextNames[0] : undefined,
+                assignedToCesList: nextCesList,
+                assignedToNames: nextNames,
+              }
+            : sq
+        ),
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }, [])
+
+  const handleToggleSideRole = useCallback((questId: string, role: ExchangeRole) => {
+    setAgreement((prev) => ({
+      ...prev,
+      sideQuests: prev.sideQuests.map((sq) => {
+        if (sq.id !== questId) return sq
+        const currentRoles = sq.assignedToRoles || []
+        const hasRole = currentRoles.includes(role)
+        const nextRoles = hasRole ? currentRoles.filter((r) => r !== role) : [...currentRoles, role]
+        return { ...sq, assignedToRoles: nextRoles }
+      }),
+      updatedAt: new Date().toISOString(),
+    }))
+  }, [])
+
+  function AssignmentChips({
+    quest,
+    onToggleRole,
+    onToggleCes,
+  }: {
+    quest: QuestItem
+    onToggleRole: (role: ExchangeRole) => void
+    onToggleCes: (ces: string, name: string) => void
+  }) {
+    const partyOptions = [
+      { ces: agreement.requesterCes, name: agreement.requesterName, role: agreement.requesterRole },
+      { ces: agreement.providerCes, name: agreement.providerName, role: agreement.providerRole },
+    ]
+    const assignedCesList = getAssignedCesList(quest)
+    const assignedNames = getAssignedNames(quest)
+    const assignedRoles = quest.assignedToRoles || []
+
+    return (
+      <div className="space-y-3 mt-3">
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-wider text-lavender/40">Assign by Being 🌱</p>
+          <div className="flex flex-wrap gap-2">
+            {partyOptions.map((p) => {
+              const selected = assignedCesList.includes(p.ces)
+              return (
+                <button
+                  key={p.ces}
+                  type="button"
+                  onClick={() => onToggleCes(p.ces, p.name)}
+                  disabled={isProposed && !isRequester(currentCes)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-all disabled:opacity-50 ${
+                    selected
+                      ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
+                      : 'bg-void-900/40 border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                  }`}
+                >
+                  {selected && <Check className="w-3 h-3 inline" />} {p.name} · {p.role} ✨
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                const cleared = {
+                  assignedToCes: undefined,
+                  assignedToName: undefined,
+                  assignedToCesList: [],
+                  assignedToNames: [],
+                  assignedToRoles: [],
+                }
+                // Apply via the caller's update helpers
+                if (quest.id === agreement.mainQuest.id) {
+                  setAgreement((prev) => ({
+                    ...prev,
+                    mainQuest: { ...prev.mainQuest, ...cleared },
+                    updatedAt: new Date().toISOString(),
+                  }))
+                } else {
+                  setAgreement((prev) => ({
+                    ...prev,
+                    sideQuests: prev.sideQuests.map((sq) => (sq.id === quest.id ? { ...sq, ...cleared } : sq)),
+                    updatedAt: new Date().toISOString(),
+                  }))
+                }
+              }}
+              disabled={isProposed && !isRequester(currentCes)}
+              className="text-xs px-2.5 py-1 rounded-full border border-lavender/10 text-lavender/40 hover:text-lavender/60 transition-all disabled:opacity-50"
+            >
+              Clear assignment 🌌
+            </button>
+          </div>
+          {assignedNames.length > 0 && (
+            <p className="text-[10px] text-lavender/40">Assigned to: {assignedNames.join(', ')} 🧭</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] uppercase tracking-wider text-lavender/40">Assign by Role 🌀</p>
+          <div className="flex flex-wrap gap-2">
+            {EXCHANGE_ROLES.map((role) => {
+              const selected = assignedRoles.includes(role)
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => onToggleRole(role)}
+                  disabled={isProposed && !isRequester(currentCes)}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-all disabled:opacity-50 ${
+                    selected
+                      ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
+                      : 'bg-void-900/40 border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                  }`}
+                >
+                  {selected && <Check className="w-3 h-3 inline" />} {role} 🔮
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const handleSign = useCallback(() => {
     const now = new Date().toISOString()
     const journey: ExchangeJourney = {
       id: `journey_${Date.now()}`,
@@ -334,7 +544,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     const next: ExchangeAgreement = { ...agreement, status: 'active', updatedAt: now }
     updateExchangeAgreement(next)
     onSigned()
-  }
+  }, [agreement, storage, updateExchangeAgreement, onSigned])
 
   const providerProfile = findProfileByCES(agreement.providerCes)
   const requesterProfile = findProfileByCES(agreement.requesterCes)
@@ -455,6 +665,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
               disabled={isProposed && !isRequester(currentCes)}
               className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
             />
+            <AssignmentChips
+              quest={agreement.mainQuest}
+              onToggleRole={handleToggleMainRole}
+              onToggleCes={handleToggleMainCes}
+            />
           </div>
 
           <div className="rounded-xl border border-lavender/10 bg-void-800/20 p-4">
@@ -500,6 +715,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                         rows={2}
                         disabled={isProposed && !isRequester(currentCes)}
                         className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
+                      />
+                      <AssignmentChips
+                        quest={q}
+                        onToggleRole={(role) => handleToggleSideRole(q.id, role)}
+                        onToggleCes={(ces, name) => handleToggleSideCes(q.id, ces, name)}
                       />
                     </div>
                     {(!isProposed || isRequester(currentCes)) && (

@@ -340,13 +340,25 @@ export interface QuestItem {
   id: string;
   title: string;
   description?: string;
+  /** @deprecated single assignment retained for backward compat */
   assignedToCes?: string;
+  /** @deprecated single assignment retained for backward compat */
   assignedToName?: string;
-  status: 'open' | 'in_progress' | 'completed' | 'paused';
+  assignedToRoles?: ExchangeRole[];
+  assignedToCesList?: string[];
+  assignedToNames?: string[];
+  status: 'open' | 'in_progress' | 'verification_pending' | 'completed' | 'paused';
   createdAt: string;
   completedAt?: string;
   completedByCes?: string;
   completedByName?: string;
+  verifications?: {
+    verifierCes: string;
+    verifierName: string;
+    verifiedAt: string;
+    status: 'approved' | 'rejected';
+    note?: string;
+  }[];
 }
 
 export interface AgreementVersion {

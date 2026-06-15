@@ -80,10 +80,12 @@ function applyApprovedAmendment(
 
   const nextJourney: ExchangeJourney = {
     ...journey,
-    mainQuest: { ...agreement.mainQuest, status: journey.mainQuest.status },
+    mainQuest: { ...agreement.mainQuest, status: normalizeQuestStatus(journey.mainQuest.status), verifications: journey.mainQuest.verifications || [] },
     sideQuests: agreement.sideQuests.map((sq) => {
       const existing = journey.sideQuests.find((j) => j.id === sq.id)
-      return existing ? { ...sq, status: existing.status } : sq
+      return existing
+        ? { ...sq, status: normalizeQuestStatus(existing.status), verifications: existing.verifications || [] }
+        : { ...sq, status: normalizeQuestStatus(sq.status), verifications: sq.verifications || [] }
     }),
     updatedAt: now,
   }
@@ -289,6 +291,29 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
 ]
 
 /* ─── Helpers ─── */
+function normalizeQuestStatus(status?: QuestItem['status']): QuestItem['status'] {
+  if (!status) return 'open'
+  // backward compatibility: legacy "completed" stays completed; anything else defaults to open
+  return status === 'completed' ? 'completed' : status
+}
+
+function getAssignedNames(quest: QuestItem): string[] {
+  if (quest.assignedToNames && quest.assignedToNames.length > 0) return quest.assignedToNames
+  if (quest.assignedToName) return [quest.assignedToName]
+  return []
+}
+
+function getAssignedCesList(quest: QuestItem): string[] {
+  if (quest.assignedToCesList && quest.assignedToCesList.length > 0) return quest.assignedToCesList
+  if (quest.assignedToCes) return [quest.assignedToCes]
+  return []
+}
+
+function hasOtherPartyApproved(quest: QuestItem, currentCes: string): boolean {
+  const verifications = quest.verifications || []
+  return verifications.some((v) => v.verifierCes !== currentCes && v.status === 'approved')
+}
+
 function timeAgo(ts: string) {
   const diff = Date.now() - new Date(ts).getTime()
   const mins = Math.floor(diff / 60000)
@@ -426,7 +451,8 @@ function QuestTracker({
 }) {
   const allQuests = useMemo(() => [journey.mainQuest, ...journey.sideQuests], [journey])
   const completedCount = useMemo(() => allQuests.filter(q => q.status === 'completed').length, [allQuests])
-  const percent = allQuests.length > 0 ? Math.round((completedCount / allQuests.length) * 100) : 0
+  const inVerificationCount = useMemo(() => allQuests.filter(q => q.status === 'verification_pending').length, [allQuests])
+  const percent = allQuests.length > 0 ? Math.round(((completedCount + inVerificationCount) / allQuests.length) * 100) : 0
   const isJourneyActive = journey.status === 'active'
 
   const pendingUpdate = agreement?.pendingUpdate
@@ -443,26 +469,100 @@ function QuestTracker({
     if (!isJourneyActive || !currentCes) return false
     const isInvolved = currentCes === journey.wishingCes || currentCes === journey.coCreatorCes
     if (!isInvolved) return false
-    if (quest.assignedToCes && quest.assignedToCes !== currentCes) return false
-    return true
+    const assignedCes = getAssignedCesList(quest)
+    // If unassigned, any involved party can start / mark done
+    if (assignedCes.length > 0 && !assignedCes.includes(currentCes)) return false
+    // Only allow moving open/in_progress to verification_pending
+    return quest.status === 'open' || quest.status === 'in_progress'
   }
 
-  function handleCompleteQuest(quest: QuestItem) {
-    if (!canCompleteQuest(quest) || quest.status === 'completed') return
+  function canVerifyQuest(quest: QuestItem) {
+    if (!isJourneyActive || !currentCes) return false
+    const isInvolved = currentCes === journey.wishingCes || currentCes === journey.coCreatorCes
+    if (!isInvolved) return false
+    // You cannot verify your own submission
+    if (quest.completedByCes === currentCes) return false
+    return quest.status === 'verification_pending'
+  }
+
+  function canRequestMoreWork(quest: QuestItem) {
+    return canVerifyQuest(quest)
+  }
+
+  function handleMarkDone(quest: QuestItem) {
+    if (!canCompleteQuest(quest)) return
     const now = new Date().toISOString()
-    const completedQuest: QuestItem = {
+    const markedQuest: QuestItem = {
       ...quest,
-      status: 'completed',
+      status: 'verification_pending',
       completedAt: now,
       completedByCes: currentCes,
       completedByName: currentName,
     }
+    updateQuest(markedQuest)
+  }
 
-    const nextMainQuest = journey.mainQuest.id === quest.id ? completedQuest : journey.mainQuest
-    const nextSideQuests = journey.sideQuests.map(q => (q.id === quest.id ? completedQuest : q))
+  function handleVerifyQuest(quest: QuestItem) {
+    if (!canVerifyQuest(quest)) return
+    const now = new Date().toISOString()
+    const verification = {
+      verifierCes: currentCes,
+      verifierName: currentName,
+      verifiedAt: now,
+      status: 'approved' as const,
+      note: '',
+    }
+    const approvedQuest: QuestItem = {
+      ...quest,
+      status: 'completed',
+      verifications: [...(quest.verifications || []), verification],
+    }
+    updateQuest(approvedQuest, { mainQuestToFulfillmentReview: quest.id === journey.mainQuest.id })
+  }
 
+  function handleRequestMoreWork(quest: QuestItem) {
+    if (!canRequestMoreWork(quest)) return
+    const now = new Date().toISOString()
+    const rejection = {
+      verifierCes: currentCes,
+      verifierName: currentName,
+      verifiedAt: now,
+      status: 'rejected' as const,
+      note: '',
+    }
+    const reopenedQuest: QuestItem = {
+      ...quest,
+      status: 'in_progress',
+      verifications: [...(quest.verifications || []), rejection],
+    }
+    updateQuest(reopenedQuest)
+  }
+
+  function updateQuest(
+    updatedQuest: QuestItem,
+    opts?: { mainQuestToFulfillmentReview?: boolean }
+  ) {
+    const now = new Date().toISOString()
+    const isMain = updatedQuest.id === journey.mainQuest.id
+
+    const nextMainQuest = isMain ? updatedQuest : journey.mainQuest
+    const nextSideQuests = journey.sideQuests.map((q) => (q.id === updatedQuest.id ? updatedQuest : q))
+
+    let nextJourneyStatus = journey.status
+    if (opts?.mainQuestToFulfillmentReview && updatedQuest.status === 'completed') {
+      nextJourneyStatus = 'fulfillment_review'
+    }
+
+    const codeEntry = CODES_DATA.find((c) => c.number === selectedCodeNum)
     const selectedRay = rayKeyFromCodeNumber(selectedCodeNum)
-    const codeEntry = CODES_DATA.find(c => c.number === selectedCodeNum)
+    const actionLabel =
+      updatedQuest.status === 'verification_pending'
+        ? 'marked as ready for verification'
+        : updatedQuest.status === 'completed'
+          ? 'verified and completed'
+          : updatedQuest.status === 'in_progress'
+            ? 'returned to in progress'
+            : 'updated'
 
     const newLog: CodeLogEntry = {
       id: `log_${Date.now()}`,
@@ -472,14 +572,15 @@ function QuestTracker({
       ray: selectedRay,
       codeNumber: codeEntry?.number ?? 12,
       timestamp: now,
-      content: `Quest completed: ${quest.title} — by ${currentName} on ${new Date(now).toLocaleDateString()}`,
+      content: `Quest ${actionLabel}: ${updatedQuest.title} — by ${currentName} on ${new Date(now).toLocaleDateString()}`,
       visibility: 'public',
       phase: 'during',
-      moodEnergy: 'Aligned, accomplished',
+      moodEnergy: 'Aligned, accountable',
     }
 
     const updatedJourney: ExchangeJourney = {
       ...journey,
+      status: nextJourneyStatus,
       mainQuest: nextMainQuest,
       sideQuests: nextSideQuests,
       logs: [...journey.logs, newLog],
@@ -487,8 +588,10 @@ function QuestTracker({
     }
 
     onJourneyUpdate(updatedJourney)
+    syncQuestToAgreement(updatedQuest)
+  }
 
-    // Sync quest completion to linked ExchangeAgreement when storage helpers are available
+  function syncQuestToAgreement(quest: QuestItem) {
     try {
       const hasAgreementHelpers =
         typeof (storage as any).updateAgreementQuest === 'function' &&
@@ -497,27 +600,27 @@ function QuestTracker({
 
       if (hasAgreementHelpers) {
         ;(storage as any).updateAgreementQuest(journey.agreementId, quest.id, {
-          status: 'completed',
-          completedAt: now,
-          completedByCes: currentCes,
-          completedByName: currentName,
+          status: quest.status,
+          completedAt: quest.completedAt,
+          completedByCes: quest.completedByCes,
+          completedByName: quest.completedByName,
+          verifications: quest.verifications,
         })
 
         const agreements = (storage as any).getExchangeAgreements() as { id: string; versions: AgreementVersion[] }[]
-        const linked = agreements.find(a => a.id === journey.agreementId)
+        const linked = agreements.find((a) => a.id === journey.agreementId)
         const previousVersion = linked?.versions?.length ? linked.versions[linked.versions.length - 1].version : 0
 
         const version: AgreementVersion = {
           version: previousVersion + 1,
-          updatedAt: now,
+          updatedAt: new Date().toISOString(),
           updatedByCes: currentCes,
           updatedByName: currentName,
-          changeSummary: `Quest completed: ${quest.title}`,
+          changeSummary: `Quest ${quest.status}: ${quest.title}`,
           approvedBy: [currentCes],
         }
         ;(storage as any).addAgreementVersion(journey.agreementId, version)
       } else {
-        // Fallback: update localStorage agreements directly
         const raw = localStorage.getItem('hlc_exchange_agreements') || '[]'
         const agreements = JSON.parse(raw) as {
           id: string
@@ -526,15 +629,15 @@ function QuestTracker({
           versions?: AgreementVersion[]
           updatedAt?: string
         }[]
-        const nextAgreements = agreements.map(ag => {
+        const nextAgreements = agreements.map((ag) => {
           if (ag.id !== journey.agreementId) return ag
-          const next = { ...ag, updatedAt: now }
+          const next = { ...ag, updatedAt: new Date().toISOString() }
           if (next.mainQuest?.id === quest.id) {
-            next.mainQuest = { ...next.mainQuest, status: 'completed', completedAt: now, completedByCes: currentCes, completedByName: currentName }
+            next.mainQuest = { ...next.mainQuest, status: quest.status, completedAt: quest.completedAt, completedByCes: quest.completedByCes, completedByName: quest.completedByName, verifications: quest.verifications }
           } else if (next.sideQuests) {
-            next.sideQuests = next.sideQuests.map(q =>
+            next.sideQuests = next.sideQuests.map((q) =>
               q.id === quest.id
-                ? { ...q, status: 'completed', completedAt: now, completedByCes: currentCes, completedByName: currentName }
+                ? { ...q, status: quest.status, completedAt: quest.completedAt, completedByCes: quest.completedByCes, completedByName: quest.completedByName, verifications: quest.verifications }
                 : q
             )
           }
@@ -544,10 +647,10 @@ function QuestTracker({
             ...versions,
             {
               version: previousVersion + 1,
-              updatedAt: now,
+              updatedAt: new Date().toISOString(),
               updatedByCes: currentCes,
               updatedByName: currentName,
-              changeSummary: `Quest completed: ${quest.title}`,
+              changeSummary: `Quest ${quest.status}: ${quest.title}`,
               approvedBy: [currentCes],
             },
           ]
@@ -556,48 +659,75 @@ function QuestTracker({
         localStorage.setItem('hlc_exchange_agreements', JSON.stringify(nextAgreements))
       }
     } catch (err) {
-      console.warn('Failed to sync quest completion to agreement:', err)
+      console.warn('Failed to sync quest update to agreement:', err)
     }
   }
 
+  function statusBadge(status: QuestItem['status']) {
+    switch (status) {
+      case 'completed':
+        return (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-green-400/20 bg-green-400/10 text-green-300">
+            ✓ Completed
+          </span>
+        )
+      case 'verification_pending':
+        return (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-magenta-400/20 bg-magenta-400/10 text-magenta-300">
+            🔍 Verification Pending
+          </span>
+        )
+      case 'in_progress':
+        return (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-blue-400/20 bg-blue-400/10 text-blue-300">
+            🌊 In Progress
+          </span>
+        )
+      case 'open':
+      default:
+        return (
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 bg-lavender/5 text-lavender/50">
+            🌌 Open
+          </span>
+        )
+    }
+  }
+
+  function handleCompleteQuest(quest: QuestItem) {
+    handleMarkDone(quest)
+  }
+
   function QuestRow({ quest, isMain }: { quest: QuestItem; isMain?: boolean }) {
-    const isCompleted = quest.status === 'completed'
-    const canToggle = canCompleteQuest(quest)
-    const disabled = !canToggle || isCompleted
+    const status = normalizeQuestStatus(quest.status)
+    const isCompleted = status === 'completed'
+    const isVerificationPending = status === 'verification_pending'
+    const canMark = canCompleteQuest(quest)
+    const canVerify = canVerifyQuest(quest)
+    const canReject = canRequestMoreWork(quest)
+    const assignedNames = getAssignedNames(quest)
 
     return (
       <div
         className={`rounded-xl border p-4 transition-all ${
           isCompleted
             ? 'border-green-400/20 bg-green-400/5'
-            : isMain
-              ? 'border-gold-400/30 bg-gold-400/5'
-              : 'border-lavender/10 bg-void-800/40'
+            : isVerificationPending
+              ? 'border-magenta-400/20 bg-magenta-400/5'
+              : isMain
+                ? 'border-gold-400/30 bg-gold-400/5'
+                : 'border-lavender/10 bg-void-800/40'
         }`}
       >
         <div className="flex items-start gap-3">
-          <button
-            onClick={() => handleCompleteQuest(quest)}
-            disabled={disabled}
-            aria-label={isCompleted ? 'Quest completed' : `Complete quest: ${quest.title}`}
-            className={`shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-              isCompleted
-                ? 'bg-green-400/20 border-green-400/50 text-green-400'
-                : disabled
-                  ? 'border-lavender/10 text-lavender/10 cursor-not-allowed'
-                  : 'border-lavender/30 text-lavender/30 hover:border-gold-400/60 hover:text-gold-400'
-            }`}
-          >
-            {isCompleted && <Check className="w-3.5 h-3.5" />}
-          </button>
+          <div className="shrink-0 pt-0.5">{statusBadge(status)}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className={`font-medium leading-snug ${isMain ? 'text-cream' : 'text-lavender/80'}`}>
                 {quest.title}
               </span>
-              {quest.assignedToName ? (
+              {assignedNames.length > 0 ? (
                 <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 text-lavender/50 bg-void-900/40">
-                  🧭 {quest.assignedToName}
+                  🧭 {assignedNames.join(', ')}
                 </span>
               ) : (
                 <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 text-lavender/50 bg-void-900/40">
@@ -610,7 +740,67 @@ function QuestTracker({
                 </span>
               )}
             </div>
-            {quest.description && <p className="text-xs text-lavender/50 leading-relaxed">{quest.description}</p>}
+            {quest.description && <p className="text-xs text-lavender/50 leading-relaxed mb-2">{quest.description}</p>}
+
+            {isVerificationPending && quest.completedByName && (
+              <p className="text-[10px] text-lavender/40 mb-2">
+                Marked ready by {quest.completedByName} · {quest.completedAt ? timeAgo(quest.completedAt) : 'recently'} 🕊️
+              </p>
+            )}
+
+            {canMark && (
+              <button
+                onClick={() => handleMarkDone(quest)}
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all mb-2"
+              >
+                <Check className="w-3 h-3" /> Mark as Done ✨
+              </button>
+            )}
+
+            {isVerificationPending && (canVerify || canReject) && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {canVerify && (
+                  <button
+                    onClick={() => handleVerifyQuest(quest)}
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-green-400/10 border border-green-400/30 text-green-300 hover:bg-green-400/20 transition-all"
+                  >
+                    <CheckCircle2 className="w-3 h-3" /> Verify Completion 🌿
+                  </button>
+                )}
+                {canReject && (
+                  <button
+                    onClick={() => handleRequestMoreWork(quest)}
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all"
+                  >
+                    <AlertTriangle className="w-3 h-3" /> Request More Work 🌀
+                  </button>
+                )}
+              </div>
+            )}
+
+            {isCompleted && quest.verifications && quest.verifications.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40">Verification History 🔮</p>
+                {quest.verifications.map((v) => (
+                  <div
+                    key={`${v.verifierCes}-${v.verifiedAt}`}
+                    className={`rounded-lg border px-2.5 py-1.5 text-xs ${
+                      v.status === 'approved'
+                        ? 'border-green-400/20 bg-green-400/5 text-green-300'
+                        : 'border-magenta-400/20 bg-magenta-400/5 text-magenta-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{v.verifierName}</span>
+                      <span className="text-[10px] text-lavender/40">{timeAgo(v.verifiedAt)}</span>
+                    </div>
+                    <span className="text-[10px] text-lavender/60">
+                      {v.status === 'approved' ? '✓ Verified' : '↩ Requested more work'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -672,6 +862,12 @@ function QuestTracker({
 
       {!isJourneyActive && (
         <p className="text-xs text-lavender/40 italic">Quests can be completed once the journey is active.</p>
+      )}
+
+      {isJourneyActive && inVerificationCount > 0 && (
+        <p className="text-xs text-magenta-300 italic">
+          {inVerificationCount} quest{inVerificationCount !== 1 ? 's' : ''} awaiting verification from the other party.
+        </p>
       )}
 
       {agreement && agreement.versions.length > 0 && (

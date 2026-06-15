@@ -73,6 +73,7 @@ export function ExchangeRequestModal({
       title: offering.title,
       description: offering.description,
       status: 'open' as const,
+      verifications: [],
       createdAt: now,
     }
 
