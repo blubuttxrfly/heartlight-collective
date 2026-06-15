@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Image, Tag, DollarSign, Gift, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem } from '../types/ces';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory } from '../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
@@ -348,24 +348,165 @@ function InviteMemberModal({ vendor, onClose, onInvite }: {
   );
 }
 
-/* ─── Add Offering Modal ─── */
+/* ─── Offerings List on Storefront Card ─── */
+function StorefrontOfferings({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: (v: VendorRecord) => void }) {
+  const [showList, setShowList] = useState(false);
+  const [editingOffering, setEditingOffering] = useState<OfferingItem | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const handleToggleAvailability = (o: OfferingItem) => {
+    const next: OfferingItem['availability'] = o.availability === 'unavailable' ? 'available' : 'unavailable';
+    const updated: VendorRecord = {
+      ...vendor,
+      offerings: vendor.offerings.map((x) => (x.id === o.id ? { ...x, availability: next, updatedAt: new Date().toISOString() } : x)),
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdate(updated);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = {
+      ...vendor,
+      offerings: vendor.offerings.filter((o) => o.id !== id),
+      updatedAt: new Date().toISOString(),
+    };
+    onUpdate(updated);
+    setConfirmDelete(null);
+  };
+
+  const formatPrice = (o: OfferingItem) => {
+    if (o.priceType === 'gift') return 'Gift';
+    if (o.priceType === 'collective_funded') return 'Collective Funded';
+    if (o.priceType === 'negotiable') return 'Negotiable';
+    if (o.priceCents != null) return `$${(o.priceCents / 100).toFixed(2)}`;
+    return 'Fixed';
+  };
+
+  const statusClass = (o: OfferingItem) => {
+    switch (o.availability) {
+      case 'available': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      case 'limited': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      case 'waitlist': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      default: return 'bg-lavender/5 text-lavender/40 border-lavender/10';
+    }
+  };
+
+  return (
+    <div className="border-t border-lavender/5 pt-3 mb-4">
+      <button
+        onClick={() => setShowList((p) => !p)}
+        className="flex items-center gap-2 text-xs text-lavender/50 hover:text-cream transition-colors mb-2"
+      >
+        <Package className="w-3.5 h-3.5" />
+        {vendor.offerings.length} {vendor.offerings.length === 1 ? 'offering' : 'offerings'}
+        <span className="text-lavender/30">{showList ? '▲' : '▼'}</span>
+      </button>
+
+      {showList && vendor.offerings.length === 0 && (
+        <p className="text-xs text-lavender/40 italic mb-2">No offerings yet. Add your first gift or service above.</p>
+      )}
+
+      {showList && vendor.offerings.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {vendor.offerings.map((o) => (
+            <div key={o.id} className="rounded-lg border border-lavender/10 bg-void-800/50 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-cream font-medium truncate">{o.title}</p>
+                  <p className="text-[10px] text-lavender/40 truncate">{o.category}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] border ${statusClass(o)}`}>
+                    {o.availability}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-gold-400 font-medium">{formatPrice(o)}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setEditingOffering(o)}
+                    className="p-1.5 rounded-md text-lavender/40 hover:text-cream hover:bg-lavender/10 transition-colors"
+                    title="Edit offering"
+                  >
+                    <PenTool className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleToggleAvailability(o)}
+                    className="p-1.5 rounded-md text-lavender/40 hover:text-cream hover:bg-lavender/10 transition-colors"
+                    title={o.availability === 'unavailable' ? 'Activate offering' : 'Pause offering'}
+                  >
+                    {o.availability === 'unavailable' ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(o.id)}
+                    className="p-1.5 rounded-md text-lavender/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Remove offering"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {confirmDelete === o.id && (
+                <div className="mt-2 p-2 rounded-md bg-red-500/5 border border-red-500/20">
+                  <p className="text-[10px] text-red-400 mb-2">Remove this offering permanently?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmDelete(null)}
+                      className="flex-1 py-1 rounded-md border border-lavender/10 text-lavender/50 text-[10px]"
+                    >
+                      Keep
+                    </button>
+                    <button
+                      onClick={() => handleDelete(o.id)}
+                      className="flex-1 py-1 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 text-[10px]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {editingOffering && (
+          <AddOfferingModal
+            vendor={vendor}
+            offering={editingOffering}
+            onClose={() => setEditingOffering(null)}
+            onSave={onUpdate}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Add / Edit Offering Modal ─── */
 function AddOfferingModal({
   vendor,
+  offering,
   onClose,
   onSave,
 }: {
   vendor: VendorRecord;
+  offering?: OfferingItem;
   onClose: () => void;
   onSave: (vendor: VendorRecord) => void;
 }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Astrology & Cosmic Guidance');
-  const [priceType, setPriceType] = useState<'fixed' | 'gift' | 'collective_funded' | 'negotiable'>('fixed');
-  const [priceCents, setPriceCents] = useState('');
-  const [availability, setAvailability] = useState<'available' | 'limited' | 'waitlist' | 'unavailable'>('available');
-  const [maxParticipants, setMaxParticipants] = useState('');
-  const [consentRequired, setConsentRequired] = useState(true);
+  const [title, setTitle] = useState(offering?.title || '');
+  const [description, setDescription] = useState(offering?.description || '');
+  const [category, setCategory] = useState<OfferingCategory>(offering?.category || 'Astrology & Cosmic Guidance');
+  const [priceType, setPriceType] = useState<'fixed' | 'gift' | 'collective_funded' | 'negotiable'>(offering?.priceType || 'fixed');
+  const [priceCents, setPriceCents] = useState(offering?.priceCents != null ? (offering.priceCents / 100).toFixed(2) : '');
+  const [availability, setAvailability] = useState<'available' | 'limited' | 'waitlist' | 'unavailable'>(offering?.availability || 'available');
+  const [maxParticipants, setMaxParticipants] = useState(offering?.maxParticipants?.toString() || '');
+  const [consentRequired, setConsentRequired] = useState(offering?.consentRequired ?? true);
   const [error, setError] = useState('');
 
   const categories = OFFERING_CATEGORIES;
@@ -387,25 +528,35 @@ function AddOfferingModal({
     if (!description.trim()) { setError('A description is required'); return; }
     if (priceType === 'fixed' && !priceCents.trim()) { setError('Please set a price or choose a different exchange type'); return; }
 
-    const offering: OfferingItem = {
-      id: `offering_${Date.now()}`,
-      vendorId: vendor.id,
+    // Convert dollars input to cents for storage
+    const parsedDollars = priceType === 'fixed' ? parseFloat(priceCents) : undefined;
+    const finalCents = parsedDollars != null && !isNaN(parsedDollars) ? Math.round(parsedDollars * 100) : undefined;
+
+    const newOffering: OfferingItem = {
+      ...(offering || {
+        id: `offering_${Date.now()}`,
+        vendorId: vendor.id,
+        createdAt: new Date().toISOString(),
+      }),
       title: title.trim(),
       description: description.trim(),
       category: category as any,
       priceType,
-      priceCents: priceType === 'fixed' ? parseInt(priceCents, 10) : undefined,
+      priceCents: finalCents,
       currency: 'USD',
       availability,
       consentRequired,
       maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : undefined,
-      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
+    const updatedOfferings = offering
+      ? vendor.offerings.map((o) => (o.id === offering.id ? newOffering : o))
+      : [...vendor.offerings, newOffering];
+
     const updated: VendorRecord = {
       ...vendor,
-      offerings: [...vendor.offerings, offering],
+      offerings: updatedOfferings,
       updatedAt: new Date().toISOString(),
     };
 
@@ -458,7 +609,7 @@ function AddOfferingModal({
               <label className="block text-sm text-lavender/70 mb-1.5">Category</label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value as OfferingCategory)}
                 className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none appearance-none"
               >
                 {categories.map((c) => (
@@ -698,7 +849,8 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
           ))}
         </div>
 
-        {/* Actions */}
+        {/* Offerings List */}
+        <StorefrontOfferings vendor={vendor} onUpdate={onUpdate} />
         <div className="flex items-center gap-2 pt-3 border-t border-lavender/5">
           <button
             onClick={() => setShowOffering(true)}
