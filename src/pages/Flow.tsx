@@ -259,6 +259,10 @@ function LogEntry({ entry, isAuthor }: { entry: CodeLogEntry; isAuthor: boolean 
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ background: codeColor(entry.codeNumber) }} />
+            <span className="text-[10px] font-medium" style={{ color: codeColor(entry.codeNumber) + 'aa' }}>
+              {entry.ray} Ray
+            </span>
             <span className="text-xs text-cream font-medium">{entry.authorName}</span>
             {isPrivate && <EyeOff className="w-3 h-3 text-lavender/30" />}
             <span className="text-[10px] text-lavender/30">{timeAgo(entry.timestamp)}</span>
@@ -607,9 +611,9 @@ function JourneyDetailPanel({
             key={code.number}
             className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border"
             style={{ borderColor: code.color + '25', color: code.color + 'cc' }}
-            title={`${code.ray}: ${code.name}`}
+            title={`${code.number}. ${code.name} — ${code.ray}`}
           >
-            {code.number}
+            {code.ray.replace(' Ray', '')}
           </span>
         ))}
       </div>
@@ -692,7 +696,9 @@ function JourneyDetailPanel({
           <div className="rounded-xl border border-lavender/15 bg-void-800/60 p-4 space-y-3">
             {/* All 12 Ray Frequencies */}
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans mb-2">All 12 Ray Frequencies — Select one to tag your entry</p>
+              <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                Which Ray Frequency is alive for you in this moment?
+              </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
                 {CODES_DATA.map(code => (
                   <button
@@ -703,16 +709,13 @@ function JourneyDetailPanel({
                         ? 'border-gold-400/40 bg-gold-400/10'
                         : 'border-white/5 bg-white/[0.03] hover:border-lavender/15 hover:bg-white/[0.06]'
                     }`}
-                    title={`${code.ray}: ${code.name}`}
+                    title={`${code.number}. ${code.name} — ${code.ray}`}
                   >
                     <span className="block w-3 h-3 rounded-full mx-auto mb-1">
                       <span className="block w-full h-full rounded-full" style={{ background: code.color }} />
                     </span>
                     <span className="text-[10px] font-sans" style={{ color: code.color + 'cc' }}>
-                      {code.number}
-                    </span>
-                    <span className="block text-[8px] leading-tight mt-0.5 text-lavender/50 truncate">
-                      {code.name.split(' ').slice(0, 2).join(' ')}
+                      {code.ray.replace(' Ray', '')}
                     </span>
                   </button>
                 ))}
@@ -725,9 +728,11 @@ function JourneyDetailPanel({
                     style={{ background: CODES_DATA.find(c => c.number === selectedCodeNum)?.color }} />
                   <div>
                     <p className="text-sm text-cream">
-                      {CODES_DATA.find(c => c.number === selectedCodeNum)?.ray}: {CODES_DATA.find(c => c.number === selectedCodeNum)?.name}
+                      {CODES_DATA.find(c => c.number === selectedCodeNum)?.ray}
                     </p>
-                    <p className="text-xs text-lavender/50 mt-0.5">This Code is selected. Your journal entry will be tagged with this frequency.</p>
+                    <p className="text-xs text-lavender/50 mt-0.5">
+                      Your entry resonates with this frequency. All 12 Ray Frequencies are alive in every exchange — this is simply where your awareness is resting right now.
+                    </p>
                   </div>
                 </div>
               )}
