@@ -33,7 +33,7 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
     coCreatorName: 'Cosmic Bloom',
     status: 'active',
     currentPhase: 'during',
-    selectedCodes: [1, 3, 6, 9, 10],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     logs: [
       {
         id: 'log_01',
@@ -106,7 +106,7 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
     coCreatorName: 'Web Weaver',
     status: 'fulfillment_review',
     currentPhase: 'after',
-    selectedCodes: [1, 3, 6, 7, 9, 10],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     logs: [
       {
         id: 'log_10',
@@ -204,11 +204,12 @@ function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney
         <span>{journey.coCreatorName}</span>
       </div>
       <div className="flex flex-wrap gap-1 mt-2">
-        {journey.selectedCodes.map(n => (
+        {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => (
           <span
             key={n}
-            className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono border"
+            className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono border"
             style={{ borderColor: codeColor(n) + '40', color: codeColor(n), background: codeColor(n) + '15' }}
+            title={CODES_DATA.find(c => c.number === n)?.name}
           >
             {n}
           </span>
@@ -599,20 +600,18 @@ function JourneyDetailPanel({
         </div>
       </div>
 
-      {/* Selected Codes Chips */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {journey.selectedCodes.map(num => {
-          const code = CODES_DATA.find(c => c.number === num)!
-          return (
-            <span
-              key={num}
-              className="text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full border"
-              style={{ borderColor: code.color + '30', color: code.color }}
-            >
-              {num}. {code.name}
-            </span>
-          )
-        })}
+      {/* All 12 Ray Frequencies — present in every exchange */}
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        {CODES_DATA.map(code => (
+          <span
+            key={code.number}
+            className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border"
+            style={{ borderColor: code.color + '25', color: code.color + 'cc' }}
+            title={`${code.ray}: ${code.name}`}
+          >
+            {code.number}
+          </span>
+        ))}
       </div>
 
       <div className="flex gap-1 mb-6 border-b border-lavender/10">

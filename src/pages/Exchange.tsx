@@ -8,6 +8,22 @@ import { haversineDistance, formatDistance } from '../lib/geo'
 import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../lib/constants'
 import type { WishScope } from '../types/ces'
 
+/* ─── Codes Data (for display) ─── */
+const CODES_DATA = [
+  { number: 1, name: 'Consent', ray: 'Red', color: '#ef4444' },
+  { number: 2, name: 'Care', ray: 'Orange', color: '#f97316' },
+  { number: 3, name: 'Sovereignty', ray: 'Yellow', color: '#eab308' },
+  { number: 4, name: 'Thrival', ray: 'Green', color: '#22c55e' },
+  { number: 5, name: 'Discernment & Repair', ray: 'Turquoise', color: '#2dd4bf' },
+  { number: 6, name: 'Sustainability & Communication', ray: 'Blue', color: '#3b82f6' },
+  { number: 7, name: 'Vision', ray: 'Indigo', color: '#6366f1' },
+  { number: 8, name: 'Sanctity of Experience', ray: 'Violet', color: '#8b5cf6' },
+  { number: 9, name: 'Authentic Joy', ray: 'Magenta', color: '#d946ef' },
+  { number: 10, name: 'Conscious Awareness', ray: 'Omni', color: '#c0c0d8' },
+  { number: 11, name: 'Sacred Service', ray: 'Elemental', color: '#7a9e5a' },
+  { number: 12, name: 'Co-Creation', ray: 'ALL', color: '#e8d4ff' },
+]
+
 /* ─── Mock Wishes (initial data) ─── */
 const INITIAL_WISHES = [
   {
@@ -24,7 +40,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsRequired: 0,
     timeCommitment: '5-10 hours over 2 weeks',
-    selectedCodes: [1, 3, 6, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_01',
     postedByName: 'Gaia Weaver',
@@ -44,7 +60,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsAvailable: 0,
     timeCommitment: '90-minute sessions',
-    selectedCodes: [1, 3, 9, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_02',
     postedByName: 'Cosmic Bloom',
@@ -64,7 +80,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'collective',
     fundsRequired: 50000,
     timeCommitment: 'One-time support',
-    selectedCodes: [4, 6, 11, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_03',
     postedByName: 'Sol Guardian',
@@ -84,7 +100,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsAvailable: 0,
     timeCommitment: '2-5 hours per project',
-    selectedCodes: [2, 5, 7, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_04',
     postedByName: 'Vision Seed',
@@ -104,7 +120,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsAvailable: 0,
     timeCommitment: '60-minute sessions, weekly availability',
-    selectedCodes: [1, 3, 8, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_05',
     postedByName: 'Breath of Gaia',
@@ -127,7 +143,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsAvailable: 0,
     timeCommitment: '90-minute session',
-    selectedCodes: [3, 7, 9, 12],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_02',
     postedByName: 'Cosmic Bloom',
@@ -157,7 +173,7 @@ const INITIAL_WISHES = [
     exchangeAvenue: 'direct',
     fundsAvailable: 0,
     timeCommitment: '2-5 hours per project',
-    selectedCodes: [2, 5, 7, 11],
+    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     status: 'open',
     postedByCes: 'local_being_04',
     postedByName: 'Vision Seed',
@@ -763,13 +779,18 @@ function WishDetailModal({ wish, onClose, onClaim }) {
             </div>
           )}
 
-          {/* Codes */}
+          {/* 12 Ray Frequencies — present in every exchange */}
           <div className="rounded-xl border border-gold-400/10 bg-gold-400/5 p-4">
-            <label className="block text-xs text-gold-400/60 mb-2 uppercase tracking-wider">12 Codes of ALL Guiding This Exchange</label>
-            <div className="flex flex-wrap gap-2">
-              {wish.selectedCodes.map(code => (
-                <span key={code} className="px-2 py-0.5 rounded-full bg-void-900 border border-gold-400/20 text-gold-300 text-xs">
-                  Code {code}
+            <label className="block text-xs text-gold-400/60 mb-2 uppercase tracking-wider">12 Ray Frequencies of ALL — Present in Every Exchange</label>
+            <div className="flex flex-wrap gap-1.5">
+              {CODES_DATA.map(code => (
+                <span
+                  key={code.number}
+                  className="px-2 py-0.5 rounded-full bg-void-900 border text-[10px]"
+                  style={{ borderColor: code.color + '30', color: code.color + 'bb' }}
+                  title={`${code.ray}: ${code.name}`}
+                >
+                  {code.number}. {code.name}
                 </span>
               ))}
             </div>
