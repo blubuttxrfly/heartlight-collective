@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Image, Tag, DollarSign, Gift, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest } from '../types/ces';
-import { PAYMENT_METHOD_LABELS } from '../lib/constants';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem } from '../types/ces';
+import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
 function slugify(name: string): string {

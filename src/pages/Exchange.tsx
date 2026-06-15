@@ -363,7 +363,7 @@ export default function Exchange() {
   const offeringCount = wishes.filter(w => w.type === 'offering').length
 
   const typeLabels = [
-    { key: 'all', label: 'ALL', count: wishes.length },
+    { key: 'all', label: 'ALL', count: wishes.length, icon: null },
     { key: 'wish', label: 'Wishes', count: wishCount, icon: Heart },
     { key: 'offer', label: 'Gifts', count: offerCount, icon: Sparkles },
     { key: 'offering', label: 'Offerings', count: offeringCount, icon: Store },
