@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation, Repeat, Store } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
 import { haversineDistance, formatDistance } from '../lib/geo'
 import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS, PAYMENT_METHOD_LABELS } from '../lib/constants'
-import type { WishScope } from '../types/ces'
+import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord } from '../types/ces'
+import { ExchangeRequestModal } from '../components/exchange/ExchangeRequestModal'
+import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor'
 
 /* ─── Codes Data (for display) ─── */
 const CODES_DATA = [
@@ -271,9 +273,13 @@ export default function Exchange() {
   const [selectedContinent, setSelectedContinent] = useState<string>('')
   const [localRadius, setLocalRadius] = useState(DEFAULT_LOCAL_RADIUS_KM)
   const [typeFilter, setTypeFilter] = useState<'all' | 'wish' | 'offer' | 'offering'>('all')
+  const [requestModalOffering, setRequestModalOffering] = useState<OfferingItem | null>(null)
+  const [requestModalVendor, setRequestModalVendor] = useState<VendorRecord | null>(null)
+  const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null)
 
   const { user } = useSession()
-  const { findProfileByCES } = useStorage()
+  const { findProfileByCES, findVendorById } = useStorage()
+  const navigate = useNavigate()
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
@@ -703,8 +709,34 @@ export default function Exchange() {
             onClose={() => setSelectedWish(null)}
             onClaim={() => {
               if (selectedWish.type === 'offering') {
-                // Offerings use the exchange agreement flow, not direct claim
-                // TODO: Wave 5 will open ExchangeRequestModal here
+                if (!user?.ces) {
+                  alert('Please sign in with your C.E.S. before requesting an aligned exchange.')
+                  return
+                }
+                const vendor = selectedWish.vendorId ? findVendorById(selectedWish.vendorId) : undefined
+                if (!vendor) {
+                  alert('This offering is not connected to a storefront right now.')
+                  return
+                }
+                // Build a typed OfferingItem from the grid payload
+                const offering: OfferingItem = {
+                  id: selectedWish.id,
+                  vendorId: vendor.id,
+                  title: selectedWish.title,
+                  description: selectedWish.description,
+                  category: selectedWish.category,
+                  priceType: selectedWish.priceType,
+                  priceCents: selectedWish.priceCents,
+                  currency: 'USD',
+                  availability: selectedWish.availability,
+                  consentRequired: selectedWish.consentRequired ?? true,
+                  maxParticipants: selectedWish.maxParticipants,
+                  stripePriceId: selectedWish.stripePriceId,
+                  createdAt: selectedWish.createdAt,
+                  updatedAt: selectedWish.updatedAt,
+                }
+                setRequestModalOffering(offering)
+                setRequestModalVendor(vendor)
                 setSelectedWish(null)
                 return
               }
@@ -731,6 +763,44 @@ export default function Exchange() {
                 setWishes(loadWishes())
               }
               setSelectedWish(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Exchange Request Modal */}
+      <AnimatePresence>
+        {requestModalOffering && requestModalVendor && user?.ces && (
+          <ExchangeRequestModal
+            offering={requestModalOffering}
+            vendor={requestModalVendor}
+            requesterCes={user.ces}
+            requesterName={findProfileByCES(user.ces)?.name || user.name || 'You'}
+            onClose={() => {
+              setRequestModalOffering(null)
+              setRequestModalVendor(null)
+            }}
+            onAgreementCreated={(ag) => {
+              setRequestModalOffering(null)
+              setRequestModalVendor(null)
+              setEditingAgreement(ag)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Exchange Agreement Editor */}
+      <AnimatePresence>
+        {editingAgreement && (
+          <ExchangeAgreementEditor
+            agreement={editingAgreement}
+            onClose={() => {
+              setEditingAgreement(null)
+              setWishes(loadWishes())
+            }}
+            onSigned={() => {
+              setEditingAgreement(null)
+              navigate('/flow')
             }}
           />
         )}
