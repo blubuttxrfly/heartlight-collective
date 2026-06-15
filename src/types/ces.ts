@@ -40,8 +40,9 @@ export interface AvailabilityBlock {
   id: string;
   dayOfWeek?: number;            // 0 = Sunday ... 6 = Saturday
   date?: string;                 // YYYY-MM-DD for one-off blocks
-  startTime: string;             // HH:mm
-  endTime: string;               // HH:mm
+  startTime?: string;            // HH:mm (omit when allDay)
+  endTime?: string;              // HH:mm (omit when allDay)
+  allDay?: boolean;              // Heartlight Green/Red Ray full-day marker
   timeZone: string;
   type: 'available' | 'unavailable';
   recurring: boolean;

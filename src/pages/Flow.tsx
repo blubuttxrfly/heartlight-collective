@@ -1690,6 +1690,7 @@ function CalendarPanel({
     date: '',
     startTime: '09:00',
     endTime: '17:00',
+    allDay: false,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     type: 'available' as AvailabilityBlock['type'],
     recurring: false,
@@ -1702,8 +1703,9 @@ function CalendarPanel({
       id: `block_${Date.now()}`,
       dayOfWeek: form.date ? undefined : Number(form.dayOfWeek),
       date: form.date || undefined,
-      startTime: form.startTime,
-      endTime: form.endTime,
+      startTime: form.allDay ? undefined : form.startTime,
+      endTime: form.allDay ? undefined : form.endTime,
+      allDay: form.allDay || undefined,
       timeZone: form.timeZone,
       type: form.type,
       recurring: form.recurring,
@@ -1715,6 +1717,41 @@ function CalendarPanel({
 
   function handleDeleteBlock(id: string) {
     storage.removeAvailabilityBlock(currentCes, id)
+    refreshCalendar()
+  }
+
+  function formatISODate(d: Date): string {
+    const tzOffset = d.getTimezoneOffset() * 60000
+    return new Date(d.getTime() - tzOffset).toISOString().split('T')[0]
+  }
+
+  function dayAvailability(date: Date): 'available' | 'unavailable' | null {
+    const dateStr = formatISODate(date)
+    const dayIndex = date.getDay()
+    const specificBlocks = calendar.availabilityBlocks.filter((b) => b.date === dateStr)
+    if (specificBlocks.length > 0) return specificBlocks[specificBlocks.length - 1].type
+    const recurringBlocks = calendar.availabilityBlocks.filter((b) => !b.date && b.dayOfWeek === dayIndex)
+    if (recurringBlocks.length > 0) return recurringBlocks[recurringBlocks.length - 1].type
+    return null
+  }
+
+  function handleDayClick(date: Date) {
+    const dateStr = formatISODate(date)
+    const existingIds = calendar.availabilityBlocks
+      .filter((b) => b.date === dateStr)
+      .map((b) => b.id)
+    const currentType = dayAvailability(date)
+    const nextType: AvailabilityBlock['type'] = currentType === 'available' ? 'unavailable' : 'available'
+    existingIds.forEach((id) => storage.removeAvailabilityBlock(currentCes, id))
+    storage.addAvailabilityBlock(currentCes, {
+      id: `block_${Date.now()}`,
+      date: dateStr,
+      allDay: true,
+      timeZone: form.timeZone,
+      type: nextType,
+      recurring: false,
+      title: nextType === 'available' ? 'Available all day' : 'Unavailable all day',
+    })
     refreshCalendar()
   }
 
@@ -1768,18 +1805,27 @@ function CalendarPanel({
               {daysInMonth.map((date) => {
                 const isToday = date.toDateString() === today.toDateString()
                 const hasMeeting = meetingDays.has(date.getDate())
+                const availability = dayAvailability(date)
+                const baseClasses = 'aspect-square rounded-lg border flex flex-col items-center justify-center text-xs transition-all cursor-pointer select-none'
+                const colorClasses =
+                  availability === 'available'
+                    ? 'border-green-400/40 bg-green-400/15 text-green-100 hover:bg-green-400/25'
+                    : availability === 'unavailable'
+                      ? 'border-red-400/40 bg-red-400/15 text-red-100 hover:bg-red-400/25'
+                      : isToday
+                        ? 'border-gold-400/40 bg-gold-400/10 text-cream hover:border-gold-400/60'
+                        : 'border-lavender/10 text-lavender/60 hover:border-lavender/30'
                 return (
-                  <div
+                  <button
                     key={date.toISOString()}
-                    className={`aspect-square rounded-lg border flex flex-col items-center justify-center text-xs transition-all ${
-                      isToday
-                        ? 'border-gold-400/40 bg-gold-400/10 text-cream'
-                        : 'border-lavender/10 text-lavender/60 hover:border-lavender/20'
-                    }`}
+                    type="button"
+                    onClick={() => handleDayClick(date)}
+                    className={`${baseClasses} ${colorClasses}`}
+                    title={availability ? `Click to toggle: currently ${availability}` : 'Click to mark available'}
                   >
                     <span>{date.getDate()}</span>
                     {hasMeeting && <span className="w-1 h-1 rounded-full bg-gold-400 mt-1" />}
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -1882,26 +1928,40 @@ function CalendarPanel({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">Start</label>
+              <div className="flex items-center gap-3 mb-1">
+                <label className="flex items-center gap-2 text-xs text-lavender/60">
                   <input
-                    type="time"
-                    value={form.startTime}
-                    onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                    type="checkbox"
+                    checked={form.allDay}
+                    onChange={(e) => setForm({ ...form, allDay: e.target.checked })}
+                    className="rounded border-lavender/20 bg-void-900/60 text-gold-400 focus:ring-gold-400/30"
                   />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-lavender/40">End</label>
-                  <input
-                    type="time"
-                    value={form.endTime}
-                    onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-                    className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
-                  />
-                </div>
+                  All day 🌅
+                </label>
               </div>
+
+              {!form.allDay && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-lavender/40">Start</label>
+                    <input
+                      type="time"
+                      value={form.startTime}
+                      onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                      className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider text-lavender/40">End</label>
+                    <input
+                      type="time"
+                      value={form.endTime}
+                      onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+                      className="w-full px-2.5 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/30 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1963,26 +2023,28 @@ function CalendarPanel({
               ) : (
                 calendar.availabilityBlocks.map((block) => (
                   <div
-                    key={block.id}
-                    className={`rounded-xl border p-3 flex items-start justify-between ${
-                      block.type === 'available'
-                        ? 'border-green-400/20 bg-green-400/5'
-                        : 'border-magenta-400/20 bg-magenta-400/5'
-                    }`}
+                  key={block.id}
+                  className={`rounded-xl border p-3 flex items-start justify-between ${
+                    block.type === 'available'
+                      ? 'border-green-400/20 bg-green-400/5'
+                      : 'border-red-400/20 bg-red-400/5'
+                  }`}
                   >
-                    <div>
-                      <p className="text-sm text-cream">
-                        {block.title || (block.type === 'available' ? 'Available' : 'Unavailable')} 🌿
-                      </p>
-                      <p className="text-xs text-lavender/60">
-                        {block.date
-                          ? `Date: ${block.date}`
-                          : `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek ?? 0]}`}
-                        {' · '}
-                        {block.startTime} – {block.endTime} ({block.timeZone})
-                        {block.recurring && ' · Recurring'}
-                      </p>
-                    </div>
+                  <div>
+                    <p className="text-sm text-cream">
+                      {block.title || (block.type === 'available' ? 'Available' : 'Unavailable')} {block.type === 'available' ? '🌿' : '🛡️'}
+                    </p>
+                    <p className="text-xs text-lavender/60">
+                      {block.date
+                        ? `Date: ${block.date}`
+                        : `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][block.dayOfWeek ?? 0]}`}
+                      {' · '}
+                      {block.allDay
+                        ? 'All day 🌅'
+                        : `${block.startTime} – ${block.endTime} (${block.timeZone})`}
+                      {block.recurring && ' · Recurring'}
+                    </p>
+                  </div>
                     <button
                       onClick={() => handleDeleteBlock(block.id)}
                       className="text-lavender/30 hover:text-magenta-300 transition-colors"
