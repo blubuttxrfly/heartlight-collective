@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
 import { haversineDistance, formatDistance } from '../lib/geo'
-import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../lib/constants'
+import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS, PAYMENT_METHOD_LABELS } from '../lib/constants'
 import type { WishScope } from '../types/ces'
 
 /* ─── Codes Data (for display) ─── */
@@ -702,6 +702,12 @@ export default function Exchange() {
             wish={selectedWish}
             onClose={() => setSelectedWish(null)}
             onClaim={() => {
+              if (selectedWish.type === 'offering') {
+                // Offerings use the exchange agreement flow, not direct claim
+                // TODO: Wave 5 will open ExchangeRequestModal here
+                setSelectedWish(null)
+                return
+              }
               const stored = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
               const idx = stored.findIndex(w => w.id === selectedWish.id)
               if (idx >= 0) {
@@ -756,9 +762,27 @@ export default function Exchange() {
   )
 }
 
-/* ─── Wish Detail Modal ─── */
+/* ─── Wish / Gift / Offering Detail Modal ─── */
 function WishDetailModal({ wish, onClose, onClaim }) {
   const u = URGENCY_CONFIG[wish.urgency]
+  const isOffering = wish.type === 'offering'
+
+  const formatPrice = () => {
+    if (wish.priceType === 'gift') return 'Gift Economy'
+    if (wish.priceType === 'collective_funded') return 'Collective Funded'
+    if (wish.priceType === 'negotiable') return 'Negotiable'
+    if (wish.priceCents != null) return `$${(wish.priceCents / 100).toFixed(2)}`
+    return 'Fixed Price'
+  }
+
+  const statusClass = () => {
+    switch (wish.availability) {
+      case 'available': return 'bg-green-500/10 text-green-400 border-green-500/20'
+      case 'limited': return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      case 'waitlist': return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+      default: return 'bg-lavender/5 text-lavender/40 border-lavender/10'
+    }
+  }
 
   return (
     <motion.div
@@ -782,22 +806,38 @@ function WishDetailModal({ wish, onClose, onClaim }) {
         </button>
 
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className={`px-2 py-0.5 rounded-full text-xs ${
               wish.type === 'wish'
                 ? 'bg-magenta-500/10 text-magenta-400'
+                : wish.type === 'offering'
+                ? 'bg-blue-400/10 text-blue-300'
                 : 'bg-gold-400/10 text-gold-300'
             }`}>
-              {wish.type === 'wish' ? '💫 Wish' : '🎁 Gift'}
+              {wish.type === 'wish' ? '💫 Wish' : wish.type === 'offering' ? '🏪 Offering' : '🎁 Gift'}
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-xs ${u.bg} ${u.color}`}>
-              <Clock className="w-2.5 h-2.5 inline mr-1" />{u.label}
-            </span>
+            {u && (
+              <span className={`px-2 py-0.5 rounded-full text-xs ${u.bg} ${u.color}`}>
+                <Clock className="w-2.5 h-2.5 inline mr-1" />{u.label}
+              </span>
+            )}
+            {isOffering && (
+              <span className={`px-2 py-0.5 rounded-full text-xs border ${statusClass()}`}>
+                {wish.availability}
+              </span>
+            )}
+            {wish.isContinualOffering && (
+              <span className="px-2 py-0.5 rounded-full text-xs bg-green-400/10 text-green-300 flex items-center gap-1">
+                <Repeat className="w-2.5 h-2.5" /> Continual
+              </span>
+            )}
           </div>
 
           <h2 className="font-serif text-2xl text-cream mb-2">{wish.title}</h2>
           <p className="text-sm text-lavender/40">
-            Posted by {wish.postedByName} • {wish.category} {CATEGORY_EMOJIS[wish.category]}
+            {isOffering ? `Offered by ${wish.vendorName || wish.postedByName}` : `Posted by ${wish.postedByName}`}
+            {' • '}
+            {wish.category} {CATEGORY_EMOJIS[wish.category]}
           </p>
         </div>
 
@@ -811,37 +851,41 @@ function WishDetailModal({ wish, onClose, onClaim }) {
           {/* Details */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
-              <label className="block text-xs text-lavender/50 mb-1">Location</label>
+              <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Exchange Type' : 'Location'}</label>
               <div className="text-sm text-cream flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-lavender/40" />
-                {wish.location}
+                {isOffering ? <Store className="w-3.5 h-3.5 text-lavender/40" /> : <MapPin className="w-3.5 h-3.5 text-lavender/40" />}
+                {isOffering ? formatPrice() : wish.location}
               </div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
-              <label className="block text-xs text-lavender/50 mb-1">Time Commitment</label>
-              <div className="text-sm text-cream">{wish.timeCommitment}</div>
+              <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Availability' : 'Time Commitment'}</label>
+              <div className="text-sm text-cream">{isOffering ? wish.availability : wish.timeCommitment}</div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
-              <label className="block text-xs text-lavender/50 mb-1">Exchange Avenue</label>
-              <div className="text-sm text-cream">{wish.exchangeAvenue}</div>
+              <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Vendor' : 'Exchange Avenue'}</label>
+              <div className="text-sm text-cream">{isOffering ? wish.vendorName || wish.postedByName : wish.exchangeAvenue}</div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
-              <label className="block text-xs text-lavender/50 mb-1">Resources</label>
+              <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Category' : 'Resources'}</label>
               <div className="flex flex-wrap gap-1">
-                {wish.resources.map(r => (
-                  <span key={r} className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">
-                    {r}
-                  </span>
-                ))}
+                {isOffering ? (
+                  <span className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">{wish.category}</span>
+                ) : (
+                  wish.resources.map(r => (
+                    <span key={r} className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">
+                      {r}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           </div>
 
           {/* Skills */}
-          {wish.skills.length > 0 && (
+          {!isOffering && wish.skills.length > 0 && (
             <div>
               <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">{wish.type === 'wish' ? 'Skills Needed' : 'Skills Offered'}</label>
               <div className="flex flex-wrap gap-2">
@@ -885,12 +929,18 @@ function WishDetailModal({ wish, onClose, onClaim }) {
             </div>
           </div>
 
-          {/* Funds */}
-          {(wish.fundsRequired > 0 || wish.fundsAvailable > 0) && (
+          {/* Funds / Price for offerings */}
+          {(isOffering || wish.fundsRequired > 0 || wish.fundsAvailable > 0) && (
             <div className="rounded-xl border border-magenta-500/10 bg-magenta-500/5 p-4">
-              <label className="block text-xs text-magenta-400/60 mb-2 uppercase tracking-wider">Funds</label>
+              <label className="block text-xs text-magenta-400/60 mb-2 uppercase tracking-wider">{isOffering ? 'Exchange Value' : 'Funds'}</label>
               <div className="text-sm text-cream">
-                {wish.fundsRequired > 0 && <span><span className="text-magenta-400">Needed: ${(wish.fundsRequired / 100).toFixed(2)}</span> </span>}
+                {isOffering && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-gold-400 font-medium text-lg">{formatPrice()}</span>
+                    <span className="text-xs text-lavender/40">{wish.priceType}</span>
+                  </div>
+                )}
+                {wish.fundsRequired > 0 && !isOffering && <span><span className="text-magenta-400">Needed: ${(wish.fundsRequired / 100).toFixed(2)}</span> </span>}
                 {wish.fundsAvailable > 0 && <span><span className="text-gold-400">Available: ${(wish.fundsAvailable / 100).toFixed(2)}</span> </span>}
               </div>
             </div>
@@ -912,18 +962,34 @@ function WishDetailModal({ wish, onClose, onClaim }) {
             </div>
           )}
 
-          {/* Claim Button */}
-          {(wish.status === 'open' || wish.isContinualOffering) && (
+          {/* Claim / Request Exchange Button */}
+          {(wish.status === 'open' || wish.isContinualOffering || isOffering) && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={onClaim}
-              className="w-full py-4 rounded-xl bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all"
+              className={`w-full py-4 rounded-xl border transition-all ${
+                isOffering
+                  ? 'bg-blue-400/10 border-blue-400/30 text-blue-300 hover:bg-blue-400/20'
+                  : 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20'
+              }`}
             >
-              <Heart className="w-5 h-5 inline mr-2" />
-              {wish.isContinualOffering
-                ? `I Feel Called to Meet This Gift (${wish.claims?.length || 0} previous resonances)`
-                : `I Feel Called to Meet This ${wish.type === 'wish' ? 'Wish' : 'Gift'}`}
+              {isOffering ? (
+                <>
+                  <Store className="w-5 h-5 inline mr-2" />
+                  Request Exchange
+                </>
+              ) : wish.isContinualOffering ? (
+                <>
+                  <Heart className="w-5 h-5 inline mr-2" />
+                  I Feel Called to Meet This Gift ({wish.claims?.length || 0} previous resonances)
+                </>
+              ) : (
+                <>
+                  <Heart className="w-5 h-5 inline mr-2" />
+                  I Feel Called to Meet This {wish.type === 'wish' ? 'Wish' : 'Gift'}
+                </>
+              )}
             </motion.button>
           )}
         </div>
