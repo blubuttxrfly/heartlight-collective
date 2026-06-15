@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { X, Heart, ArrowRight, Store, MessageSquare, ScrollText, CreditCard, UsersRound, AlertCircle, Clock, Calendar as CalendarIcon, CalendarDays, MapPin } from 'lucide-react'
 import { useStorage } from '../../lib/storage'
-import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock, AgreementParty, QuestItem } from '../../types/ces'
+import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRequest, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock, AgreementParty, QuestItem } from '../../types/ces'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
 
@@ -66,7 +66,7 @@ export function ExchangeRequestModal({
   onClose,
   onAgreementCreated,
 }: ExchangeRequestModalProps) {
-  const { addExchangeAgreement, findProfileByCES, getExchangeCalendar, addScheduledMeeting } = useStorage()
+  const { addExchangeAgreement, addExchangeRequest, findProfileByCES, getExchangeCalendar, addScheduledMeeting } = useStorage()
   const [message, setMessage] = useState('')
   const [proposedTerms, setProposedTerms] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType | ''>('')
@@ -242,6 +242,27 @@ export function ExchangeRequestModal({
       addScheduledMeeting(vendor.ownerCes, meeting)
       addScheduledMeeting(requesterCes, { ...meeting, title: `${meeting.title} (with ${providerName})` })
     }
+
+    // Persist the inbound request for the vendor inbox
+    const exchangeRequest: ExchangeRequest = {
+      id: `request_${Date.now()}`,
+      offeringId: offering.id,
+      vendorId: vendor.id,
+      requesterCes,
+      requesterName,
+      providerCes: vendor.ownerCes,
+      providerName,
+      message: message.trim(),
+      priceType: offering.priceType,
+      paymentMethod: effectivePaymentMethod,
+      status: 'pending',
+      collectivePetitionId: undefined,
+      consentAcknowledged: true,
+      createdAt: now,
+      updatedAt: now,
+    }
+    addExchangeRequest(exchangeRequest)
+
     onAgreementCreated(agreement)
   }
 

@@ -35,6 +35,7 @@ import { useStorage } from '../lib/storage.tsx'
 import { useSession } from '../lib/session.ts'
 import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor.tsx'
 import { WithdrawalModal } from '../components/exchange/WithdrawalModal.tsx'
+import { VendorInbox } from '../components/VendorInbox.tsx'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../lib/calendar.ts'
 import type {
   ExchangeJourney,
@@ -1271,6 +1272,8 @@ export default function Flow() {
               />
             </Link>
           </div>
+
+          <VendorInbox />
 
           <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
             <div className="flex items-center gap-2 mb-4">

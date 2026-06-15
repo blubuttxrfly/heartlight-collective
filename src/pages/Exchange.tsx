@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Globe, Navigation, Repeat, Store } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Globe, Navigation, Repeat, Store, Inbox } from 'lucide-react'
 import { PiShootingStar, PiHeartLight } from 'react-icons/pi'
 import { FaHandHoldingHeart } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
@@ -11,6 +11,9 @@ import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRE
 import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord } from '../types/ces'
 import { ExchangeRequestModal } from '../components/exchange/ExchangeRequestModal'
 import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor'
+import { VendorInbox } from '../components/VendorInbox'
+import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges'
+import { StorefrontCard } from '../components/StorefrontCard'
 
 /* ─── Codes Data (for display) ─── */
 const CODES_DATA = [
@@ -280,8 +283,11 @@ export default function Exchange() {
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null)
 
   const { user } = useSession()
-  const { findProfileByCES, findVendorById } = useStorage()
+  const { findProfileByCES, findVendorById, getVendors } = useStorage()
   const navigate = useNavigate()
+
+  const [vendorDiscoveryOpen, setVendorDiscoveryOpen] = useState(false)
+  const [showVendorInbox, setShowVendorInbox] = useState(false)
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
@@ -427,6 +433,43 @@ export default function Exchange() {
           Find a Vendor <Store className="w-4 h-4" />
         </Link>
       </div>
+
+      <button
+        onClick={() => setShowVendorInbox((v) => !v)}
+        className="mx-auto mb-6 flex items-center gap-2 px-4 py-2 rounded-full border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-sm"
+      >
+        {showVendorInbox ? 'Close Vendor Inbox' : 'Open Vendor Inbox'}
+        <Inbox className="w-4 h-4" />
+      </button>
+
+      {showVendorInbox && (
+        <div className="mb-8">
+          <VendorInbox embedded onClose={() => setShowVendorInbox(false)} />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-3 mb-8 justify-center">
+        <button
+          onClick={() => setVendorDiscoveryOpen((v) => !v)}
+          className={`px-5 py-2 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
+            vendorDiscoveryOpen
+              ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
+              : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+          }`}
+        >
+          Vendor Shops <Store className="w-4 h-4" />
+        </button>
+      </div>
+
+      {vendorDiscoveryOpen && (
+        <div className="mb-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {getVendors()
+            .filter((v) => v.status === 'active')
+            .map((vendor) => (
+              <StorefrontCard key={vendor.id} vendor={vendor} />
+            ))}
+        </div>
+      )}
 
       {/* Type Filter Tabs */}
       <div className="flex flex-wrap gap-2 justify-center mb-6">
