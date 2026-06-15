@@ -179,7 +179,7 @@ function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney
   const lastLog = journey.logs[journey.logs.length - 1]
   const statusColor = journey.status === 'active' ? 'border-green-500/20 bg-green-500/5 text-green-400'
     : journey.status === 'fulfillment_review' ? 'border-magenta-400/20 bg-magenta-400/5 text-magenta-400'
-    : journey.status === 'completed' ? 'border-gold-400/20 bg-gold-400/5 text-gold-400'
+    : journey.status === 'complete' ? 'border-gold-400/20 bg-gold-400/5 text-gold-400'
     : 'border-lavender/10 bg-lavender/5 text-lavender/40'
 
   return (
