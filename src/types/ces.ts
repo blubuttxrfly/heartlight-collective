@@ -160,6 +160,23 @@ export interface CreatorRecord {
   
   // NEW — Structured location data for distance-aware discovery
   locationData?: LocationData;
+
+  // NEW — Peer-to-peer payment methods this being accepts (Wave 7)
+  peerPaymentMethods?: PaymentMethodConfig[];
+}
+
+export interface MutualAidSummary {
+  totalAgreements: number;
+  activeAgreements: number;
+  completedAgreements: number;
+  giftsShared: number;
+  giftsReceived: number;
+  wishesPosted: number;
+  wishesClaimed: number;
+  vendorsOwned: number;
+  offeringsActive: number;
+  totalEstimatedValueCents: number;
+  unpaidAgreements: number;
 }
 
 export interface AuthorizedStewardEntry {
@@ -251,16 +268,21 @@ export type VendorMemberRole = 'owner' | 'admin' | 'contributor';
 
 export type VendorMemberStatus = 'invited' | 'active' | 'removed';
 
-export type PaymentMethodType = 'stripe' | 'venmo' | 'cashapp' | 'zelle' | 'collective';
+export type PaymentMethodType = 'stripe' | 'venmo' | 'cashapp' | 'zelle' | 'chime' | 'collective';
 
 export interface PaymentMethodConfig {
   type: PaymentMethodType;
   enabled: boolean;
-  stripeAccountId?: string;     // Stripe Connect account ID
+  // Direct peer-to-peer / platform links
+  stripePaymentLink?: string;   // Stripe Checkout / Payment Link URL
+  stripeAccountId?: string;     // Stripe Connect account ID (legacy)
   venmoUsername?: string;       // @username
   cashappUsername?: string;     // $username
   zelleContact?: string;        // Phone or email (with consent)
+  chimeUsername?: string;       // Chime $username or username
   collectivePriority?: boolean; // Prefer collective funding when available
+  preferredCurrency?: string; // e.g. USD
+  note?: string;               // Public note about when/how to pay
 }
 
 export interface VendorMember {

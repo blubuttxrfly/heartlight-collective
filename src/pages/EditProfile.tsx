@@ -12,7 +12,8 @@ import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { ACCESSIBILITY_PRESETS, ASTROLOGY_SIGNS, CONTACT_FIELDS } from '../lib/constants';
 import CreatorTagSelector from '../components/CreatorTagSelector';
 import LocationSelect from '../components/LocationSelect';
-import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData } from '../types/ces';
+import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData, PaymentMethodConfig } from '../types/ces';
+import PaymentMethodEditor from '../components/PaymentMethodEditor';
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   email: FaEnvelope,
@@ -70,6 +71,9 @@ export default function EditProfile() {
   // Guide & Guardian
   const [guideGuardianOptIn, setGuideGuardianOptIn] = useState(false);
 
+  // Peer-to-Peer Payment Methods
+  const [peerPaymentMethods, setPeerPaymentMethods] = useState<PaymentMethodConfig[]>([]);
+
   // Load full profile on mount
   useEffect(() => {
     if (!user?.ces) return;
@@ -101,6 +105,7 @@ export default function EditProfile() {
         setNumerology(p.numerology || []);
         setAccessibility(p.accessibility || []);
         setGuideGuardianOptIn(p.guideGuardianStatus === 'opted_in');
+        setPeerPaymentMethods(p.peerPaymentMethods || []);
       }
     };
     
@@ -224,6 +229,7 @@ export default function EditProfile() {
         guideGuardianOptedInAt: guideGuardianOptIn && profile.guideGuardianStatus !== 'opted_in' 
           ? new Date().toISOString() 
           : profile.guideGuardianOptedInAt,
+        peerPaymentMethods,
       };
 
       // Update in unified storage (Supabase + localStorage)
@@ -654,6 +660,11 @@ export default function EditProfile() {
                 <p className="text-xs text-lavender/50">Support other beings in their journey and hold space for the Collective</p>
               </div>
             </label>
+          </div>
+
+          {/* Peer-to-Peer Payment Methods */}
+          <div className="space-y-4 pt-4 border-t border-lavender/10">
+            <PaymentMethodEditor methods={peerPaymentMethods} onChange={setPeerPaymentMethods} />
           </div>
 
           {/* Actions */}

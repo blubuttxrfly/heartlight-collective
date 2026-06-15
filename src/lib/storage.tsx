@@ -6,24 +6,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert } from '../types/ces';
+import { seedDevData } from './seedData';
 
 const STORAGE_PREFIX = 'hlc_';
-
-interface StorageState {
-  pending: CreatorRecord[];
-  approved: CreatorRecord[];
-  returned: CreatorRecord[];
-  authorizedCES: AuthorizedStewardEntry[];
-  securityLog: SecurityLogEntry[];
-  agreements: AgreementRecord[];
-  vendors: VendorRecord[];
-  vendorInvites: VendorInvite[];
-  vendorJoinRequests: VendorJoinRequest[];
-  exchangeRequests: ExchangeRequest[];
-  exchangeAgreements: ExchangeAgreement[];
-  collectivePetitions: CollectivePetition[];
-  exchangeAlerts: ExchangeAlert[];
-}
 
 type StorageKey = keyof StorageState;
 
@@ -129,6 +114,22 @@ interface StorageContextValue {
   getScheduledMeetingsForCes: (ces: string) => ScheduledMeeting[];
 }
 
+export interface StorageState {
+  pending: CreatorRecord[];
+  approved: CreatorRecord[];
+  returned: CreatorRecord[];
+  authorizedCES: AuthorizedStewardEntry[];
+  securityLog: SecurityLogEntry[];
+  agreements: AgreementRecord[];
+  vendors: VendorRecord[];
+  vendorInvites: VendorInvite[];
+  vendorJoinRequests: VendorJoinRequest[];
+  exchangeRequests: ExchangeRequest[];
+  exchangeAgreements: ExchangeAgreement[];
+  collectivePetitions: CollectivePetition[];
+  exchangeAlerts: ExchangeAlert[];
+}
+
 const StorageContext = createContext<StorageContextValue | null>(null);
 
 export function StorageProvider({ children }: { children: React.ReactNode }) {
@@ -162,7 +163,10 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     }
-    return initial;
+
+    // Dev-only: seed interconnected mock exchange data when storage is empty
+    const seeded = seedDevData(initial);
+    return seeded;
   });
 
   const stateRef = useRef(state);

@@ -167,8 +167,9 @@ export const OFFERING_AVAILABILITY_OPTIONS = [
 export const PAYMENT_METHOD_LABELS: Record<string, { label: string; prefix: string; example: string }> = {
   venmo:     { label: 'Venmo',     prefix: 'venmo.com/u/',  example: '@username' },
   cashapp:   { label: 'Cash App',  prefix: 'cash.app/$',    example: '$username' },
+  chime:     { label: 'Chime',     prefix: 'chime.com/r/',   example: '$username' },
   zelle:     { label: 'Zelle',     prefix: '',              example: 'phone or email' },
-  stripe:    { label: 'Stripe',    prefix: '',              example: 'Stripe Connect account' },
+  stripe:    { label: 'Stripe',    prefix: '',              example: 'Stripe payment link' },
   collective: { label: 'Collective', prefix: '',             example: 'Collective treasury' },
 };
 

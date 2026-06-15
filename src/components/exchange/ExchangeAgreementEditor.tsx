@@ -4,10 +4,11 @@ import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Tras
 import { Link } from 'react-router-dom'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
-import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility, ScheduledMeeting, AvailabilityBlock, AgreementParty, SafetyReport, AgreementPartyWithdrawal } from '../../types/ces'
+import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, PaymentMethodConfig, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility, ScheduledMeeting, AvailabilityBlock, AgreementParty, SafetyReport, AgreementPartyWithdrawal } from '../../types/ces'
+import { getPaymentUrl, formatPaymentLabel, paymentTypeIcon } from '../../lib/payments'
 import { WithdrawalModal } from './WithdrawalModal'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
-import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check } from 'lucide-react'
+import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check, ExternalLink } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 
 const EXCHANGE_ROLES: ExchangeRole[] = [
@@ -29,7 +30,7 @@ This Privacy Assurance space is meant for every individual being to share bounda
 
 This Exchange Agreement may also change, shift, update and/or be revoked at any time by any being within the Exchange Agreement before, during, or after the exchange as approved by ALL beings within the Exchange Agreement.`
 
-const PAYMENT_METHODS: PaymentMethodType[] = ['stripe', 'venmo', 'cashapp', 'zelle', 'collective']
+const PAYMENT_METHODS: PaymentMethodType[] = ['stripe', 'venmo', 'cashapp', 'zelle', 'chime', 'collective']
 
 interface ExchangeAgreementEditorProps {
   agreement: ExchangeAgreement
@@ -71,6 +72,81 @@ function emptySideQuest(): QuestItem {
     verifications: [],
     createdAt: now,
   }
+}
+
+interface PeerPaymentActionsProps {
+  agreement: ExchangeAgreement
+}
+
+function PeerPaymentActions({ agreement }: PeerPaymentActionsProps) {
+  const { findProfileByCES, findVendorById } = useStorage()
+  const providerProfile = useMemo(() => findProfileByCES(agreement.providerCes), [findProfileByCES, agreement.providerCes])
+  const vendor = useMemo(() => (agreement.vendorId ? findVendorById(agreement.vendorId) : undefined), [findVendorById, agreement.vendorId])
+
+  const selectedType = agreement.paymentMethod
+  const amountCents = agreement.agreedPriceCents ?? agreement.proposedPriceCents
+
+  const availableMethods = useMemo(() => {
+    const all: PaymentMethodConfig[] = []
+    const seen = new Set<PaymentMethodType>()
+    const add = (method?: PaymentMethodConfig) => {
+      if (!method || !method.enabled) return
+      if (seen.has(method.type)) return
+      seen.add(method.type)
+      all.push(method)
+    }
+    ;(providerProfile?.peerPaymentMethods || []).forEach(add)
+    ;(vendor?.paymentMethods || []).forEach(add)
+    return all
+  }, [providerProfile, vendor])
+
+  const selectedMethod = availableMethods.find((m) => m.type === selectedType)
+
+  if (!selectedType) return null
+
+  if (selectedType === 'collective') {
+    return (
+      <div className="mt-3 p-3 rounded-lg border border-green-400/20 bg-green-400/10 text-sm text-green-300">
+        Collective funding path. Request will route through Heartlight treasury review.
+      </div>
+    )
+  }
+
+  if (!selectedMethod) {
+    return (
+      <div className="mt-3 p-3 rounded-lg border border-lavender/10 bg-void-800/40 text-sm text-lavender/60">
+        {PAYMENT_METHOD_LABELS[selectedType]?.label || selectedType} details are not yet configured by the provider.
+      </div>
+    )
+  }
+
+  const url = getPaymentUrl(selectedMethod, amountCents)
+  const label = formatPaymentLabel(selectedMethod)
+
+  return (
+    <div className="mt-3 p-3 rounded-lg border border-gold-400/20 bg-gold-400/5">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-lg">{paymentTypeIcon(selectedMethod.type)}</span>
+        <span className="text-sm font-medium text-cream">{label}</span>
+      </div>
+      {selectedMethod.note && <p className="text-xs text-lavender/70 mb-2">{selectedMethod.note}</p>}
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-400/20 text-gold-300 hover:bg-gold-400/30 transition-all text-sm"
+        >
+          <ExternalLink className="w-4 h-4" />
+          {amountCents != null && amountCents > 0
+            ? `Pay ${(amountCents / 100).toFixed(2)} ${selectedMethod.preferredCurrency || 'USD'}`
+            : `Open ${PAYMENT_METHOD_LABELS[selectedType]?.label || selectedType}`}
+        </a>
+      ) : (
+        <p className="text-xs text-lavender/50">No direct link configured for this method.</p>
+      )}
+    </div>
+  )
 }
 
 function normalizeQuestStatus(status?: QuestItem['status']): QuestItem['status'] {
@@ -1343,6 +1419,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                   <option key={m} value={m}>{PAYMENT_METHOD_LABELS[m]?.label || m}</option>
                 ))}
               </select>
+              <PeerPaymentActions agreement={agreement} />
               {agreement.collectiveFundingRequested && (
                 <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" /> Collective funding requested

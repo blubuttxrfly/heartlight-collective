@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation, Repeat, Store } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Globe, Navigation, Repeat, Store } from 'lucide-react'
+import { PiShootingStar, PiHeartLight } from 'react-icons/pi'
+import { FaHandHoldingHeart } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
@@ -385,10 +387,10 @@ export default function Exchange() {
 
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
-            <Wand2 className="w-8 h-8 text-gold-400" />
+            <PiHeartLight className="w-8 h-8 text-gold-400" aria-label="Heartlight" />
           </div>
           <h1 className="font-serif text-3xl text-gold-400 mb-2">
-            Wish Exchange Portal
+            Heartlight Exchange
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
             Cast a Wish, Share a Gift, and Exchange with Fulfillment!
@@ -405,18 +407,24 @@ export default function Exchange() {
       </div>
 
       {/* Post CTA */}
-      <div className="flex gap-3 mb-8 justify-center">
+      <div className="flex flex-wrap gap-3 mb-8 justify-center">
         <Link
-          to="/post-wish"
+          to="/post-wish?type=wish"
           className="px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center gap-2"
         >
-          <Plus className="w-4 h-4" /> Share a Wish
+          Cast a Wish <PiShootingStar className="w-4 h-4" />
         </Link>
         <Link
-          to="/post-wish"
+          to="/post-wish?type=gift"
           className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center gap-2"
         >
-          <Sparkles className="w-4 h-4" /> Share a Gift
+          Share a Gift <FaHandHoldingHeart className="w-4 h-4" />
+        </Link>
+        <Link
+          to="/directory"
+          className="px-6 py-3 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all inline-flex items-center gap-2"
+        >
+          Find a Vendor <Store className="w-4 h-4" />
         </Link>
       </div>
 
@@ -470,10 +478,10 @@ export default function Exchange() {
                   isActive ? activeClass : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                 }`}
               >
+                {s === 'local' ? 'Local' : s === 'global' ? 'Regional' : 'Universal'}
                 {s === 'local' && <Navigation className="w-4 h-4" />}
                 {s === 'global' && <Globe className="w-4 h-4" />}
                 {s === 'universal' && <Sparkles className="w-4 h-4" />}
-                {s === 'local' ? 'Local' : s === 'global' ? 'Regional' : 'Universal'}
               </button>
             )
           })}

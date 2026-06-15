@@ -15,6 +15,7 @@ import MyStorefronts from './pages/MyStorefronts'
 import SignIn from './pages/SignIn'
 import EditProfile from './pages/EditProfile'
 import Profile from './pages/Profile'
+import ResourceFlow from './pages/ResourceFlow'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/profile/:ces" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/resource-flow/:ces?" element={<ResourceFlow />} />
         </Routes>
       </main>
       <Footer />

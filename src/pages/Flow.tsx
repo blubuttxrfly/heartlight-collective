@@ -28,6 +28,7 @@ import {
   Plus,
   X,
   Download,
+  HandHeart,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
@@ -1259,6 +1260,16 @@ export default function Flow() {
               color="#f59e0b"
               onClick={() => setView('calendar')}
             />
+            <Link to={`/resource-flow/${user?.ces || ''}`} className="contents">
+              <AspectCard
+                icon={HandHeart}
+                label="Mutual Aid"
+                count={myAgreements.filter((a) => a.status === 'active').length}
+                subtitle="Your resource flow: gifts, offerings, wishes, vendors, and payments"
+                color="#ec4899"
+                onClick={() => {}}
+              />
+            </Link>
           </div>
 
           <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
