@@ -251,6 +251,19 @@ export interface VendorInvite {
   respondedAt?: string;
 }
 
+/** Beings request to join a vendor group */
+export interface VendorJoinRequest {
+  id: string;
+  vendorId: string;
+  requesterCes: string;
+  requesterName: string;
+  message?: string;
+  status: 'pending' | 'approved' | 'declined';
+  requestedAt: string;
+  respondedAt?: string;
+  respondedByCes?: string;
+}
+
 export interface OfferingItem {
   id: string;
   vendorId: string;
@@ -282,6 +295,7 @@ export interface VendorRecord {
   paymentMethods: PaymentMethodConfig[];
   status: VendorStatus;
   collectiveFunded: boolean;     // Accepts collective-funded requests
+  joinRequests: VendorJoinRequest[]; // Incoming membership requests
   createdAt: string;
   updatedAt: string;
 }
@@ -300,6 +314,28 @@ export interface ExchangeRequest {
   status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
   collectivePetitionId?: string; // If collective-funded
   consentAcknowledged: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Agreement-based exchange for vendor offerings with mutual consent */
+export interface ExchangeAgreement {
+  id: string;
+  offeringId: string;
+  vendorId: string;
+  requesterCes: string;
+  requesterName: string;
+  providerCes: string;
+  providerName: string;
+  message: string;
+  proposedPriceCents?: number;
+  agreedPriceCents?: number;
+  paymentMethod?: PaymentMethodType;
+  status: 'requested' | 'discussing' | 'agreed' | 'fulfilled' | 'completed' | 'declined';
+  requesterConsented: boolean;
+  providerConsented: boolean;
+  collectiveFundingRequested: boolean;
+  collectiveFundingApproved?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -420,6 +456,10 @@ export interface Wish {
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
+  /** When true, this gift listing persists and can be claimed repeatedly */
+  isContinualOffering?: boolean;
+  /** Track each claim for continual offerings */
+  claims?: { claimedByCes: string; claimedByName: string; claimedAt: string }[];
 }
 
 // ═══════════════════════════════════════════════════════════════

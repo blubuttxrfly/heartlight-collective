@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
-import type { VendorRecord, PaymentMethodConfig } from '../types/ces';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest } from '../types/ces';
 import { PAYMENT_METHOD_LABELS } from '../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
@@ -42,9 +42,22 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [collectiveFunded, setCollectiveFunded] = useState(false);
+  const [paymentConfig, setPaymentConfig] = useState<PaymentMethodConfig[]>([
+    { type: 'stripe', enabled: false },
+    { type: 'venmo', enabled: false },
+    { type: 'cashapp', enabled: false },
+    { type: 'zelle', enabled: false },
+    { type: 'collective', enabled: false, collectivePriority: false },
+  ]);
   const [error, setError] = useState('');
 
   const myCes = getMyCES();
+
+  const updatePayment = (type: string, key: string, value: unknown) => {
+    setPaymentConfig(prev =>
+      prev.map(p => p.type === type ? { ...p, [key]: value } : p)
+    );
+  };
 
   function handleSubmit() {
     if (!name.trim()) { setError('A storefront name is required'); return; }
@@ -60,15 +73,10 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
       ownerName: '', // filled from profile
       members: [],
       offerings: [],
-      paymentMethods: [
-        { type: 'stripe', enabled: false },
-        { type: 'venmo', enabled: false },
-        { type: 'cashapp', enabled: false },
-        { type: 'zelle', enabled: false },
-        { type: 'collective', enabled: false, collectivePriority: false },
-      ],
+      paymentMethods: paymentConfig,
       status: 'active',
       collectiveFunded,
+      joinRequests: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -84,7 +92,7 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-lg overflow-hidden"
+        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-lg overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -101,7 +109,8 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Name + Description */}
             <div>
               <label className="block text-sm text-lavender/70 mb-1.5">Storefront Name</label>
               <input
@@ -119,6 +128,8 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
                 className="w-full bg-void-800 border border-lavender/10 rounded-xl px-4 py-3 text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors resize-none"
               />
             </div>
+
+            {/* Collective Funding */}
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox" checked={collectiveFunded}
@@ -130,6 +141,67 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
                 <span className="block text-xs text-lavender/40">Allow aligned exchanges to flow through the Collective treasury</span>
               </span>
             </label>
+
+            {/* Payment Methods */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-3">Payment Methods</label>
+              <div className="space-y-3">
+                {paymentConfig.map((method) => {
+                  const cfg = PAYMENT_METHOD_LABELS[method.type];
+                  return (
+                    <div key={method.type} className="rounded-xl border border-lavender/10 bg-void-800/50 p-3">
+                      <label className="flex items-center gap-3 cursor-pointer mb-2">
+                        <input
+                          type="checkbox"
+                          checked={method.enabled}
+                          onChange={(e) => updatePayment(method.type, 'enabled', e.target.checked)}
+                          className="w-4 h-4 rounded border-lavender/20 bg-void-800 accent-gold-400"
+                        />
+                        <span className="text-sm text-cream">{cfg.label}</span>
+                      </label>
+                      {method.enabled && method.type === 'venmo' && (
+                        <input
+                          value={(method as any).venmoUsername || ''}
+                          onChange={(e) => updatePayment('venmo', 'venmoUsername', e.target.value)}
+                          placeholder="@username"
+                          className="w-full bg-void-900 border border-lavender/10 rounded-lg px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/50 focus:outline-none"
+                        />
+                      )}
+                      {method.enabled && method.type === 'cashapp' && (
+                        <input
+                          value={(method as any).cashappUsername || ''}
+                          onChange={(e) => updatePayment('cashapp', 'cashappUsername', e.target.value)}
+                          placeholder="$username"
+                          className="w-full bg-void-900 border border-lavender/10 rounded-lg px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/50 focus:outline-none"
+                        />
+                      )}
+                      {method.enabled && method.type === 'zelle' && (
+                        <input
+                          value={(method as any).zelleContact || ''}
+                          onChange={(e) => updatePayment('zelle', 'zelleContact', e.target.value)}
+                          placeholder="phone or email"
+                          className="w-full bg-void-900 border border-lavender/10 rounded-lg px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/50 focus:outline-none"
+                        />
+                      )}
+                      {method.enabled && method.type === 'stripe' && (
+                        <p className="text-xs text-lavender/40">Stripe Connect account linking will be available in a future wave.</p>
+                      )}
+                      {method.enabled && method.type === 'collective' && (
+                        <label className="flex items-center gap-2 cursor-pointer mt-1">
+                          <input
+                            type="checkbox"
+                            checked={(method as any).collectivePriority || false}
+                            onChange={(e) => updatePayment('collective', 'collectivePriority', e.target.checked)}
+                            className="w-3 h-3 rounded border-lavender/20 bg-void-800 accent-gold-400"
+                          />
+                          <span className="text-xs text-lavender/50">Prefer Collective funding when available</span>
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -149,13 +221,146 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
   );
 }
 
+/* ─── Member List ─── */
+function MemberList({ members }: { members: VendorRecord['members'] }) {
+  const roleIcon = (role: string) => {
+    if (role === 'owner') return <Crown className="w-3 h-3 text-gold-400" />;
+    if (role === 'admin') return <Shield className="w-3 h-3 text-blue-400" />;
+    return <PenTool className="w-3 h-3 text-lavender/50" />;
+  };
+  const roleClass = (role: string) => {
+    if (role === 'owner') return 'bg-gold-400/10 text-gold-300 border-gold-400/20';
+    if (role === 'admin') return 'bg-blue-400/10 text-blue-300 border-blue-400/20';
+    return 'bg-lavender/5 text-lavender/50 border-lavender/10';
+  };
+
+  return (
+    <div className="space-y-1.5">
+      {members.map((m) => (
+        <div key={m.ces} className="flex items-center justify-between px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/5">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-[10px] text-lavender/40">
+              {m.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm text-cream">{m.name}</span>
+          </div>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] border flex items-center gap-1 ${roleClass(m.role)}`}>
+            {roleIcon(m.role)} {m.role}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Invite Member Modal ─── */
+function InviteMemberModal({ vendor, onClose, onInvite }: {
+  vendor: VendorRecord;
+  onClose: () => void;
+  onInvite: (req: VendorJoinRequest) => void;
+}) {
+  const [ces, setCes] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  function handleSubmit() {
+    if (!ces.trim()) { setError('A C.E.S. number is required'); return; }
+
+    const req: VendorJoinRequest = {
+      id: `vjr_${Date.now()}`,
+      vendorId: vendor.id,
+      requesterCes: ces.trim(),
+      requesterName: ces.trim(), // Will be resolved from profile in future
+      message: message.trim() || undefined,
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+    };
+    onInvite(req);
+    onClose();
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-gold-400" />
+              <h2 className="text-xl font-semibold text-cream">Invite Co-Creator</h2>
+            </div>
+            <button onClick={onClose} className="text-lavender/40 hover:text-cream transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+
+          <p className="text-sm text-lavender/50 mb-4">
+            Invite a being to join <span className="text-cream">{vendor.name}</span>. They will receive a request to become a contributor.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">C.E.S. Number</label>
+              <input
+                value={ces} onChange={(e) => { setCes(e.target.value); setError(''); }}
+                placeholder="e.g., 111111111"
+                className="w-full bg-void-800 border border-lavender/10 rounded-xl px-4 py-3 text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Message (optional)</label>
+              <textarea
+                value={message} onChange={(e) => setMessage(e.target.value)}
+                placeholder="Why would you like them to join your collective?"
+                rows={3}
+                className="w-full bg-void-800 border border-lavender/10 rounded-xl px-4 py-3 text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors resize-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-lavender/5 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all text-sm font-medium">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="flex-1 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
+          >
+            Send Invite
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── Storefront Card ─── */
 function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: (v: VendorRecord) => void }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
+
+  const { addVendorJoinRequest, updateVendorJoinRequest, removeVendor } = useStorage();
 
   const offeringCount = vendor.offerings.length;
   const memberCount = vendor.members.length;
   const activePayments = vendor.paymentMethods.filter((m) => m.enabled).length;
+  const pendingRequests = vendor.joinRequests?.filter((r) => r.status === 'pending') || [];
 
   function toggleStatus() {
     const nextStatus = vendor.status === 'active' ? 'paused' : 'active';
@@ -163,8 +368,47 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
   }
 
   function handleDelete() {
-    // Actual removal handled by parent; this just confirms
+    removeVendor(vendor.id);
     setShowDeleteConfirm(false);
+  }
+
+  function handleInvite(req: VendorJoinRequest) {
+    addVendorJoinRequest(req);
+    onUpdate({ ...vendor, updatedAt: new Date().toISOString() });
+  }
+
+  function handleApproveJoin(req: VendorJoinRequest) {
+    const updatedReq = { ...req, status: 'approved' as const, respondedAt: new Date().toISOString() };
+    updateVendorJoinRequest(updatedReq);
+    // Add to members as contributor
+    const newMember = {
+      ces: req.requesterCes,
+      name: req.requesterName,
+      role: 'contributor' as const,
+      invitedAt: req.requestedAt,
+      joinedAt: new Date().toISOString(),
+      status: 'active' as const,
+    };
+    onUpdate({
+      ...vendor,
+      members: [...vendor.members, newMember],
+      joinRequests: vendor.joinRequests?.map((r) =>
+        r.id === req.id ? updatedReq : r
+      ) || [updatedReq],
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function handleDeclineJoin(req: VendorJoinRequest) {
+    const updatedReq = { ...req, status: 'declined' as const, respondedAt: new Date().toISOString() };
+    updateVendorJoinRequest(updatedReq);
+    onUpdate({
+      ...vendor,
+      joinRequests: vendor.joinRequests?.map((r) =>
+        r.id === req.id ? updatedReq : r
+      ) || [updatedReq],
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   return (
@@ -225,8 +469,11 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
           <button className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add Offering
           </button>
-          <button className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5">
-            <Users className="w-3.5 h-3.5" /> Invite
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5"
+          >
+            <UserPlus className="w-3.5 h-3.5" /> Invite
           </button>
           <button
             onClick={toggleStatus}
@@ -247,7 +494,87 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Members Section */}
+        {vendor.members.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-lavender/5">
+            <button
+              onClick={() => setShowMembers(prev => !prev)}
+              className="flex items-center gap-2 text-xs text-lavender/50 hover:text-cream transition-colors mb-2"
+            >
+              <Users className="w-3.5 h-3.5" />
+              {vendor.members.length + 1} member{vendor.members.length !== 0 ? 's' : ''}
+              <span className="text-lavender/30">{showMembers ? '▲' : '▼'}</span>
+            </button>
+            {showMembers && (
+              <div className="mb-2">
+                {/* Owner */}
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gold-400/5 border border-gold-400/10 mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-void-900 border border-gold-400/20 flex items-center justify-center text-[10px] text-gold-400">
+                      {vendor.ownerName?.charAt(0).toUpperCase() || 'O'}
+                    </div>
+                    <span className="text-sm text-cream">{vendor.ownerName || 'Owner'}</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] border bg-gold-400/10 text-gold-300 border-gold-400/20 flex items-center gap-1">
+                    <Crown className="w-3 h-3" /> owner
+                  </span>
+                </div>
+                <MemberList members={vendor.members} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pending Join Requests */}
+        {pendingRequests.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-lavender/5">
+            <button
+              onClick={() => setShowJoinRequests(prev => !prev)}
+              className="flex items-center gap-2 text-xs text-magenta-400 hover:text-magenta-300 transition-colors mb-2"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              {pendingRequests.length} pending request{pendingRequests.length !== 1 ? 's' : ''}
+              <span className="text-magenta-400/50">{showJoinRequests ? '▲' : '▼'}</span>
+            </button>
+            {showJoinRequests && (
+              <div className="space-y-2">
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className="rounded-lg border border-lavender/10 bg-void-800/50 p-3">
+                    <p className="text-sm text-cream mb-1">C.E.S. {req.requesterCes}</p>
+                    {req.message && <p className="text-xs text-lavender/50 mb-2 italic">"{req.message}"</p>}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApproveJoin(req)}
+                        className="flex-1 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs hover:bg-green-500/20 transition-all"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleDeclineJoin(req)}
+                        className="flex-1 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 transition-all"
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Invite Modal */}
+      <AnimatePresence>
+        {showInvite && (
+          <InviteMemberModal
+            vendor={vendor}
+            onClose={() => setShowInvite(false)}
+            onInvite={handleInvite}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Delete confirmation */}
       <AnimatePresence>

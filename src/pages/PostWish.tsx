@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X, MapPin, Globe } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X, MapPin, Globe, Repeat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
 import { useSession } from '../lib/session'
@@ -60,6 +60,7 @@ export default function PostWish() {
   const [fundsAvailable, setFundsAvailable] = useState('')
   const [timeCommitment, setTimeCommitment] = useState('')
   const [images, setImages] = useState<string[]>([])
+  const [isContinualOffering, setIsContinualOffering] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -106,6 +107,7 @@ export default function PostWish() {
       fundsAvailable: fundsAvailable ? Math.round(parseFloat(fundsAvailable) * 100) : undefined,
       timeCommitment,
       images,
+      isContinualOffering: wishType === 'offer' ? isContinualOffering : false,
       status: 'open',
       postedByCes: 'local_user',
       postedByName: 'Atlas Island Being',
@@ -157,6 +159,7 @@ export default function PostWish() {
               setTitle('')
               setDescription('')
               setCategory('')
+              setIsContinualOffering(false)
             }}
           >
             Post Another
@@ -210,6 +213,28 @@ export default function PostWish() {
           <Sparkles className="w-4 h-4 inline mr-2" /> I Have a Gift
         </button>
       </div>
+
+      {/* Continual Offering Toggle — only for Gifts */}
+      {wishType === 'offer' && (
+        <div className="mb-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setIsContinualOffering(prev => !prev)}
+            className={`px-5 py-2.5 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
+              isContinualOffering
+                ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+            }`}
+            title="When on, this gift stays visible even after someone claims it. You can fulfill multiple times."
+          >
+            <Repeat className={`w-4 h-4 ${isContinualOffering ? 'text-green-300' : 'text-lavender/40'}`} />
+            {isContinualOffering ? 'Continual Offering On' : 'Continual Offering Off'}
+          </button>
+          <span className="sr-only">
+            Toggle whether this gift remains discoverable after a claim
+          </span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>

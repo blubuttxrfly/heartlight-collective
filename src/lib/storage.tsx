@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition } from '../types/ces';
+import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement } from '../types/ces';
 
 const STORAGE_PREFIX = 'hlc_';
 
@@ -18,7 +18,9 @@ interface StorageState {
   agreements: AgreementRecord[];
   vendors: VendorRecord[];
   vendorInvites: VendorInvite[];
+  vendorJoinRequests: VendorJoinRequest[];
   exchangeRequests: ExchangeRequest[];
+  exchangeAgreements: ExchangeAgreement[];
   collectivePetitions: CollectivePetition[];
 }
 
@@ -33,7 +35,9 @@ const DEFAULT_STATE: StorageState = {
   agreements: [],
   vendors: [],
   vendorInvites: [],
+  vendorJoinRequests: [],
   exchangeRequests: [],
+  exchangeAgreements: [],
   collectivePetitions: [],
 };
 
@@ -83,9 +87,15 @@ interface StorageContextValue {
   getVendorInvites: () => VendorInvite[];
   addVendorInvite: (invite: VendorInvite) => void;
   updateVendorInvite: (invite: VendorInvite) => void;
+  getVendorJoinRequests: (vendorId: string) => VendorJoinRequest[];
+  addVendorJoinRequest: (req: VendorJoinRequest) => void;
+  updateVendorJoinRequest: (req: VendorJoinRequest) => void;
   getExchangeRequests: () => ExchangeRequest[];
   addExchangeRequest: (req: ExchangeRequest) => void;
   updateExchangeRequest: (req: ExchangeRequest) => void;
+  getExchangeAgreements: () => ExchangeAgreement[];
+  addExchangeAgreement: (ag: ExchangeAgreement) => void;
+  updateExchangeAgreement: (ag: ExchangeAgreement) => void;
   getCollectivePetitions: () => CollectivePetition[];
   addCollectivePetition: (petition: CollectivePetition) => void;
   updateCollectivePetition: (petition: CollectivePetition) => void;
@@ -104,7 +114,9 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       agreements: readStorageKey('agreements'),
       vendors: readStorageKey('vendors'),
       vendorInvites: readStorageKey('vendorInvites'),
+      vendorJoinRequests: readStorageKey('vendorJoinRequests'),
       exchangeRequests: readStorageKey('exchangeRequests'),
+      exchangeAgreements: readStorageKey('exchangeAgreements'),
       collectivePetitions: readStorageKey('collectivePetitions'),
     };
     // Seed Atlas as founding steward if no stewards exist
@@ -265,6 +277,24 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const getVendorJoinRequests = useCallback((vendorId: string) => {
+    return stateRef.current.vendorJoinRequests.filter((r) => r.vendorId === vendorId);
+  }, []);
+
+  const addVendorJoinRequest = useCallback((req: VendorJoinRequest) => {
+    setState((prev) => ({
+      ...prev,
+      vendorJoinRequests: [...prev.vendorJoinRequests, req],
+    }));
+  }, []);
+
+  const updateVendorJoinRequest = useCallback((req: VendorJoinRequest) => {
+    setState((prev) => ({
+      ...prev,
+      vendorJoinRequests: prev.vendorJoinRequests.map((r) => (r.id === req.id ? req : r)),
+    }));
+  }, []);
+
   const getExchangeRequests = useCallback(() => stateRef.current.exchangeRequests, []);
 
   const addExchangeRequest = useCallback((req: ExchangeRequest) => {
@@ -278,6 +308,22 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({
       ...prev,
       exchangeRequests: prev.exchangeRequests.map((r) => (r.id === req.id ? req : r)),
+    }));
+  }, []);
+
+  const getExchangeAgreements = useCallback(() => stateRef.current.exchangeAgreements, []);
+
+  const addExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: [...prev.exchangeAgreements, ag],
+    }));
+  }, []);
+
+  const updateExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((a) => (a.id === ag.id ? ag : a)),
     }));
   }, []);
 
@@ -323,9 +369,15 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     getVendorInvites,
     addVendorInvite,
     updateVendorInvite,
+    getVendorJoinRequests,
+    addVendorJoinRequest,
+    updateVendorJoinRequest,
     getExchangeRequests,
     addExchangeRequest,
     updateExchangeRequest,
+    getExchangeAgreements,
+    addExchangeAgreement,
+    updateExchangeAgreement,
     getCollectivePetitions,
     addCollectivePetition,
     updateCollectivePetition,

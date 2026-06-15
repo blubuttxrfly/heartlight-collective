@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation, Repeat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
@@ -89,6 +89,87 @@ const INITIAL_WISHES = [
     postedByCes: 'local_being_04',
     postedByName: 'Vision Seed',
     createdAt: '2026-06-12T16:00:00Z',
+  },
+  {
+    id: 'wish_005',
+    type: 'offer',
+    title: 'Free breathwork sessions for community wellness circles',
+    description: 'I hold space for somatic breathwork journeys. This is a continual offering — feel called whenever you need to return to your breath. I offer sessions weekly and welcome new beings at any time.',
+    category: 'Healing & Wellness',
+    skills: ['breathwork', 'somatic practice', 'facilitation'],
+    resources: ['Time', 'Skills'],
+    roles: ['teacher', 'guide'],
+    urgency: 'low',
+    location: 'Remote / Anywhere',
+    exchangeAvenue: 'direct',
+    fundsAvailable: 0,
+    timeCommitment: '60-minute sessions, weekly availability',
+    selectedCodes: [1, 3, 8, 12],
+    status: 'open',
+    postedByCes: 'local_being_05',
+    postedByName: 'Breath of Gaia',
+    createdAt: '2026-06-12T18:00:00Z',
+    isContinualOffering: true,
+    claims: [],
+  },
+  // ═══ Demo Vendor Offerings ═══
+  {
+    id: 'offering_001',
+    type: 'offering',
+    title: 'Evolutionary Astrology Reading — 90 min',
+    description: 'A deep dive into your soul purpose, current transits, and heartlight alignment. Sessions held via Zoom with recording available.',
+    category: 'Astrology & Guidance',
+    skills: ['astrology', 'evolutionary astrology', 'transit interpretation'],
+    resources: ['Time', 'Skills'],
+    roles: ['teacher', 'guide'],
+    urgency: 'low',
+    location: 'Remote / Zoom',
+    exchangeAvenue: 'direct',
+    fundsAvailable: 0,
+    timeCommitment: '90-minute session',
+    selectedCodes: [3, 7, 9, 12],
+    status: 'open',
+    postedByCes: 'local_being_02',
+    postedByName: 'Cosmic Bloom',
+    createdAt: '2026-06-12T19:00:00Z',
+    vendorId: 'vendor_lunas_star',
+    vendorName: "Luna's Star Readings",
+    priceType: 'fixed',
+    priceCents: 7500,
+    availability: 'available',
+    paymentMethods: [
+      { type: 'stripe', enabled: true },
+      { type: 'venmo', enabled: true, venmoUsername: '@cosmicbloom' },
+      { type: 'collective', enabled: true, collectivePriority: false },
+    ],
+  },
+  {
+    id: 'offering_002',
+    type: 'offering',
+    title: 'Climate Action Campaign Design — Pro Bono',
+    description: 'Professional graphic design for climate justice campaigns. Posters, social assets, presentations, and brand identity. Vision Seed contributes via the Green Canvas Collective.',
+    category: 'Creative & Design',
+    skills: ['graphic design', 'branding', 'social media', 'illustration'],
+    resources: ['Time', 'Skills', 'Equipment'],
+    roles: ['co-creator', 'teacher'],
+    urgency: 'low',
+    location: 'Remote / Anywhere',
+    exchangeAvenue: 'direct',
+    fundsAvailable: 0,
+    timeCommitment: '2-5 hours per project',
+    selectedCodes: [2, 5, 7, 11],
+    status: 'open',
+    postedByCes: 'local_being_04',
+    postedByName: 'Vision Seed',
+    createdAt: '2026-06-12T20:00:00Z',
+    vendorId: 'vendor_green_canvas',
+    vendorName: 'Green Canvas Collective',
+    priceType: 'gift',
+    availability: 'limited',
+    paymentMethods: [
+      { type: 'venmo', enabled: true, venmoUsername: '@visionseed' },
+      { type: 'collective', enabled: true, collectivePriority: true },
+    ],
   },
 ]
 
@@ -410,9 +491,9 @@ export default function Exchange() {
               }`}
               onClick={() => setSelectedWish(wish)}
             >
-              {/* Type badge + Urgency */}
+              {/* Type badge + Urgency + Continual Offering */}
               <div className="flex items-center justify-between mb-3">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${
                     wish.type === 'wish'
                       ? 'bg-magenta-500/10 text-magenta-400'
@@ -424,6 +505,11 @@ export default function Exchange() {
                     <Clock className="w-2.5 h-2.5 inline mr-1" />
                     {URGENCY_CONFIG[wish.urgency].label}
                   </span>
+                  {wish.isContinualOffering && (
+                    <span className="px-2 py-0.5 rounded-full text-xs bg-green-400/10 text-green-300 flex items-center gap-1">
+                      <Repeat className="w-2.5 h-2.5" /> Continual
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-lavender/30">
                   {CATEGORY_EMOJIS[wish.category]}
@@ -514,10 +600,22 @@ export default function Exchange() {
               const stored = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
               const idx = stored.findIndex(w => w.id === selectedWish.id)
               if (idx >= 0) {
-                stored[idx].status = 'claimed'
-                stored[idx].claimedByCes = 'current_user'
-                stored[idx].claimedByName = 'You'
-                stored[idx].claimedAt = new Date().toISOString()
+                const target = stored[idx]
+                if (target.isContinualOffering) {
+                  // Continual: keep open, record the claim
+                  if (!target.claims) target.claims = []
+                  target.claims.push({
+                    claimedByCes: 'current_user',
+                    claimedByName: 'You',
+                    claimedAt: new Date().toISOString(),
+                  })
+                } else {
+                  // One-time: mark as claimed
+                  target.status = 'claimed'
+                  target.claimedByCes = 'current_user'
+                  target.claimedByName = 'You'
+                  target.claimedAt = new Date().toISOString()
+                }
                 localStorage.setItem('hlw_wishes', JSON.stringify(stored))
                 setWishes(loadWishes())
               }
@@ -688,8 +786,24 @@ function WishDetailModal({ wish, onClose, onClaim }) {
             </div>
           )}
 
+          {/* Claims history for continual offerings */}
+          {wish.isContinualOffering && wish.claims && wish.claims.length > 0 && (
+            <div className="rounded-xl border border-green-400/10 bg-green-400/5 p-4">
+              <label className="block text-xs text-green-400/60 mb-2 uppercase tracking-wider">
+                <Repeat className="w-3 h-3 inline mr-1" /> Continual Offering — {wish.claims.length} {wish.claims.length === 1 ? 'being' : 'beings'} called
+              </label>
+              <div className="space-y-1">
+                {wish.claims.map((c, i) => (
+                  <div key={i} className="text-xs text-lavender/50">
+                    {c.claimedByName} — {new Date(c.claimedAt).toLocaleDateString()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Claim Button */}
-          {wish.status === 'open' && (
+          {(wish.status === 'open' || wish.isContinualOffering) && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -697,7 +811,9 @@ function WishDetailModal({ wish, onClose, onClaim }) {
               className="w-full py-4 rounded-xl bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all"
             >
               <Heart className="w-5 h-5 inline mr-2" />
-              I Feel Called to Meet This {wish.type === 'wish' ? 'Wish' : 'Gift'}
+              {wish.isContinualOffering
+                ? `I Feel Called to Meet This Gift (${wish.claims?.length || 0} previous resonances)`
+                : `I Feel Called to Meet This ${wish.type === 'wish' ? 'Wish' : 'Gift'}`}
             </motion.button>
           )}
         </div>
