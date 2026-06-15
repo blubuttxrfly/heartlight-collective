@@ -203,18 +203,12 @@ function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney
         <ChevronRight className="w-3 h-3" />
         <span>{journey.coCreatorName}</span>
       </div>
-      <div className="flex flex-wrap gap-1 mt-2">
-        {[1,2,3,4,5,6,7,8,9,10,11,12].map(n => (
-          <span
-            key={n}
-            className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono border"
-            style={{ borderColor: codeColor(n) + '40', color: codeColor(n), background: codeColor(n) + '15' }}
-            title={CODES_DATA.find(c => c.number === n)?.name}
-          >
-            {n}
-          </span>
+      <div className="mt-2 h-1 rounded-full w-full overflow-hidden flex">
+        {CODES_DATA.map(code => (
+          <div key={code.number} className="flex-1 h-full" style={{ background: code.color + '80' }} />
         ))}
       </div>
+      <p className="text-[10px] text-lavender/30 mt-1">12 Ray Frequencies of ALL</p>
     </button>
   )
 }
