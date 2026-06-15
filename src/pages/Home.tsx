@@ -350,7 +350,18 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 99% Earth-Conscious Dedication — placed prominently right after welcome */}
+      <ProfileStatusBanner />
+
+      {/* Sacred Pillars — the four main navigation buttons */}
+      <section className="mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {pillars.map((pillar, i) => (
+            <PillarCard key={pillar.title} pillar={pillar} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* 99% Earth-Conscious Dedication — placed after the four main navigation buttons */}
       <section className="text-center py-8">
         <motion.div
           initial={{ opacity: 0 }}
@@ -404,17 +415,6 @@ export default function Home() {
             </a>
           </div>
         </motion.div>
-      </section>
-
-      <ProfileStatusBanner />
-
-      {/* Sacred Pillars — the four main navigation buttons */}
-      <section className="mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {pillars.map((pillar, i) => (
-            <PillarCard key={pillar.title} pillar={pillar} index={i} />
-          ))}
-        </div>
       </section>
 
       {/* Treasury Stats */}
