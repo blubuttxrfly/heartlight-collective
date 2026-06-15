@@ -270,6 +270,15 @@ export type VendorMemberStatus = 'invited' | 'active' | 'removed';
 
 export type PaymentMethodType = 'stripe' | 'venmo' | 'cashapp' | 'zelle' | 'chime' | 'collective';
 
+/** Accepted forms of exchange (visible everywhere an exchange can happen) */
+export type ExchangeForm =
+  | 'gift'
+  | 'barter'
+  | 'fixed'
+  | 'negotiable'
+  | 'collective_funded'
+  | 'peer_payment';
+
 export interface PaymentMethodConfig {
   type: PaymentMethodType;
   enabled: boolean;
@@ -336,6 +345,8 @@ export interface OfferingItem {
   consentRequired: boolean;      // Must read provider's boundaries before booking
   maxParticipants?: number;      // For group sessions / events
   stripePriceId?: string;        // Stripe Price object ID
+  exchangePolicy?: ExchangeForm[]; // Accepted forms of exchange
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -345,12 +356,16 @@ export interface VendorRecord {
   name: string;                  // "Luna's Star Readings"
   slug: string;                  // "lunas-star-readings"
   description: string;           // Short bio / mission
+  coreDirective?: string;        // Full Vendor Shop bio / mission
   logoUrl?: string;              // Storefront image
   ownerCes: string;              // C.E.S. of the founding being
   ownerName: string;
   members: VendorMember[];       // Co-creators who can manage offerings
   offerings: OfferingItem[];     // Products / services
   paymentMethods: PaymentMethodConfig[];
+  exchangePolicy?: ExchangeForm[]; // Accepted forms of exchange
+  locationData?: import('./ces').LocationData;
+  tags?: string[];
   status: VendorStatus;
   collectiveFunded: boolean;     // Accepts collective-funded requests
   joinRequests: VendorJoinRequest[]; // Incoming membership requests

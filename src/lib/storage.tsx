@@ -10,6 +10,8 @@ import { seedDevData } from './seedData';
 import {
   syncVendor,
   deleteVendor,
+  syncOfferingsForVendor,
+  deleteOffering,
   syncExchangeAgreement,
   syncExchangeRequest,
   syncVendorInvite,
@@ -320,6 +322,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       vendors: [...prev.vendors, vendor],
     }));
     syncVendor(vendor);
+    syncOfferingsForVendor(vendor);
   }, []);
 
   const updateVendor = useCallback((vendor: VendorRecord) => {
@@ -328,14 +331,19 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       vendors: prev.vendors.map((v) => (v.id === vendor.id ? vendor : v)),
     }));
     syncVendor(vendor);
+    syncOfferingsForVendor(vendor);
   }, []);
 
   const removeVendor = useCallback((id: string) => {
+    const vendor = stateRef.current.vendors.find((v) => v.id === id);
     setState((prev) => ({
       ...prev,
       vendors: prev.vendors.filter((v) => v.id !== id),
     }));
     deleteVendor(id);
+    if (vendor) {
+      vendor.offerings.forEach((o) => deleteOffering(o.id));
+    }
   }, []);
 
   const findVendorById = useCallback((id: string) => {

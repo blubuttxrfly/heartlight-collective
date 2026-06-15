@@ -16,6 +16,7 @@ import type {
   ExchangeAlert,
   AgreementRecord,
   Wish,
+  OfferingItem,
 } from '../types/ces';
 
 export type ExchangeEntityKey =
@@ -131,11 +132,15 @@ export function vendorToRow(v: VendorRecord): Record<string, unknown> {
     name: v.name,
     slug: v.slug,
     description: v.description,
+    core_directive: v.coreDirective || null,
     logo_url: v.logoUrl || null,
     owner_ces: v.ownerCes,
     owner_name: v.ownerName,
     members: v.members || [],
     payment_methods: v.paymentMethods || [],
+    exchange_policy: v.exchangePolicy || [],
+    location_data: v.locationData || null,
+    tags: v.tags || [],
     status: v.status,
     collective_funded: v.collectiveFunded,
     created_at: v.createdAt,
@@ -149,15 +154,63 @@ export function rowToVendor(row: any): VendorRecord {
     name: String(row.name),
     slug: String(row.slug),
     description: String(row.description || ''),
+    coreDirective: row.core_directive || undefined,
     logoUrl: row.logo_url || undefined,
     ownerCes: String(row.owner_ces),
     ownerName: String(row.owner_name),
     members: Array.isArray(row.members) ? row.members : [],
-    offerings: [], // offerings are stored in separate table; merged later
+    offerings: [], // merged from offerings table during hydration
     paymentMethods: Array.isArray(row.payment_methods) ? row.payment_methods : [],
+    exchangePolicy: Array.isArray(row.exchange_policy) ? row.exchange_policy : undefined,
+    locationData: row.location_data || undefined,
+    tags: Array.isArray(row.tags) ? row.tags : undefined,
     status: String(row.status) as VendorRecord['status'],
     collectiveFunded: Boolean(row.collective_funded),
-    joinRequests: [], // joined separately
+    joinRequests: [], // merged from vendor_join_requests during hydration
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export function offeringToRow(o: OfferingItem): Record<string, unknown> {
+  return {
+    id: o.id,
+    vendor_id: o.vendorId,
+    title: o.title,
+    description: o.description,
+    category: o.category,
+    price_type: o.priceType,
+    price_cents: o.priceCents ?? null,
+    currency: o.currency,
+    image_url: o.imageUrl || null,
+    availability: o.availability,
+    consent_required: o.consentRequired,
+    max_participants: o.maxParticipants ?? null,
+    stripe_price_id: o.stripePriceId || null,
+    exchange_policy: o.exchangePolicy || [],
+    tags: o.tags || [],
+    created_at: o.createdAt,
+    updated_at: o.updatedAt,
+  };
+}
+
+export function rowToOffering(row: any): OfferingItem {
+  return {
+    id: String(row.id),
+    vendorId: String(row.vendor_id),
+    title: String(row.title),
+    description: String(row.description || ''),
+    category: String(row.category || 'Other') as OfferingItem['category'],
+    priceType: String(row.price_type || 'gift') as OfferingItem['priceType'],
+    priceCents: row.price_cents ?? undefined,
+    currency: String(row.currency || 'USD') as OfferingItem['currency'],
+    imageUrl: row.image_url || undefined,
+    availability: String(row.availability || 'available') as OfferingItem['availability'],
+    consentRequired: Boolean(row.consent_required),
+    maxParticipants: row.max_participants ?? undefined,
+    stripePriceId: row.stripe_price_id || undefined,
+    exchangePolicy: Array.isArray(row.exchange_policy) ? row.exchange_policy : undefined,
+    tags: Array.isArray(row.tags) ? row.tags : undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -481,6 +534,23 @@ export async function syncVendor(v: VendorRecord) {
   return upsert('vendors', vendorToRow(v));
 }
 
+export async function syncOfferingsForVendor(v: VendorRecord) {
+  const results = await Promise.all((v.offerings || []).map((o) => upsert('offerings', offeringToRow(o))));
+  const failed = results.filter((r) => !r.success);
+  if (failed.length > 0) {
+    log('syncOfferings', `${failed.length} offering sync(s) failed for vendor ${v.id}`);
+  }
+  return results;
+}
+
+export async function syncOffering(o: OfferingItem) {
+  return upsert('offerings', offeringToRow(o));
+}
+
+export async function deleteOffering(id: string) {
+  return removeById('offerings', id);
+}
+
 export async function deleteVendor(id: string) {
   return removeById('vendors', id);
 }
@@ -541,11 +611,12 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
       return {};
     }
   }
-  log('hydrate', 'Pulling collective exchange memory from Supabase...');
+  log('hydrate', `Pulling collective exchange memory from Supabase...`);
   const [
     exchangeAgreements,
     exchangeRequests,
     vendors,
+    offerings,
     vendorInvites,
     vendorJoinRequests,
     collectivePetitions,
@@ -556,6 +627,7 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     fetchAll('exchange_agreements', rowToExchangeAgreement),
     fetchAll('exchange_requests', rowToExchangeRequest),
     fetchAll('vendors', rowToVendor),
+    fetchAll('offerings', rowToOffering),
     fetchAll('vendor_invites', rowToVendorInvite),
     fetchAll('vendor_join_requests', rowToVendorJoinRequest),
     fetchAll('collective_petitions', rowToCollectivePetition),
@@ -563,7 +635,21 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     fetchAll('exchange_calendars', rowToExchangeCalendar),
     fetchAll('wishes', rowToWish),
   ]);
-  log('hydrate', `Loaded: ${exchangeAgreements.length} agreements, ${vendors.length} vendors, ${exchangeCalendars.length} calendars, ${wishes.length} wishes`);
+
+  // Merge offerings into their parent vendors
+  const vendorMap = new Map(vendors.map((v) => [v.id, v]));
+  for (const o of offerings) {
+    const v = vendorMap.get(o.vendorId);
+    if (v) v.offerings.push(o);
+  }
+
+  // Merge join requests into vendors
+  for (const r of vendorJoinRequests) {
+    const v = vendorMap.get(r.vendorId);
+    if (v) v.joinRequests.push(r);
+  }
+
+  log('hydrate', `Loaded: ${exchangeAgreements.length} agreements, ${vendors.length} vendors (${offerings.length} offerings), ${exchangeCalendars.length} calendars, ${wishes.length} wishes`);
   return {
     exchangeAgreements,
     exchangeRequests,

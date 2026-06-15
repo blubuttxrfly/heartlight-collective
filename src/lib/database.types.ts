@@ -102,18 +102,22 @@ export interface Database {
         }
       }
 
-      /* ═══ Vendor Storefronts ═══ */
+      /* ═══ Vendors / Storefronts ═══ */
       vendors: {
         Row: {
-          id: string                    // vendor_123456
+          id: string
           name: string
           slug: string
           description: string
+          core_directive: string          // Vendor Shop bio / mission
           logo_url: string | null
           owner_ces: string
           owner_name: string
           members: Json                 // VendorMember[]
           payment_methods: Json          // PaymentMethodConfig[]
+          exchange_policy: Json          // ExchangeForm[]
+          location_data: Json | null     // LocationData
+          tags: string[]
           status: string                // 'active' | 'paused' | 'under_review'
           collective_funded: boolean
           created_at: string
@@ -124,11 +128,15 @@ export interface Database {
           name: string
           slug: string
           description?: string
+          core_directive?: string
           logo_url?: string | null
           owner_ces: string
           owner_name: string
           members?: Json
           payment_methods?: Json
+          exchange_policy?: Json
+          location_data?: Json | null
+          tags?: string[]
           status?: string
           collective_funded?: boolean
           created_at?: string
@@ -138,11 +146,15 @@ export interface Database {
           name?: string
           slug?: string
           description?: string
+          core_directive?: string
           logo_url?: string | null
           owner_ces?: string
           owner_name?: string
           members?: Json
           payment_methods?: Json
+          exchange_policy?: Json
+          location_data?: Json | null
+          tags?: string[]
           status?: string
           collective_funded?: boolean
           updated_at?: string
@@ -165,6 +177,8 @@ export interface Database {
           consent_required: boolean
           max_participants: number | null
           stripe_price_id: string | null
+          exchange_policy: Json          // ExchangeForm[]
+          tags: string[]
           created_at: string
           updated_at: string
         }
@@ -182,6 +196,8 @@ export interface Database {
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
+          exchange_policy?: Json
+          tags?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -196,6 +212,8 @@ export interface Database {
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
+          exchange_policy?: Json
+          tags?: string[]
           updated_at?: string
         }
       }
@@ -760,6 +778,7 @@ export interface Database {
           price_cents: number | null
           price_type: string | null
           payment_method: string | null
+          exchange_policy: Json | null          // ExchangeForm[]
           images: string[]
           status: string
           claimed_by_ces: string | null
@@ -784,6 +803,7 @@ export interface Database {
           price_cents?: number | null
           price_type?: string | null
           payment_method?: string | null
+          exchange_policy?: Json | null
           images?: string[]
           status?: string
           claimed_by_ces?: string | null
@@ -807,6 +827,7 @@ export interface Database {
           price_cents?: number | null
           price_type?: string | null
           payment_method?: string | null
+          exchange_policy?: Json | null
           images?: string[]
           status?: string
           claimed_by_ces?: string | null
