@@ -319,23 +319,76 @@ export interface ExchangeRequest {
 }
 
 /** Agreement-based exchange for vendor offerings with mutual consent */
+// ═══════════════════════════════════════════════════════════════
+//  Quest System — The beating heart of every exchange
+//  Main Quest, Side Quests, roles, and the living Agreement
+// ═══════════════════════════════════════════════════════════════
+
+export type ExchangeRole =
+  | 'Vision Holder'
+  | 'Guide'
+  | 'Learner'
+  | 'Builder'
+  | 'Facilitator'
+  | 'Recipient'
+  | 'Steward'
+  | 'Contributor'
+  | 'Observer'
+  | 'Co-Creator';
+
+export interface QuestItem {
+  id: string;
+  title: string;
+  description?: string;
+  assignedToCes?: string;
+  assignedToName?: string;
+  status: 'open' | 'in_progress' | 'completed' | 'paused';
+  createdAt: string;
+  completedAt?: string;
+  completedByCes?: string;
+  completedByName?: string;
+}
+
+export interface AgreementVersion {
+  version: number;
+  updatedAt: string;
+  updatedByCes: string;
+  updatedByName: string;
+  changeSummary: string;
+  approvedBy: string[];  // CES numbers who approved this version
+}
+
 export interface ExchangeAgreement {
   id: string;
-  offeringId: string;
-  vendorId: string;
+  offeringId?: string;           // for vendor offerings
+  vendorId?: string;
+  wishId?: string;               // for wish/gift exchanges (no vendor)
   requesterCes: string;
   requesterName: string;
   providerCes: string;
   providerName: string;
-  message: string;
+  message: string;               // initial resonance statement
+  // --- ROLES ---
+  requesterRole: ExchangeRole;
+  providerRole: ExchangeRole;
+  // --- QUESTS ---
+  mainQuest: QuestItem;
+  sideQuests: QuestItem[];
+  // --- TERMS ---
   proposedPriceCents?: number;
   agreedPriceCents?: number;
   paymentMethod?: PaymentMethodType;
-  status: 'requested' | 'discussing' | 'agreed' | 'fulfilled' | 'completed' | 'declined';
+  communicationPrefs?: string;   // e.g. "Weekly check-ins via Signal"
+  // --- CONSENT ---
+  status: 'draft' | 'proposed' | 'agreed' | 'active' | 'fulfilled' | 'completed' | 'declined';
   requesterConsented: boolean;
   providerConsented: boolean;
   collectiveFundingRequested: boolean;
   collectiveFundingApproved?: boolean;
+  // --- LIVING DOCUMENT ---
+  versions: AgreementVersion[];
+  pendingUpdate?: AgreementVersion;
+  // --- META ---
   createdAt: string;
   updatedAt: string;
 }
@@ -400,6 +453,10 @@ export interface ExchangeJourney {
   currentPhase: JourneyPhase;
   selectedCodes: number[];
   logs: CodeLogEntry[];
+  // --- QUESTS inherited from Agreement ---
+  mainQuest: QuestItem;
+  sideQuests: QuestItem[];
+  // --- FULFILLMENT ---
   fulfillmentNotes: string;
   fulfillmentSignedAt: string | null;
   fulfillmentSignedBy: string[];

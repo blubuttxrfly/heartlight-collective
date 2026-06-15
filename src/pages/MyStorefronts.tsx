@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Image, Tag, DollarSign, Gift, UsersRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
 import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest } from '../types/ces';
@@ -348,10 +348,244 @@ function InviteMemberModal({ vendor, onClose, onInvite }: {
   );
 }
 
+/* ─── Add Offering Modal ─── */
+function AddOfferingModal({
+  vendor,
+  onClose,
+  onSave,
+}: {
+  vendor: VendorRecord;
+  onClose: () => void;
+  onSave: (vendor: VendorRecord) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Astrology & Cosmic Guidance');
+  const [priceType, setPriceType] = useState<'fixed' | 'gift' | 'collective_funded' | 'negotiable'>('fixed');
+  const [priceCents, setPriceCents] = useState('');
+  const [availability, setAvailability] = useState<'available' | 'limited' | 'waitlist' | 'unavailable'>('available');
+  const [maxParticipants, setMaxParticipants] = useState('');
+  const [consentRequired, setConsentRequired] = useState(true);
+  const [error, setError] = useState('');
+
+  const categories = OFFERING_CATEGORIES;
+  const priceTypes = [
+    { value: 'fixed', label: 'Fixed Price', desc: 'A clear exchange amount' },
+    { value: 'gift', label: 'Gift Economy', desc: 'Receiver offers what feels aligned' },
+    { value: 'collective_funded', label: 'Collective Funded', desc: 'From the Collective treasury' },
+    { value: 'negotiable', label: 'Negotiable', desc: 'Discussed between beings' },
+  ] as const;
+  const availOptions = [
+    { value: 'available', label: 'Available' },
+    { value: 'limited', label: 'Limited Spots' },
+    { value: 'waitlist', label: 'Waitlist Open' },
+    { value: 'unavailable', label: 'Currently Unavailable' },
+  ] as const;
+
+  function handleSave() {
+    if (!title.trim()) { setError('A title is required'); return; }
+    if (!description.trim()) { setError('A description is required'); return; }
+    if (priceType === 'fixed' && !priceCents.trim()) { setError('Please set a price or choose a different exchange type'); return; }
+
+    const offering: OfferingItem = {
+      id: `offering_${Date.now()}`,
+      vendorId: vendor.id,
+      title: title.trim(),
+      description: description.trim(),
+      category: category as any,
+      priceType,
+      priceCents: priceType === 'fixed' ? parseInt(priceCents, 10) : undefined,
+      currency: 'USD',
+      availability,
+      consentRequired,
+      maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updated: VendorRecord = {
+      ...vendor,
+      offerings: [...vendor.offerings, offering],
+      updatedAt: new Date().toISOString(),
+    };
+
+    onSave(updated);
+    onClose();
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-gold-400" />
+              <h2 className="text-xl font-semibold text-cream">Add Offering</h2>
+            </div>
+            <button onClick={onClose} className="text-lavender/40 hover:text-cream transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" /> {error}
+            </div>
+          )}
+
+          <div className="space-y-5">
+            {/* Title */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">What do you offer?</label>
+              <input
+                value={title}
+                onChange={(e) => { setTitle(e.target.value); setError(''); }}
+                placeholder="e.g., Evolutionary Astrology Reading — 90 min"
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none appearance-none"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => { setDescription(e.target.value); setError(''); }}
+                placeholder="Describe your offering, how it serves, and what beings can expect..."
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+              />
+            </div>
+
+            {/* Price Type */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-2">Exchange Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                {priceTypes.map((pt) => (
+                  <button
+                    key={pt.value}
+                    onClick={() => setPriceType(pt.value)}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      priceType === pt.value
+                        ? 'border-gold-400/30 bg-gold-400/10 text-cream'
+                        : 'border-lavender/10 text-lavender/50 hover:border-lavender/20 hover:text-lavender/70'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{pt.label}</span>
+                    <span className="block text-[10px] mt-0.5 opacity-70">{pt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price (only for fixed) */}
+            {priceType === 'fixed' && (
+              <div>
+                <label className="block text-sm text-lavender/70 mb-1.5">Exchange Amount (USD)</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lavender/30">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceCents}
+                    onChange={(e) => { setPriceCents(e.target.value); setError(''); }}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <p className="text-[10px] text-lavender/30 mt-1">
+                  If Collective-funded is enabled on your storefront, beings may also request Collective support.
+                </p>
+              </div>
+            )}
+
+            {/* Availability */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Availability</label>
+              <select
+                value={availability}
+                onChange={(e) => setAvailability(e.target.value as any)}
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none appearance-none"
+              >
+                {availOptions.map((a) => (
+                  <option key={a.value} value={a.value}>{a.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Max Participants */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Max Participants (optional)</label>
+              <input
+                type="number"
+                min="1"
+                value={maxParticipants}
+                onChange={(e) => setMaxParticipants(e.target.value)}
+                placeholder="Leave blank for one-on-one"
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+              />
+            </div>
+
+            {/* Consent Required */}
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-lavender/10 bg-white/[0.02]">
+              <input
+                type="checkbox"
+                id="consent"
+                checked={consentRequired}
+                onChange={(e) => setConsentRequired(e.target.checked)}
+                className="w-4 h-4 accent-gold-400"
+              />
+              <label htmlFor="consent" className="text-sm text-lavender/70 cursor-pointer">
+                <span className="text-cream">Consent required before exchange</span> — Beings must read and agree to your boundaries before requesting
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-lavender/5 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/20 transition-all text-sm font-medium">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
+          >
+            Save Offering
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ─── Storefront Card ─── */
 function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: (v: VendorRecord) => void }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showOffering, setShowOffering] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showJoinRequests, setShowJoinRequests] = useState(false);
 
@@ -466,7 +700,10 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-3 border-t border-lavender/5">
-          <button className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5">
+          <button
+            onClick={() => setShowOffering(true)}
+            className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5"
+          >
             <Plus className="w-3.5 h-3.5" /> Add Offering
           </button>
           <button
@@ -605,6 +842,17 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
               </div>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Add Offering Modal */}
+      <AnimatePresence>
+        {showOffering && (
+          <AddOfferingModal
+            vendor={vendor}
+            onClose={() => setShowOffering(false)}
+            onSave={onUpdate}
+          />
         )}
       </AnimatePresence>
     </motion.div>

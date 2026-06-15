@@ -96,6 +96,10 @@ interface StorageContextValue {
   getExchangeAgreements: () => ExchangeAgreement[];
   addExchangeAgreement: (ag: ExchangeAgreement) => void;
   updateExchangeAgreement: (ag: ExchangeAgreement) => void;
+  // ── Quest / Agreement Versioning (Wave 2+) ──
+  updateAgreementQuest: (agreementId: string, questId: string, updates: Partial<import('../types/ces').QuestItem>) => void;
+  addAgreementVersion: (agreementId: string, version: import('../types/ces').AgreementVersion) => void;
+  approveAgreementUpdate: (agreementId: string, cesNumber: string) => void;
   getCollectivePetitions: () => CollectivePetition[];
   addCollectivePetition: (petition: CollectivePetition) => void;
   updateCollectivePetition: (petition: CollectivePetition) => void;
@@ -327,6 +331,64 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  // ── Quest / Agreement Versioning (Wave 2+) ──
+
+  const updateAgreementQuest = useCallback((agreementId: string, questId: string, updates: Partial<import('../types/ces').QuestItem>) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = { ...ag, mainQuest: { ...ag.mainQuest }, sideQuests: [...ag.sideQuests] };
+        if (next.mainQuest.id === questId) {
+          Object.assign(next.mainQuest, updates);
+        } else {
+          const idx = next.sideQuests.findIndex((q) => q.id === questId);
+          if (idx >= 0) {
+            next.sideQuests[idx] = { ...next.sideQuests[idx], ...updates };
+          }
+        }
+        next.updatedAt = new Date().toISOString();
+        return next;
+      }),
+    }));
+  }, []);
+
+  const addAgreementVersion = useCallback((agreementId: string, version: import('../types/ces').AgreementVersion) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        return {
+          ...ag,
+          versions: [...ag.versions, version],
+          pendingUpdate: undefined,
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
+  const approveAgreementUpdate = useCallback((agreementId: string, cesNumber: string) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId || !ag.pendingUpdate) return ag;
+        const nextPending = {
+          ...ag.pendingUpdate,
+          approvedBy: [...ag.pendingUpdate.approvedBy, cesNumber],
+        };
+        // If all parties approved (requester + provider), apply the update
+        const allApproved = nextPending.approvedBy.includes(ag.requesterCes) && nextPending.approvedBy.includes(ag.providerCes);
+        return {
+          ...ag,
+          pendingUpdate: allApproved ? undefined : nextPending,
+          versions: allApproved ? [...ag.versions, nextPending] : ag.versions,
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
   const getCollectivePetitions = useCallback(() => stateRef.current.collectivePetitions, []);
 
   const addCollectivePetition = useCallback((petition: CollectivePetition) => {
@@ -378,6 +440,10 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     getExchangeAgreements,
     addExchangeAgreement,
     updateExchangeAgreement,
+    // Quest / Agreement Versioning (Wave 2+)
+    updateAgreementQuest,
+    addAgreementVersion,
+    approveAgreementUpdate,
     getCollectivePetitions,
     addCollectivePetition,
     updateCollectivePetition,

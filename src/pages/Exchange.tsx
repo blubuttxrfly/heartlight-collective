@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation, Repeat } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Wand2, Globe, Navigation, Repeat, Store } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
@@ -195,6 +195,48 @@ function loadWishes() {
   return [...INITIAL_WISHES, ...stored]
 }
 
+function loadVendorOfferings() {
+  try {
+    const vendors = JSON.parse(localStorage.getItem('hlc_vendors') || '[]')
+    const offerings: any[] = []
+    for (const v of vendors) {
+      if (!v.offerings || !Array.isArray(v.offerings)) continue
+      for (const o of v.offerings) {
+        offerings.push({
+          ...o,
+          type: 'offering',
+          postedByCes: v.ownerCes,
+          postedByName: v.name,
+          status: 'open',
+          vendorName: v.name,
+          vendorId: v.id,
+          // Normalize fields the grid expects
+          skills: [],
+          resources: [],
+          roles: [],
+          urgency: 'low',
+          scope: 'universal',
+          location: 'Remote / Anywhere',
+          locationData: { continent: 'Anywhere', city: 'Remote', country: 'Anywhere' },
+          fundsRequired: o.priceCents || 0,
+          fundsAvailable: 0,
+          timeCommitment: '',
+          isContinualOffering: false,
+          claims: [],
+          exchangeAvenue: 'vendor',
+        })
+      }
+    }
+    return offerings
+  } catch {
+    return []
+  }
+}
+
+function loadAllItems() {
+  return [...loadWishes(), ...loadVendorOfferings()]
+}
+
 const CATEGORY_EMOJIS = {
   'Tech & Development': '💻',
   'Creative & Design': '🎨',
@@ -221,13 +263,14 @@ const URGENCY_CONFIG = {
 
 /* ─── Exchange Portal ─── */
 export default function Exchange() {
-  const [wishes, setWishes] = useState(loadWishes)
+  const [wishes, setWishes] = useState(loadAllItems)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedWish, setSelectedWish] = useState(null)
   const [viewScope, setViewScope] = useState<WishScope>('universal')
   const [selectedContinent, setSelectedContinent] = useState<string>('')
   const [localRadius, setLocalRadius] = useState(DEFAULT_LOCAL_RADIUS_KM)
+  const [typeFilter, setTypeFilter] = useState<'all' | 'wish' | 'offer' | 'offering'>('all')
 
   const { user } = useSession()
   const { findProfileByCES } = useStorage()
@@ -251,12 +294,17 @@ export default function Exchange() {
   const filtered = useMemo(() => {
     let list = [...wishes]
 
+    // Type filter: all | wish | offer | offering
+    if (typeFilter !== 'all') {
+      list = list.filter(w => w.type === typeFilter)
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(w =>
         w.title.toLowerCase().includes(q) ||
         w.description.toLowerCase().includes(q) ||
-        w.skills.some(s => s.toLowerCase().includes(q)) ||
+        w.skills.some((s: string) => s.toLowerCase().includes(q)) ||
         w.category.toLowerCase().includes(q) ||
         w.postedByName.toLowerCase().includes(q)
       )
@@ -266,7 +314,7 @@ export default function Exchange() {
       list = list.filter(w => w.category === selectedCategory)
     }
 
-    // Scope filtering: Local / Regional / Universal
+    // Scope filtering: Local / Global / Universal
     if (viewScope === 'local') {
       // Show wishes scoped to 'local' or 'universal' that are within radius
       list = list.filter(w => {
@@ -308,10 +356,18 @@ export default function Exchange() {
     })
 
     return list
-  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation])
+  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation, typeFilter])
 
   const wishCount = wishes.filter(w => w.type === 'wish').length
   const offerCount = wishes.filter(w => w.type === 'offer').length
+  const offeringCount = wishes.filter(w => w.type === 'offering').length
+
+  const typeLabels = [
+    { key: 'all', label: 'ALL', count: wishes.length },
+    { key: 'wish', label: 'Wishes', count: wishCount, icon: Heart },
+    { key: 'offer', label: 'Gifts', count: offerCount, icon: Sparkles },
+    { key: 'offering', label: 'Offerings', count: offeringCount, icon: Store },
+  ] as const;
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
@@ -335,9 +391,10 @@ export default function Exchange() {
       </div>
 
       {/* Stats Bar */}
-      <div className="flex items-center justify-center gap-6 mb-8 text-xs text-lavender/40">
+      <div className="flex items-center justify-center gap-6 mb-8 text-xs text-lavender/40 flex-wrap">
         <span><Heart className="w-3 h-3 inline mr-1 text-magenta-400" />{wishCount} wishes</span>
         <span><Sparkles className="w-3 h-3 inline mr-1 text-gold-400" />{offerCount} gifts</span>
+        <span><Store className="w-3 h-3 inline mr-1 text-blue-400" />{offeringCount} offerings</span>
         <span><Tag className="w-3 h-3 inline mr-1 text-lavender/50" />{categories.length} categories</span>
       </div>
 
@@ -355,6 +412,34 @@ export default function Exchange() {
         >
           <Sparkles className="w-4 h-4" /> Share a Gift
         </Link>
+      </div>
+
+      {/* Type Filter Tabs */}
+      <div className="flex flex-wrap gap-2 justify-center mb-6">
+        {typeLabels.map(t => {
+          const Icon = t.icon
+          const isActive = typeFilter === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTypeFilter(t.key)}
+              className={`px-4 py-2 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
+                isActive
+                  ? t.key === 'wish'
+                    ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                    : t.key === 'offer'
+                    ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
+                    : t.key === 'offering'
+                    ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
+                    : 'bg-lavender/10 border-lavender/30 text-cream'
+                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/20 hover:text-lavender/70'
+              }`}
+            >
+              {t.icon && <Icon className="w-3.5 h-3.5" />}
+              {t.label} <span className="text-[10px] opacity-60">({t.count})</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* View Scope Toggle: Local | Regional | Universal */}
@@ -500,10 +585,12 @@ export default function Exchange() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`rounded-2xl border p-5 hover:border-magenta-500/30 transition-all cursor-pointer ${
+              className={`rounded-2xl border p-5 transition-all cursor-pointer ${
                 wish.type === 'wish'
-                  ? 'border-magenta-500/15 bg-void-800/40'
-                  : 'border-gold-400/15 bg-void-800/30'
+                  ? 'border-magenta-500/15 bg-void-800/40 hover:border-magenta-500/30'
+                  : wish.type === 'offering'
+                  ? 'border-blue-400/15 bg-void-800/30 hover:border-blue-400/30'
+                  : 'border-gold-400/15 bg-void-800/30 hover:border-gold-400/30'
               }`}
               onClick={() => setSelectedWish(wish)}
             >
@@ -513,9 +600,11 @@ export default function Exchange() {
                   <span className={`px-2 py-0.5 rounded-full text-xs ${
                     wish.type === 'wish'
                       ? 'bg-magenta-500/10 text-magenta-400'
+                      : wish.type === 'offering'
+                      ? 'bg-blue-400/10 text-blue-300'
                       : 'bg-gold-400/10 text-gold-300'
                   }`}>
-                    {wish.type === 'wish' ? '💫 Wish' : '🎁 Gift'}
+                    {wish.type === 'wish' ? '💫 Wish' : wish.type === 'offering' ? '🏪 Offering' : '🎁 Gift'}
                   </span>
                   <span className={`px-2 py-0.5 rounded-full text-xs ${URGENCY_CONFIG[wish.urgency].bg} ${URGENCY_CONFIG[wish.urgency].color}`}>
                     <Clock className="w-2.5 h-2.5 inline mr-1" />
