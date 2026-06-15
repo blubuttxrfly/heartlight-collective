@@ -1,10 +1,42 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, PenLine, CheckCircle2, Heart, Eye, EyeOff, Printer, Send, ChevronRight, FileText, Lock, Unlock, Sparkles, AlertTriangle, BookOpen, Store, Inbox, ClipboardList, Check } from 'lucide-react'
+import {
+  ArrowLeft,
+  PenLine,
+  CheckCircle2,
+  Heart,
+  Eye,
+  EyeOff,
+  Printer,
+  Send,
+  ChevronRight,
+  FileText,
+  Lock,
+  Unlock,
+  Sparkles,
+  AlertTriangle,
+  BookOpen,
+  Store,
+  Inbox,
+  ClipboardList,
+  Check,
+  ScrollText,
+  Activity,
+  Users,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
 import { useSession } from '../lib/session.ts'
-import type { ExchangeJourney, CodeLogEntry, JourneyPhase, QuestItem, AgreementVersion, RayKey, ExchangeAgreement } from '../types/ces'
+import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor.tsx'
+import type {
+  ExchangeJourney,
+  CodeLogEntry,
+  JourneyPhase,
+  QuestItem,
+  AgreementVersion,
+  RayKey,
+  ExchangeAgreement,
+} from '../types/ces'
 
 /* ─── Codes Data (inline for render, synced with Codes.tsx) ─── */
 const CODES_DATA: { number: number; name: string; ray: string; color: string }[] = [
@@ -23,9 +55,10 @@ const CODES_DATA: { number: number; name: string; ray: string; color: string }[]
 ]
 
 const JOURNEYS_KEY = 'hlc_exchange_journeys'
+const AGREEMENTS_KEY = 'hlc_exchange_agreements'
 
 function rayKeyFromCodeNumber(n: number): RayKey {
-  return (CODES_DATA.find(c => c.number === n)?.ray.split(' ')[0] as RayKey) ?? 'ALL'
+  return (CODES_DATA.find((c) => c.number === n)?.ray.split(' ')[0] as RayKey) ?? 'ALL'
 }
 
 function readJourneysFromStorage(): ExchangeJourney[] | null {
@@ -39,9 +72,20 @@ function readJourneysFromStorage(): ExchangeJourney[] | null {
   }
 }
 
+function readAgreementsFromStorage(): ExchangeAgreement[] {
+  try {
+    const raw = localStorage.getItem(AGREEMENTS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as ExchangeAgreement[]
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 function getLinkedAgreement(journey: ExchangeJourney): ExchangeAgreement | undefined {
   try {
-    const agreements = JSON.parse(localStorage.getItem('hlc_exchange_agreements') || '[]') as ExchangeAgreement[]
+    const agreements = JSON.parse(localStorage.getItem(AGREEMENTS_KEY) || '[]') as ExchangeAgreement[]
     return agreements.find((a) => a.id === journey.agreementId)
   } catch {
     return undefined
@@ -50,10 +94,10 @@ function getLinkedAgreement(journey: ExchangeJourney): ExchangeAgreement | undef
 
 function saveLinkedAgreement(agreement: ExchangeAgreement) {
   try {
-    const raw = localStorage.getItem('hlc_exchange_agreements') || '[]'
+    const raw = localStorage.getItem(AGREEMENTS_KEY) || '[]'
     const agreements = JSON.parse(raw) as ExchangeAgreement[]
     const next = agreements.map((a) => (a.id === agreement.id ? agreement : a))
-    localStorage.setItem('hlc_exchange_agreements', JSON.stringify(next))
+    localStorage.setItem(AGREEMENTS_KEY, JSON.stringify(next))
   } catch (err) {
     console.warn('Failed to save linked agreement locally:', err)
   }
@@ -67,7 +111,8 @@ function applyApprovedAmendment(
   const now = new Date().toISOString()
   const pending = agreement.pendingUpdate
   if (!pending) return { updatedJourney: journey, appliedVersion: undefined }
-  const fullyApproved = pending.approvedBy.includes(agreement.requesterCes) && pending.approvedBy.includes(agreement.providerCes)
+  const fullyApproved =
+    pending.approvedBy.includes(agreement.requesterCes) && pending.approvedBy.includes(agreement.providerCes)
   if (!fullyApproved) return { updatedJourney: journey, appliedVersion: undefined }
 
   const nextAgreement: ExchangeAgreement = {
@@ -80,7 +125,11 @@ function applyApprovedAmendment(
 
   const nextJourney: ExchangeJourney = {
     ...journey,
-    mainQuest: { ...agreement.mainQuest, status: normalizeQuestStatus(journey.mainQuest.status), verifications: journey.mainQuest.verifications || [] },
+    mainQuest: {
+      ...agreement.mainQuest,
+      status: normalizeQuestStatus(journey.mainQuest.status),
+      verifications: journey.mainQuest.verifications || [],
+    },
     sideQuests: agreement.sideQuests.map((sq) => {
       const existing = journey.sideQuests.find((j) => j.id === sq.id)
       return existing
@@ -125,7 +174,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Red',
         codeNumber: 1,
         timestamp: '2026-06-01T14:30:00Z',
-        content: 'Feeling clear about my boundaries entering this reading. I am open to what arrives but also know I can pause at any time.',
+        content:
+          'Feeling clear about my boundaries entering this reading. I am open to what arrives but also know I can pause at any time.',
         visibility: 'public',
         phase: 'before',
         moodEnergy: 'Clear, grounded',
@@ -138,7 +188,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Blue',
         codeNumber: 6,
         timestamp: '2026-06-02T09:15:00Z',
-        content: 'Sat with Seren\'s chart for a week before our session. Intentional pacing feels aligned with the Blue Ray. I will share reflections as they arise.',
+        content:
+          "Sat with Seren's chart for a week before our session. Intentional pacing feels aligned with the Blue Ray. I will share reflections as they arise.",
         visibility: 'public',
         phase: 'before',
         moodEnergy: 'Patient, intentional',
@@ -151,7 +202,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Magenta',
         codeNumber: 9,
         timestamp: '2026-06-04T16:45:00Z',
-        content: 'The reading yesterday brought me such authentic joy. Seeing my chart reflected back to me felt like coming home. I wrote pages of notes and feel so seen.',
+        content:
+          'The reading yesterday brought me such authentic joy. Seeing my chart reflected back to me felt like coming home. I wrote pages of notes and feel so seen.',
         visibility: 'public',
         phase: 'during',
         moodEnergy: 'Joyful, expansive',
@@ -164,7 +216,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Omni',
         codeNumber: 10,
         timestamp: '2026-06-05T08:20:00Z',
-        content: 'Integration day. Consciously noticing how the insights are weaving into my daily life. Not forcing it. Just watching.',
+        content:
+          'Integration day. Consciously noticing how the insights are weaving into my daily life. Not forcing it. Just watching.',
         visibility: 'private',
         phase: 'during',
         moodEnergy: 'Gentle, observant',
@@ -177,7 +230,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
     mainQuest: {
       id: 'mq_j01',
       title: 'Complete a 90-minute evolutionary astrology reading with integration support',
-      description: 'Deliver a comprehensive natal chart reading covering soul purpose, current transits, and heart-aligned next steps. Include a follow-up integration call.',
+      description:
+        'Deliver a comprehensive natal chart reading covering soul purpose, current transits, and heart-aligned next steps. Include a follow-up integration call.',
       status: 'in_progress',
       createdAt: '2026-06-01T10:00:00Z',
     },
@@ -220,7 +274,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Indigo',
         codeNumber: 7,
         timestamp: '2026-05-15T10:00:00Z',
-        content: 'Aligned on the vision: a warm, welcoming portal that feels like stepping into a sanctuary. No urgency, only resonance.',
+        content:
+          'Aligned on the vision: a warm, welcoming portal that feels like stepping into a sanctuary. No urgency, only resonance.',
         visibility: 'public',
         phase: 'before',
         moodEnergy: 'Visionary, grounded',
@@ -233,7 +288,8 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Red',
         codeNumber: 1,
         timestamp: '2026-05-20T12:30:00Z',
-        content: 'Consent check-in: The midway review felt good. Both of us had space to say what was working and what needed adjustment. The design shifted based on what felt true.',
+        content:
+          'Consent check-in: The midway review felt good. Both of us had space to say what was working and what needed adjustment. The design shifted based on what felt true.',
         visibility: 'public',
         phase: 'during',
         moodEnergy: 'Collaborative, clear',
@@ -246,20 +302,23 @@ const MOCK_JOURNEYS: ExchangeJourney[] = [
         ray: 'Blue',
         codeNumber: 6,
         timestamp: '2026-05-22T15:00:00Z',
-        content: 'Communication has been flowing well. We check in about once per week, sometimes more when there is momentum. It never feels forced.',
+        content:
+          'Communication has been flowing well. We check in about once per week, sometimes more when there is momentum. It never feels forced.',
         visibility: 'public',
         phase: 'during',
         moodEnergy: 'Flowing, communicative',
       },
     ],
-    fulfillmentNotes: 'The portal is complete and feels like a true sanctuary. Atlas and I both feel this exchange was aligned and joyful. Ready to sign off.',
+    fulfillmentNotes:
+      'The portal is complete and feels like a true sanctuary. Atlas and I both feel this exchange was aligned and joyful. Ready to sign off.',
     fulfillmentSignedAt: null,
     fulfillmentSignedBy: [],
     adaptationConsent: false,
     mainQuest: {
       id: 'mq_j02',
       title: 'Design and build the Sanctuary Portals website',
-      description: 'Create a warm, welcoming digital portal for Atlas Island event coordination. Include event listings, registration flow, and community gathering spaces.',
+      description:
+        'Create a warm, welcoming digital portal for Atlas Island event coordination. Include event listings, registration flow, and community gathering spaces.',
       status: 'in_progress',
       createdAt: '2026-05-10T09:00:00Z',
     },
@@ -327,16 +386,28 @@ function timeAgo(ts: string) {
 }
 
 function codeColor(n: number) {
-  return CODES_DATA.find(c => c.number === n)?.color ?? '#c0c0d8'
+  return CODES_DATA.find((c) => c.number === n)?.color ?? '#c0c0d8'
 }
 
 /* ─── Journey Card ─── */
-function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney; isActive: boolean; onSelect: () => void }) {
+function JourneyCard({
+  journey,
+  isActive,
+  onSelect,
+}: {
+  journey: ExchangeJourney
+  isActive: boolean
+  onSelect: () => void
+}) {
   const lastLog = journey.logs[journey.logs.length - 1]
-  const statusColor = journey.status === 'active' ? 'border-green-500/20 bg-green-500/5 text-green-400'
-    : journey.status === 'fulfillment_review' ? 'border-magenta-400/20 bg-magenta-400/5 text-magenta-400'
-    : journey.status === 'complete' ? 'border-gold-400/20 bg-gold-400/5 text-gold-400'
-    : 'border-lavender/10 bg-lavender/5 text-lavender/40'
+  const statusColor =
+    journey.status === 'active'
+      ? 'border-green-500/20 bg-green-500/5 text-green-400'
+      : journey.status === 'fulfillment_review'
+        ? 'border-magenta-400/20 bg-magenta-400/5 text-magenta-400'
+        : journey.status === 'complete'
+          ? 'border-gold-400/20 bg-gold-400/5 text-gold-400'
+          : 'border-lavender/10 bg-lavender/5 text-lavender/40'
 
   return (
     <button
@@ -360,7 +431,7 @@ function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney
         <span>{journey.coCreatorName}</span>
       </div>
       <div className="mt-2 h-1 rounded-full w-full overflow-hidden flex">
-        {CODES_DATA.map(code => (
+        {CODES_DATA.map((code) => (
           <div key={code.number} className="flex-1 h-full" style={{ background: code.color + '80' }} />
         ))}
       </div>
@@ -370,7 +441,17 @@ function JourneyCard({ journey, isActive, onSelect }: { journey: ExchangeJourney
 }
 
 /* ─── Phase Tab ─── */
-function PhaseTab({ label, phase, current, onClick }: { label: string; phase: JourneyPhase; current: JourneyPhase; onClick: () => void }) {
+function PhaseTab({
+  label,
+  phase,
+  current,
+  onClick,
+}: {
+  label: string
+  phase: JourneyPhase
+  current: JourneyPhase
+  onClick: () => void
+}) {
   const isActive = phase === current
   return (
     <button
@@ -418,9 +499,7 @@ function LogEntry({ entry, isAuthor }: { entry: CodeLogEntry; isAuthor: boolean 
             <span className="text-[10px] text-lavender/30">{timeAgo(entry.timestamp)}</span>
           </div>
           <p className="text-sm text-lavender/70 leading-relaxed">{entry.content}</p>
-          {entry.moodEnergy && (
-            <span className="inline-block mt-2 text-[10px] text-lavender/30">{entry.moodEnergy}</span>
-          )}
+          {entry.moodEnergy && <span className="inline-block mt-2 text-[10px] text-lavender/30">{entry.moodEnergy}</span>}
         </div>
       </div>
     </motion.div>
@@ -450,18 +529,17 @@ function QuestTracker({
   onClearAutoNotice?: () => void
 }) {
   const allQuests = useMemo(() => [journey.mainQuest, ...journey.sideQuests], [journey])
-  const completedCount = useMemo(() => allQuests.filter(q => q.status === 'completed').length, [allQuests])
-  const inVerificationCount = useMemo(() => allQuests.filter(q => q.status === 'verification_pending').length, [allQuests])
+  const completedCount = useMemo(() => allQuests.filter((q) => q.status === 'completed').length, [allQuests])
+  const inVerificationCount = useMemo(() => allQuests.filter((q) => q.status === 'verification_pending').length, [allQuests])
   const percent = allQuests.length > 0 ? Math.round(((completedCount + inVerificationCount) / allQuests.length) * 100) : 0
   const isJourneyActive = journey.status === 'active'
 
   const pendingUpdate = agreement?.pendingUpdate
   const hasPendingUpdate = Boolean(pendingUpdate)
   const pendingApprovedBy = pendingUpdate?.approvedBy ?? []
-  const remainingParty =
-    pendingApprovedBy.includes(agreement?.requesterCes ?? '')
-      ? agreement?.providerName || 'Provider'
-      : agreement?.requesterName || 'Requester'
+  const remainingParty = pendingApprovedBy.includes(agreement?.requesterCes ?? '')
+    ? agreement?.providerName || 'Provider'
+    : agreement?.requesterName || 'Requester'
 
   const latestVersion = agreement?.versions?.[agreement.versions.length - 1]
 
@@ -498,6 +576,7 @@ function QuestTracker({
       completedAt: now,
       completedByCes: currentCes,
       completedByName: currentName,
+      verifications: quest.verifications || [],
     }
     updateQuest(markedQuest)
   }
@@ -538,10 +617,7 @@ function QuestTracker({
     updateQuest(reopenedQuest)
   }
 
-  function updateQuest(
-    updatedQuest: QuestItem,
-    opts?: { mainQuestToFulfillmentReview?: boolean }
-  ) {
+  function updateQuest(updatedQuest: QuestItem, opts?: { mainQuestToFulfillmentReview?: boolean }) {
     const now = new Date().toISOString()
     const isMain = updatedQuest.id === journey.mainQuest.id
 
@@ -621,7 +697,7 @@ function QuestTracker({
         }
         ;(storage as any).addAgreementVersion(journey.agreementId, version)
       } else {
-        const raw = localStorage.getItem('hlc_exchange_agreements') || '[]'
+        const raw = localStorage.getItem(AGREEMENTS_KEY) || '[]'
         const agreements = JSON.parse(raw) as {
           id: string
           mainQuest?: QuestItem
@@ -633,11 +709,25 @@ function QuestTracker({
           if (ag.id !== journey.agreementId) return ag
           const next = { ...ag, updatedAt: new Date().toISOString() }
           if (next.mainQuest?.id === quest.id) {
-            next.mainQuest = { ...next.mainQuest, status: quest.status, completedAt: quest.completedAt, completedByCes: quest.completedByCes, completedByName: quest.completedByName, verifications: quest.verifications }
+            next.mainQuest = {
+              ...next.mainQuest,
+              status: quest.status,
+              completedAt: quest.completedAt,
+              completedByCes: quest.completedByCes,
+              completedByName: quest.completedByName,
+              verifications: quest.verifications,
+            }
           } else if (next.sideQuests) {
             next.sideQuests = next.sideQuests.map((q) =>
               q.id === quest.id
-                ? { ...q, status: quest.status, completedAt: quest.completedAt, completedByCes: quest.completedByCes, completedByName: quest.completedByName, verifications: quest.verifications }
+                ? {
+                    ...q,
+                    status: quest.status,
+                    completedAt: quest.completedAt,
+                    completedByCes: quest.completedByCes,
+                    completedByName: quest.completedByName,
+                    verifications: quest.verifications,
+                  }
                 : q
             )
           }
@@ -656,7 +746,7 @@ function QuestTracker({
           ]
           return next
         })
-        localStorage.setItem('hlc_exchange_agreements', JSON.stringify(nextAgreements))
+        localStorage.setItem(AGREEMENTS_KEY, JSON.stringify(nextAgreements))
       }
     } catch (err) {
       console.warn('Failed to sync quest update to agreement:', err)
@@ -691,10 +781,6 @@ function QuestTracker({
           </span>
         )
     }
-  }
-
-  function handleCompleteQuest(quest: QuestItem) {
-    handleMarkDone(quest)
   }
 
   function QuestRow({ quest, isMain }: { quest: QuestItem; isMain?: boolean }) {
@@ -823,7 +909,9 @@ function QuestTracker({
               <CheckCircle2 className="w-4 h-4" /> Exchange Agreement amendment auto-applied
             </p>
             {onClearAutoNotice && (
-              <button onClick={onClearAutoNotice} className="text-xs text-lavender/40 hover:text-cream">Dismiss</button>
+              <button onClick={onClearAutoNotice} className="text-xs text-lavender/40 hover:text-cream">
+                Dismiss
+              </button>
             )}
           </div>
           <p className="text-lavender/60 mt-1">{autoAppliedNotice.summary}</p>
@@ -854,7 +942,7 @@ function QuestTracker({
       {journey.sideQuests.length > 0 && (
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans">Side Quests</p>
-          {journey.sideQuests.map(quest => (
+          {journey.sideQuests.map((quest) => (
             <QuestRow key={quest.id} quest={quest} />
           ))}
         </div>
@@ -906,7 +994,7 @@ function QuestTracker({
 }
 
 /* ─── Flow View Types ─── */
-type FlowView = 'dashboard' | 'journeys' | 'vendor-inbox' | 'journey-detail'
+type FlowView = 'dashboard' | 'journeys' | 'vendor-inbox' | 'journey-detail' | 'agreements' | 'exchanges' | 'quest-tracker' | 'present-journal'
 
 /* ─── Dashboard Card ─── */
 function AspectCard({
@@ -917,12 +1005,12 @@ function AspectCard({
   color,
   onClick,
 }: {
-  icon: typeof BookOpen;
-  label: string;
-  count: number;
-  subtitle: string;
-  color: string;
-  onClick: () => void;
+  icon: typeof BookOpen
+  label: string
+  count: number
+  subtitle: string
+  color: string
+  onClick: () => void
 }) {
   return (
     <motion.button
@@ -960,6 +1048,16 @@ export default function Flow() {
     return real ?? MOCK_JOURNEYS
   })
 
+  const agreements = useMemo<ExchangeAgreement[]>(() => {
+    const fromStorage = storage.getExchangeAgreements()
+    return fromStorage.length > 0 ? fromStorage : readAgreementsFromStorage()
+  }, [storage])
+
+  const myAgreements = useMemo(
+    () => agreements.filter((a) => a.requesterCes === currentCes || a.providerCes === currentCes),
+    [agreements, currentCes]
+  )
+
   const [selectedJourneyId, setSelectedJourneyId] = useState<string>(journeys[0]?.id ?? '')
   const [view, setView] = useState<FlowView>('dashboard')
   const [activePhase, setActivePhase] = useState<JourneyPhase>('during')
@@ -967,6 +1065,7 @@ export default function Flow() {
   const [selectedCodeNum, setSelectedCodeNum] = useState(1)
   const [logVisibility, setLogVisibility] = useState<'private' | 'public'>('public')
   const [autoAppliedNotice, setAutoAppliedNotice] = useState<{ summary: string; updatedAt: string } | null>(null)
+  const [selectedAgreement, setSelectedAgreement] = useState<ExchangeAgreement | null>(null)
 
   const persistAgreement = useCallback(
     (ag: ExchangeAgreement) => {
@@ -1007,7 +1106,7 @@ export default function Flow() {
 
   const updateJourney = useCallback(
     (updated: ExchangeJourney) => {
-      const next = journeys.map(j => (j.id === updated.id ? updated : j))
+      const next = journeys.map((j) => (j.id === updated.id ? updated : j))
       persistJourneys(next)
     },
     [journeys, persistJourneys]
@@ -1015,19 +1114,22 @@ export default function Flow() {
 
   useEffect(() => {
     // Keep selected journey valid if the list changes
-    if (journeys.length > 0 && !journeys.find(j => j.id === selectedJourneyId)) {
+    if (journeys.length > 0 && !journeys.find((j) => j.id === selectedJourneyId)) {
       setSelectedJourneyId(journeys[0].id)
     }
   }, [journeys, selectedJourneyId])
 
-  const journey = useMemo(() => journeys.find(j => j.id === selectedJourneyId) ?? journeys[0], [journeys, selectedJourneyId])
+  const journey = useMemo(
+    () => journeys.find((j) => j.id === selectedJourneyId) ?? journeys[0],
+    [journeys, selectedJourneyId]
+  )
 
   // Filter logs by phase + visibility (show public logs + the author's private logs)
   const visibleLogs = useMemo(() => {
     if (!journey) return []
     return journey.logs
-      .filter(l => l.phase === activePhase)
-      .filter(l => l.visibility === 'public' || l.authorCes === currentCes)
+      .filter((l) => l.phase === activePhase)
+      .filter((l) => l.visibility === 'public' || l.authorCes === currentCes)
   }, [journey, activePhase, currentCes])
 
   const addLogEntry = useCallback(() => {
@@ -1084,33 +1186,46 @@ export default function Flow() {
         <Heart className="w-8 h-8 text-gold-400 mx-auto mb-3" />
         <h1 className="font-serif text-2xl md:text-3xl text-cream mb-2">Flow</h1>
         <p className="text-lavender/60 max-w-lg mx-auto text-sm">
-          Your living dashboard for all exchanges — co-creation journeys and vendor marketplace inbox.
+          Your living dashboard for all exchanges — agreements, active journeys, quest tracking, and present-moment
+          reflection.
         </p>
       </motion.div>
 
       {/* ─── DASHBOARD VIEW ─── */}
       {view === 'dashboard' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl mx-auto"
-        >
-          <div className="grid sm:grid-cols-2 gap-4 mb-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <AspectCard
-              icon={BookOpen}
-              label="Journeys"
-              count={journeys.length}
-              subtitle="Document and reflect on your active co-creation exchanges"
+              icon={ScrollText}
+              label="Agreements"
+              count={myAgreements.length}
+              subtitle="Co-created, consented, and living agreements you are part of"
               color="#eab308"
-              onClick={() => setView('journeys')}
+              onClick={() => setView('agreements')}
             />
             <AspectCard
-              icon={Store}
-              label="Vendor Inbox"
-              count={0}
-              subtitle="Manage incoming exchange requests for your storefront offerings"
+              icon={Activity}
+              label="Exchanges"
+              count={journeys.length}
+              subtitle="Overview of active co-creation journeys and quick stats"
+              color="#22c55e"
+              onClick={() => setView('exchanges')}
+            />
+            <AspectCard
+              icon={ClipboardList}
+              label="Quest Tracker"
+              count={journeys.filter((j) => j.status === 'active').length}
+              subtitle="Track quests across all your journeys in one place"
               color="#d946ef"
-              onClick={() => setView('vendor-inbox')}
+              onClick={() => setView('quest-tracker')}
+            />
+            <AspectCard
+              icon={BookOpen}
+              label="Present Journey Journal"
+              count={journeys.reduce((acc, j) => acc + j.logs.filter((l) => l.phase === 'during').length, 0)}
+              subtitle="Record reflections, presence, and Code awareness as you go"
+              color="#3b82f6"
+              onClick={() => setView('present-journal')}
             />
           </div>
 
@@ -1119,7 +1234,7 @@ export default function Flow() {
               <ClipboardList className="w-4 h-4 text-lavender/40" />
               <h3 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Recent Activity</h3>
             </div>
-            {journeys.map(j => (
+            {journeys.map((j) => (
               <button
                 key={j.id}
                 onClick={() => selectJourney(j.id)}
@@ -1135,6 +1250,162 @@ export default function Flow() {
               </button>
             ))}
           </div>
+        </motion.div>
+      )}
+
+      {/* ─── AGREEMENTS VIEW ─── */}
+      {view === 'agreements' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setView('dashboard')} className="text-xs text-lavender/40 hover:text-cream transition-colors">
+              ← Back to Flow Dashboard
+            </button>
+          </div>
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <ScrollText className="w-4 h-4 text-gold-400" />
+              <h2 className="font-serif text-lg text-cream">Agreements</h2>
+            </div>
+            {myAgreements.length === 0 ? (
+              <p className="text-sm text-lavender/40 italic">
+                No agreements yet. When you co-create or receive an exchange proposal, it will appear here.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {myAgreements.map((a) => (
+                  <div
+                    key={a.id}
+                    className="rounded-xl border border-lavender/10 bg-void-900/40 p-4 hover:border-lavender/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                          a.status === 'active' || a.status === 'agreed'
+                            ? 'border-green-400/20 bg-green-400/10 text-green-300'
+                            : a.status === 'proposed'
+                              ? 'border-magenta-400/20 bg-magenta-400/10 text-magenta-300'
+                              : 'border-lavender/10 bg-lavender/5 text-lavender/40'
+                        }`}
+                      >
+                        {a.status.replace('_', ' ')}
+                      </span>
+                      <span className="text-[10px] text-lavender/30">{timeAgo(a.updatedAt)}</span>
+                    </div>
+                    <h3 className="text-sm font-medium text-cream mb-1">{a.mainQuest.title || 'Untitled Agreement'}</h3>
+                    <p className="text-xs text-lavender/50 mb-3 line-clamp-2">{a.mainQuest.description || a.message}</p>
+                    <div className="flex items-center gap-1.5 text-[10px] text-lavender/40 mb-3">
+                      <span>{a.requesterName}</span>
+                      <ChevronRight className="w-3 h-3" />
+                      <span>{a.providerName}</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedAgreement(a)}
+                      className="w-full py-2 rounded-lg border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-xs"
+                    >
+                      Open Agreement ✨
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ─── EXCHANGES VIEW ─── */}
+      {view === 'exchanges' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setView('dashboard')} className="text-xs text-lavender/40 hover:text-cream transition-colors">
+              ← Back to Flow Dashboard
+            </button>
+          </div>
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5 mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="w-4 h-4 text-green-400" />
+              <h2 className="font-serif text-lg text-cream">Exchanges</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div className="rounded-xl border border-lavender/10 bg-void-900/40 p-4 text-center">
+                <p className="text-2xl font-serif text-cream">{journeys.length}</p>
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40">Total Journeys</p>
+              </div>
+              <div className="rounded-xl border border-green-400/10 bg-green-400/5 p-4 text-center">
+                <p className="text-2xl font-serif text-green-300">{journeys.filter((j) => j.status === 'active').length}</p>
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40">Active</p>
+              </div>
+              <div className="rounded-xl border border-magenta-400/10 bg-magenta-400/5 p-4 text-center">
+                <p className="text-2xl font-serif text-magenta-300">
+                  {journeys.filter((j) => j.status === 'fulfillment_review').length}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40">In Review</p>
+              </div>
+              <div className="rounded-xl border border-gold-400/10 bg-gold-400/5 p-4 text-center">
+                <p className="text-2xl font-serif text-gold-300">{journeys.filter((j) => j.status === 'complete').length}</p>
+                <p className="text-[10px] uppercase tracking-wider text-lavender/40">Complete</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {journeys.map((j) => (
+                <JourneyCard key={j.id} journey={j} isActive={j.id === selectedJourneyId} onSelect={() => selectJourney(j.id)} />
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ─── QUEST TRACKER VIEW ─── */}
+      {view === 'quest-tracker' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setView('dashboard')} className="text-xs text-lavender/40 hover:text-cream transition-colors">
+              ← Back to Flow Dashboard
+            </button>
+          </div>
+          <div className="grid md:grid-cols-[280px_1fr] gap-6">
+            <div className="space-y-3">
+              <h2 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Select Journey</h2>
+              {journeys.map((j) => (
+                <JourneyCard key={j.id} journey={j} isActive={j.id === selectedJourneyId} onSelect={() => setSelectedJourneyId(j.id)} />
+              ))}
+            </div>
+            <div>
+              {journey ? (
+                <QuestTracker
+                  journey={journey}
+                  currentCes={currentCes}
+                  currentName={currentName}
+                  selectedCodeNum={selectedCodeNum}
+                  storage={storage}
+                  onJourneyUpdate={updateJourney}
+                  agreement={getLinkedAgreement(journey)}
+                  autoAppliedNotice={autoAppliedNotice}
+                  onClearAutoNotice={() => setAutoAppliedNotice(null)}
+                />
+              ) : (
+                <p className="text-sm text-lavender/40 text-center py-12">No journey selected.</p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* ─── PRESENT JOURNEY JOURNAL VIEW ─── */}
+      {view === 'present-journal' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center justify-between mb-4">
+            <button onClick={() => setView('dashboard')} className="text-xs text-lavender/40 hover:text-cream transition-colors">
+              ← Back to Flow Dashboard
+            </button>
+          </div>
+          <PresentJournalPanel
+            journeys={journeys}
+            selectedJourneyId={selectedJourneyId}
+            onSelectJourney={setSelectedJourneyId}
+            currentCes={currentCes}
+            currentName={currentName}
+            onJourneyUpdate={updateJourney}
+          />
         </motion.div>
       )}
 
@@ -1157,7 +1428,7 @@ export default function Flow() {
                 <h2 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Your Co-Creations</h2>
                 <span className="text-[10px] text-lavender/30">{journeys.length} active</span>
               </div>
-              {journeys.map(j => (
+              {journeys.map((j) => (
                 <JourneyCard
                   key={j.id}
                   journey={j}
@@ -1271,7 +1542,8 @@ export default function Flow() {
           <Inbox className="w-12 h-12 text-lavender/20 mx-auto mb-4" />
           <h2 className="text-lg font-medium text-lavender/60 mb-2">Vendor Inbox</h2>
           <p className="text-sm text-lavender/40 max-w-md mx-auto mb-6">
-            Exchange requests for your storefront offerings will appear here. This is where you manage incoming agreements, approve or decline requests, and track fulfillment.
+            Exchange requests for your storefront offerings will appear here. This is where you manage incoming
+            agreements, approve or decline requests, and track fulfillment.
           </p>
           <button
             onClick={() => setView('dashboard')}
@@ -1281,6 +1553,197 @@ export default function Flow() {
           </button>
         </motion.div>
       )}
+
+      {/* ─── Agreement Editor Modal ─── */}
+      {selectedAgreement && (
+        <ExchangeAgreementEditor
+          agreement={selectedAgreement}
+          onClose={() => setSelectedAgreement(null)}
+          onSigned={() => setSelectedAgreement(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ─── Present Journey Journal Panel ─── */
+function PresentJournalPanel({
+  journeys,
+  selectedJourneyId,
+  onSelectJourney,
+  currentCes,
+  currentName,
+  onJourneyUpdate,
+}: {
+  journeys: ExchangeJourney[]
+  selectedJourneyId: string
+  onSelectJourney: (id: string) => void
+  currentCes: string
+  currentName: string
+  onJourneyUpdate: (j: ExchangeJourney) => void
+}) {
+  const [selectedCodeNum, setSelectedCodeNum] = useState(1)
+  const [content, setContent] = useState('')
+  const [visibility, setVisibility] = useState<'private' | 'public'>('public')
+
+  const selectedJourney = useMemo(
+    () => journeys.find((j) => j.id === selectedJourneyId) ?? journeys[0],
+    [journeys, selectedJourneyId]
+  )
+
+  const visibleLogs = useMemo(() => {
+    if (!selectedJourney) return []
+    return selectedJourney.logs
+      .filter((l) => l.phase === 'during')
+      .filter((l) => l.visibility === 'public' || l.authorCes === currentCes)
+      .slice()
+      .reverse()
+  }, [selectedJourney, currentCes])
+
+  function addEntry() {
+    if (!selectedJourney || !content.trim()) return
+    const selectedRay = rayKeyFromCodeNumber(selectedCodeNum)
+    const newLog: CodeLogEntry = {
+      id: `log_${Date.now()}`,
+      exchangeId: selectedJourney.id,
+      authorCes: currentCes,
+      authorName: currentName,
+      ray: selectedRay,
+      codeNumber: selectedCodeNum,
+      timestamp: new Date().toISOString(),
+      content: content.trim(),
+      visibility,
+      phase: 'during',
+      moodEnergy: 'Present, reflective',
+    }
+    onJourneyUpdate({ ...selectedJourney, logs: [...selectedJourney.logs, newLog], updatedAt: newLog.timestamp })
+    setContent('')
+  }
+
+  return (
+    <div className="grid md:grid-cols-[280px_1fr] gap-6">
+      <div className="space-y-3">
+        <h2 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Select Journey</h2>
+        {journeys.map((j) => (
+          <JourneyCard key={j.id} journey={j} isActive={j.id === selectedJourneyId} onSelect={() => onSelectJourney(j.id)} />
+        ))}
+      </div>
+
+      <div className="space-y-5">
+        {selectedJourney ? (
+          <>
+            <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <BookOpen className="w-4 h-4 text-blue-400" />
+                <h3 className="font-serif text-lg text-cream">Present Journey Journal</h3>
+              </div>
+              <p className="text-xs text-lavender/50 mb-4">
+                Recording for <span className="text-cream">{selectedJourney.title}</span> — shared entries are visible to
+                all co-creators; private entries are yours alone.
+              </p>
+
+              <div className="rounded-xl border border-lavender/15 bg-void-800/60 p-4 space-y-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                    Which Ray Frequency is alive right now?
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                    {CODES_DATA.map((code) => (
+                      <button
+                        key={code.number}
+                        onClick={() => setSelectedCodeNum(code.number)}
+                        className={`p-2 rounded-lg border text-center transition-all ${
+                          selectedCodeNum === code.number
+                            ? 'border-gold-400/40 bg-gold-400/10'
+                            : 'border-white/5 bg-white/[0.03] hover:border-lavender/15 hover:bg-white/[0.06]'
+                        }`}
+                        title={`${code.number}. ${code.name} — ${code.ray}`}
+                      >
+                        <span className="block w-3 h-3 rounded-full mx-auto mb-1">
+                          <span className="block w-full h-full rounded-full" style={{ background: code.color }} />
+                        </span>
+                        <span className="text-[10px] font-sans" style={{ color: code.color + 'cc' }}>
+                          {code.ray.replace(' Ray', '')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {selectedCodeNum > 0 && (
+                    <div
+                      className="mt-2 p-2.5 rounded-lg border flex items-start gap-2.5"
+                      style={{ borderColor: CODES_DATA.find((c) => c.number === selectedCodeNum)?.color + '20' }}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full shrink-0 mt-0.5"
+                        style={{ background: CODES_DATA.find((c) => c.number === selectedCodeNum)?.color }}
+                      />
+                      <div>
+                        <p className="text-sm text-cream">{CODES_DATA.find((c) => c.number === selectedCodeNum)?.ray}</p>
+                        <p className="text-xs text-lavender/50 mt-0.5">
+                          Your entry resonates with this frequency. All 12 Ray Frequencies are alive in every exchange —
+                          this is simply where your awareness is resting right now.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="What is alive for you in this moment of co-creation..."
+                  className="w-full px-3 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/25 focus:border-gold-400/30 focus:outline-none resize-none"
+                  rows={3}
+                />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setVisibility('public')}
+                      className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all ${
+                        visibility === 'public'
+                          ? 'border-lavender/20 text-cream bg-white/[0.05]'
+                          : 'border-transparent text-lavender/30 hover:text-lavender/50'
+                      }`}
+                    >
+                      <Unlock className="w-3 h-3" /> Shared
+                    </button>
+                    <button
+                      onClick={() => setVisibility('private')}
+                      className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all ${
+                        visibility === 'private'
+                          ? 'border-lavender/20 text-cream bg-white/[0.05]'
+                          : 'border-transparent text-lavender/30 hover:text-lavender/50'
+                      }`}
+                    >
+                      <Lock className="w-3 h-3" /> Private
+                    </button>
+                  </div>
+                  <button
+                    onClick={addEntry}
+                    disabled={!content.trim()}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 text-xs hover:bg-gold-400/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Send className="w-3 h-3" /> Record Entry
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 mt-6">
+                {visibleLogs.length > 0 ? (
+                  visibleLogs.map((log) => <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />)
+                ) : (
+                  <p className="text-sm text-lavender/30 italic text-center py-8">
+                    No journal entries yet for this journey. Begin with your first reflection.
+                  </p>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-lavender/40 text-center py-12">No journey selected.</p>
+        )}
+      </div>
     </div>
   )
 }
@@ -1307,25 +1770,25 @@ function JourneyDetailPanel({
   autoAppliedNotice,
   onClearAutoNotice,
 }: {
-  journey: ExchangeJourney;
-  activePhase: JourneyPhase;
-  setActivePhase: (p: JourneyPhase) => void;
-  visibleLogs: CodeLogEntry[];
-  newLogContent: string;
-  setNewLogContent: (s: string) => void;
-  selectedCodeNum: number;
-  setSelectedCodeNum: (n: number) => void;
-  logVisibility: 'private' | 'public';
-  setLogVisibility: (v: 'private' | 'public') => void;
-  addLogEntry: () => void;
-  handlePrint: () => void;
-  currentCes: string;
-  currentName: string;
-  storage: ReturnType<typeof useStorage>;
-  onJourneyUpdate: (j: ExchangeJourney) => void;
-  agreement?: ExchangeAgreement;
-  autoAppliedNotice?: { summary: string; updatedAt: string } | null;
-  onClearAutoNotice?: () => void;
+  journey: ExchangeJourney
+  activePhase: JourneyPhase
+  setActivePhase: (p: JourneyPhase) => void
+  visibleLogs: CodeLogEntry[]
+  newLogContent: string
+  setNewLogContent: (s: string) => void
+  selectedCodeNum: number
+  setSelectedCodeNum: (n: number) => void
+  logVisibility: 'private' | 'public'
+  setLogVisibility: (v: 'private' | 'public') => void
+  addLogEntry: () => void
+  handlePrint: () => void
+  currentCes: string
+  currentName: string
+  storage: ReturnType<typeof useStorage>
+  onJourneyUpdate: (j: ExchangeJourney) => void
+  agreement?: ExchangeAgreement
+  autoAppliedNotice?: { summary: string; updatedAt: string } | null
+  onClearAutoNotice?: () => void
 }) {
   return (
     <>
@@ -1341,7 +1804,7 @@ function JourneyDetailPanel({
 
       {/* All 12 Ray Frequencies — present in every exchange */}
       <div className="flex flex-wrap gap-1.5 mb-5">
-        {CODES_DATA.map(code => (
+        {CODES_DATA.map((code) => (
           <span
             key={code.number}
             className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border"
@@ -1385,8 +1848,8 @@ function JourneyDetailPanel({
               <FileText className="w-4 h-4 text-gold-400" /> The Exchange Agreement
             </h3>
             <p className="text-sm text-lavender/60 mb-4 leading-relaxed">
-              Before co-creation begins, beings craft and co-sign an Agreement. This document captures
-              roles, boundaries, communication preferences, and the Codes most relevant to this exchange.
+              Before co-creation begins, beings craft and co-sign an Agreement. This document captures roles, boundaries,
+              communication preferences, and the Codes most relevant to this exchange.
             </p>
 
             <div className="space-y-3 text-sm">
@@ -1396,18 +1859,22 @@ function JourneyDetailPanel({
               </div>
               <div className="flex gap-3">
                 <div className="w-24 text-right text-lavender/30 text-xs pt-1">Wishing</div>
-                <div className="text-cream/80">{journey.wishingName} <span className="text-lavender/30">(C.E.S. {journey.wishingCes})</span></div>
+                <div className="text-cream/80">
+                  {journey.wishingName} <span className="text-lavender/30">(C.E.S. {journey.wishingCes})</span>
+                </div>
               </div>
               <div className="flex gap-3">
                 <div className="w-24 text-right text-lavender/30 text-xs pt-1">Co-Creating</div>
-                <div className="text-cream/80">{journey.coCreatorName} <span className="text-lavender/30">(C.E.S. {journey.coCreatorCes})</span></div>
+                <div className="text-cream/80">
+                  {journey.coCreatorName} <span className="text-lavender/30">(C.E.S. {journey.coCreatorCes})</span>
+                </div>
               </div>
             </div>
 
             <div className="mt-5 p-4 rounded-lg border border-gold-400/10 bg-gold-400/[0.03]">
               <p className="text-xs text-gold-400/70 italic">
-                In a live system, this Agreement is co-signed by both beings before work begins.
-                This prototype displays the journey scaffold.
+                In a live system, this Agreement is co-signed by both beings before work begins. This prototype displays
+                the journey scaffold.
               </p>
             </div>
           </div>
@@ -1415,9 +1882,11 @@ function JourneyDetailPanel({
           {visibleLogs.length > 0 && (
             <div className="space-y-3 mt-6">
               <h4 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Agreement Phase Reflections</h4>
-              {visibleLogs.filter(l => l.phase === 'before').map(log => (
-                <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
-              ))}
+              {visibleLogs
+                .filter((l) => l.phase === 'before')
+                .map((log) => (
+                  <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
+                ))}
             </div>
           )}
         </div>
@@ -1441,8 +1910,8 @@ function JourneyDetailPanel({
           </div>
 
           <p className="text-sm text-lavender/50 mb-4">
-            Document the living journey of your co-creation. Shared entries are visible to all co-creators.
-            Private entries are yours alone. Toggle any entry between the two.
+            Document the living journey of your co-creation. Shared entries are visible to all co-creators. Private entries
+            are yours alone. Toggle any entry between the two.
           </p>
 
           {/* Journal Composer */}
@@ -1453,7 +1922,7 @@ function JourneyDetailPanel({
                 Which Ray Frequency is alive for you in this moment?
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
-                {CODES_DATA.map(code => (
+                {CODES_DATA.map((code) => (
                   <button
                     key={code.number}
                     onClick={() => setSelectedCodeNum(code.number)}
@@ -1474,17 +1943,19 @@ function JourneyDetailPanel({
                 ))}
               </div>
               {selectedCodeNum > 0 && (
-                <div className="mt-2 p-2.5 rounded-lg border flex items-start gap-2.5"
-                  style={{ borderColor: CODES_DATA.find(c => c.number === selectedCodeNum)?.color + '20' }}
+                <div
+                  className="mt-2 p-2.5 rounded-lg border flex items-start gap-2.5"
+                  style={{ borderColor: CODES_DATA.find((c) => c.number === selectedCodeNum)?.color + '20' }}
                 >
-                  <span className="w-3.5 h-3.5 rounded-full shrink-0 mt-0.5"
-                    style={{ background: CODES_DATA.find(c => c.number === selectedCodeNum)?.color }} />
+                  <span
+                    className="w-3.5 h-3.5 rounded-full shrink-0 mt-0.5"
+                    style={{ background: CODES_DATA.find((c) => c.number === selectedCodeNum)?.color }}
+                  />
                   <div>
-                    <p className="text-sm text-cream">
-                      {CODES_DATA.find(c => c.number === selectedCodeNum)?.ray}
-                    </p>
+                    <p className="text-sm text-cream">{CODES_DATA.find((c) => c.number === selectedCodeNum)?.ray}</p>
                     <p className="text-xs text-lavender/50 mt-0.5">
-                      Your entry resonates with this frequency. All 12 Ray Frequencies are alive in every exchange — this is simply where your awareness is resting right now.
+                      Your entry resonates with this frequency. All 12 Ray Frequencies are alive in every exchange —
+                      this is simply where your awareness is resting right now.
                     </p>
                   </div>
                 </div>
@@ -1534,11 +2005,15 @@ function JourneyDetailPanel({
 
           {/* Journal Feed */}
           <div className="space-y-3">
-            {visibleLogs.filter(l => l.phase === 'during').map(log => (
-              <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
-            ))}
-            {visibleLogs.filter(l => l.phase === 'during').length === 0 && (
-              <p className="text-sm text-lavender/30 italic text-center py-8">No journal entries yet. This is a new journey. Begin with your first reflection.</p>
+            {visibleLogs
+              .filter((l) => l.phase === 'during')
+              .map((log) => (
+                <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
+              ))}
+            {visibleLogs.filter((l) => l.phase === 'during').length === 0 && (
+              <p className="text-sm text-lavender/30 italic text-center py-8">
+                No journal entries yet. This is a new journey. Begin with your first reflection.
+              </p>
             )}
           </div>
         </div>
@@ -1552,9 +2027,8 @@ function JourneyDetailPanel({
               <CheckCircle2 className="w-4 h-4 text-gold-400" /> Fulfillment
             </h3>
             <p className="text-sm text-lavender/60 mb-4 leading-relaxed">
-              Fulfillment is a shared consensus, not a solo declaration. Every being involved affirms
-              that the exchange is complete as it is. There is no pressure to declare perfection.
-              Only to acknowledge what is.
+              Fulfillment is a shared consensus, not a solo declaration. Every being involved affirms that the exchange is
+              complete as it is. There is no pressure to declare perfection. Only to acknowledge what is.
             </p>
 
             <div className="p-4 rounded-lg border border-lavender/10 bg-white/[0.02] mb-4">
@@ -1562,7 +2036,10 @@ function JourneyDetailPanel({
               {journey.fulfillmentNotes ? (
                 <p className="text-sm text-cream/80 leading-relaxed">{journey.fulfillmentNotes}</p>
               ) : (
-                <p className="text-sm text-lavender/30 italic">No fulfillment notes yet. When the exchange reaches its natural conclusion, co-creators write shared reflections here.</p>
+                <p className="text-sm text-lavender/30 italic">
+                  No fulfillment notes yet. When the exchange reaches its natural conclusion, co-creators write shared
+                  reflections here.
+                </p>
               )}
             </div>
 
@@ -1598,8 +2075,8 @@ function JourneyDetailPanel({
             <div className="p-4 rounded-lg border border-turquoise-400/10 bg-turquoise-400/[0.03]">
               <h4 className="text-xs uppercase tracking-widest text-turquoise-400/60 font-sans mb-1">Adaptation Pathway</h4>
               <p className="text-xs text-lavender/50 leading-relaxed mb-2">
-                If this exchange wants to evolve, reshape, or become something new, all original co-creators
-                must give consent. Adaptation is welcome when sovereignty is shared.
+                If this exchange wants to evolve, reshape, or become something new, all original co-creators must give
+                consent. Adaptation is welcome when sovereignty is shared.
               </p>
               <button
                 className="text-xs text-turquoise-400/60 hover:text-turquoise-300 underline"
@@ -1612,9 +2089,11 @@ function JourneyDetailPanel({
 
           <div className="mt-6 space-y-3">
             <h4 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Fulfillment Phase Reflections</h4>
-            {visibleLogs.filter(l => l.phase === 'after').map(log => (
-              <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
-            ))}
+            {visibleLogs
+              .filter((l) => l.phase === 'after')
+              .map((log) => (
+                <LogEntry key={log.id} entry={log} isAuthor={log.authorCes === currentCes} />
+              ))}
           </div>
 
           {/* Storyfire */}
@@ -1627,8 +2106,8 @@ function JourneyDetailPanel({
               <Sparkles className="w-8 h-8 text-gold-400 mx-auto mb-3" />
               <p className="font-serif text-gold-300 mb-2">Storyfire Complete</p>
               <p className="text-sm text-lavender/60">
-                This exchange has been witnessed. What began as a wish has become a shared miracle in form.
-                The Codes have been lived, the journey has been honored, and ALL beings are held in the field.
+                This exchange has been witnessed. What began as a wish has become a shared miracle in form. The Codes have
+                been lived, the journey has been honored, and ALL beings are held in the field.
               </p>
             </motion.div>
           )}

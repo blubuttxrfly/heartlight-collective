@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Check } from 'lucide-react'
+import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Check, Mail, Smartphone, MessageCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
-import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion } from '../../types/ces'
+import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility } from '../../types/ces'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 
 const EXCHANGE_ROLES: ExchangeRole[] = [
@@ -59,6 +60,136 @@ function getAssignedCesList(quest: QuestItem): string[] {
   if (quest.assignedToCesList && quest.assignedToCesList.length > 0) return quest.assignedToCesList
   if (quest.assignedToCes) return [quest.assignedToCes]
   return []
+}
+
+const CONTACT_ICON: Record<keyof ContactMethods, typeof Mail> = {
+  email: Mail,
+  phone: Smartphone,
+  instagram: MessageCircle,
+  youtube: MessageCircle,
+  threads: MessageCircle,
+  spotify: MessageCircle,
+  discord: MessageCircle,
+  telegram: MessageCircle,
+  signal: MessageCircle,
+}
+
+const CONTACT_LABEL: Record<keyof ContactMethods, string> = {
+  email: 'Email',
+  phone: 'Phone',
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  threads: 'Threads',
+  spotify: 'Spotify',
+  discord: 'Discord',
+  telegram: 'Telegram',
+  signal: 'Signal',
+}
+
+function visibleContactMethods(
+  profile: { contactMethods: ContactMethods; contactVisibility: ContactVisibility } | null | undefined,
+  currentCes: string,
+  partyCes: string
+): Array<{ key: keyof ContactMethods; value: string; label: string; icon: typeof Mail }> {
+  if (!profile) return []
+  const isParty = currentCes === partyCes
+  return (Object.keys(profile.contactMethods) as (keyof ContactMethods)[])
+    .filter((key) => {
+      const visible = profile.contactVisibility?.[key]
+      const hasValue = !!profile.contactMethods[key]?.trim()
+      return hasValue && (isParty || visible)
+    })
+    .map((key) => ({ key, value: profile.contactMethods[key], label: CONTACT_LABEL[key], icon: CONTACT_ICON[key] }))
+}
+
+function ContactMethodRow({
+  method,
+  href,
+}: {
+  method: { key: keyof ContactMethods; value: string; label: string; icon: typeof Mail }
+  href?: string
+}) {
+  const Icon = method.icon
+  const body = (
+    <div className="flex items-center gap-2 text-xs text-lavender/70">
+      <Icon className="w-3.5 h-3.5 text-lavender/40" />
+      <span className="font-medium">{method.label}:</span>
+      <span className="truncate">{method.value}</span>
+    </div>
+  )
+  return href ? (
+    <a href={href} target="_blank" rel="noreferrer" className="block hover:bg-white/[0.03] rounded-lg p-2 -mx-2 transition-colors">
+      {body}
+    </a>
+  ) : (
+    <div className="p-2 -mx-2">{body}</div>
+  )
+}
+
+function ContactHref(method: keyof ContactMethods, value: string): string | undefined {
+  switch (method) {
+    case 'email':
+      return `mailto:${value}`
+    case 'phone':
+      return `tel:${value.replace(/\s/g, '')}`
+    case 'instagram':
+      return `https://instagram.com/${value.replace(/^@/, '')}`
+    case 'threads':
+      return `https://threads.net/@${value.replace(/^@/, '')}`
+    case 'youtube':
+      return value.startsWith('http') ? value : `https://youtube.com/@${value.replace(/^@/, '')}`
+    case 'spotify':
+      return value.startsWith('http') ? value : `https://open.spotify.com/user/${value}`
+    case 'discord':
+      return undefined
+    case 'telegram':
+      return `https://t.me/${value.replace(/^@/, '')}`
+    case 'signal':
+      return undefined
+  }
+}
+
+function PartyContactCard({
+  label,
+  ces,
+  name,
+  profile,
+  currentCes,
+}: {
+  label: string
+  ces: string
+  name: string
+  profile: { contactMethods: ContactMethods; contactVisibility: ContactVisibility } | null | undefined
+  currentCes: string
+}) {
+  const methods = visibleContactMethods(profile, currentCes, ces)
+  const isCurrentUser = currentCes === ces
+  return (
+    <div className="rounded-xl border border-lavender/10 bg-void-900/30 p-4 mt-4">
+      <div className="flex items-center gap-2 mb-3">
+        <MessageSquare className="w-4 h-4 text-gold-400" />
+        <span className="text-xs uppercase tracking-wider text-lavender/40">{label} Preferred Contact</span>
+      </div>
+      <div className="flex items-center gap-2 mb-2">
+        <Link to={`/profile/${ces}`} className="text-sm text-cream hover:text-gold-300 transition-colors underline underline-offset-2">
+          {name} {isCurrentUser ? '(you)' : ''} 🌟
+        </Link>
+      </div>
+      {methods.length === 0 ? (
+        <p className="text-xs text-lavender/40 italic">
+          {isCurrentUser
+            ? 'You have not shared any contact methods for this exchange.'
+            : 'No public contact methods are visible for this being.'}
+        </p>
+      ) : (
+        <div className="space-y-1">
+          {methods.map((m) => (
+            <ContactMethodRow key={m.key} method={m} href={ContactHref(m.key, m.value)} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, onSigned }: ExchangeAgreementEditorProps) {
@@ -617,6 +748,13 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 ))}
               </select>
             </div>
+            <PartyContactCard
+              label="Requester"
+              ces={agreement.requesterCes}
+              name={agreement.requesterName}
+              profile={requesterProfile}
+              currentCes={currentCes}
+            />
           </div>
 
           <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
@@ -642,6 +780,13 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 ))}
               </select>
             </div>
+            <PartyContactCard
+              label="Provider"
+              ces={agreement.providerCes}
+              name={agreement.providerName || vendor?.name || 'Provider'}
+              profile={providerProfile}
+              currentCes={currentCes}
+            />
           </div>
         </div>
 
