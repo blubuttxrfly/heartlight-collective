@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Mail, Smartphone, MessageCircle } from 'lucide-react'
+import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Mail, Smartphone, MessageCircle, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../../lib/storage'
 import { useSession } from '../../lib/session'
-import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility, ScheduledMeeting, AvailabilityBlock } from '../../types/ces'
+import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, ExchangeJourney, AgreementVersion, ContactMethods, ContactVisibility, ScheduledMeeting, AvailabilityBlock, AgreementParty, SafetyReport, AgreementPartyWithdrawal } from '../../types/ces'
+import { WithdrawalModal } from './WithdrawalModal'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
 import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
@@ -21,6 +22,12 @@ const EXCHANGE_ROLES: ExchangeRole[] = [
   'Observer',
   'Co-Creator',
 ]
+
+const SACRED_PROMPT = `This co-creates a space of conscious awareness of how sacred and special this exchange is.
+
+This Privacy Assurance space is meant for every individual being to share boundaries and consent for sharing and/or communicating information of the beings within this Exchange Agreement. This privacy assurance may be as expansive and detail-oriented as you prefer.
+
+This Exchange Agreement may also change, shift, update and/or be revoked at any time by any being within the Exchange Agreement before, during, or after the exchange as approved by ALL beings within the Exchange Agreement.`
 
 const PAYMENT_METHODS: PaymentMethodType[] = ['stripe', 'venmo', 'cashapp', 'zelle', 'collective']
 
@@ -217,7 +224,7 @@ function PartyContactCard({
 export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, onSigned }: ExchangeAgreementEditorProps) {
   const storage = useStorage()
   const { user } = useSession()
-  const { updateExchangeAgreement, findVendorById, findProfileByCES, getExchangeCalendar, addScheduledMeeting, updateScheduledMeeting } = storage
+  const { updateExchangeAgreement, findVendorById, findProfileByCES, getExchangeCalendar, addScheduledMeeting, updateScheduledMeeting, submitAgreementWithdrawal, approveAgreementWithdrawal, updateAgreementPartyPrivacy } = storage
   const [agreement, setAgreement] = useState<ExchangeAgreement>(() => ({
     ...initialAgreement,
     scheduledMeetings: initialAgreement.scheduledMeetings || [],
@@ -231,6 +238,13 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       status: normalizeQuestStatus(q.status),
       verifications: q.verifications || [],
     })),
+    parties: initialAgreement.parties || [
+      { ces: initialAgreement.requesterCes, name: initialAgreement.requesterName, role: initialAgreement.requesterRole, privacyAgreed: initialAgreement.requesterConsented, privacyAssurance: '' },
+      { ces: initialAgreement.providerCes, name: initialAgreement.providerName, role: initialAgreement.providerRole, privacyAgreed: initialAgreement.providerConsented, privacyAssurance: '' },
+    ],
+    mainQuestDirective: initialAgreement.mainQuestDirective || initialAgreement.mainQuest,
+    mainQuests: initialAgreement.mainQuests?.length ? initialAgreement.mainQuests : [initialAgreement.mainQuest],
+    safetyReports: initialAgreement.safetyReports || [],
   }))
   const [error, setError] = useState('')
   const [changeSummary, setChangeSummary] = useState('')
@@ -260,6 +274,9 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
   const [amendMode, setAmendMode] = useState(false)
   const [amendSummary, setAmendSummary] = useState('')
   const [amendNote, setAmendNote] = useState('')
+  const [showWithdrawal, setShowWithdrawal] = useState(false)
+  const [mainQuestDirectiveTitle, setMainQuestDirectiveTitle] = useState(agreement.mainQuestDirective?.title || agreement.mainQuest.title || '')
+  const [mainQuestDirectiveDescription, setMainQuestDirectiveDescription] = useState(agreement.mainQuestDirective?.description || '')
 
   const vendor = useMemo(() => (agreement.vendorId ? findVendorById(agreement.vendorId) : undefined), [agreement.vendorId, findVendorById])
   const enabledPaymentMethods = useMemo(
@@ -272,6 +289,85 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       setAgreement((prev) => ({ ...prev, [key]: value, updatedAt: new Date().toISOString() }))
     },
     []
+  )
+
+  const updateMainQuestDirective = useCallback(() => {
+    const now = new Date().toISOString()
+    const directive: QuestItem = {
+      ...(agreement.mainQuestDirective || agreement.mainQuest),
+      id: agreement.mainQuestDirective?.id || agreement.mainQuest.id,
+      title: mainQuestDirectiveTitle,
+      description: mainQuestDirectiveDescription,
+      status: 'open',
+      createdAt: agreement.mainQuestDirective?.createdAt || now,
+      verifications: [],
+    }
+    setAgreement((prev) => ({
+      ...prev,
+      mainQuestDirective: directive,
+      mainQuest: { ...prev.mainQuest, title: mainQuestDirectiveTitle, description: mainQuestDirectiveDescription },
+      updatedAt: now,
+    }))
+  }, [mainQuestDirectiveTitle, mainQuestDirectiveDescription, agreement.mainQuestDirective, agreement.mainQuest])
+
+  const handlePrivacyAssuranceChange = useCallback((ces: string, text: string, agreed: boolean) => {
+    setAgreement((prev) => ({
+      ...prev,
+      parties: (prev.parties || []).map((p) =>
+        p.ces === ces ? { ...p, privacyAssurance: text, privacyAgreed: agreed } : p
+      ),
+      updatedAt: new Date().toISOString(),
+    }))
+  }, [])
+
+  const persistPrivacyAssurance = useCallback((ces: string) => {
+    const party = agreement.parties?.find((p) => p.ces === ces)
+    if (!party) return
+    updateAgreementPartyPrivacy(agreement.id, ces, party.privacyAssurance || '', party.privacyAgreed)
+  }, [agreement.parties, agreement.id, updateAgreementPartyPrivacy])
+
+  const handleAddParty = useCallback(() => {
+    setAgreement((prev) => ({
+      ...prev,
+      parties: [...(prev.parties || []), { ces: '', name: '', role: 'Co-Creator', privacyAgreed: false, privacyAssurance: '' }],
+      updatedAt: new Date().toISOString(),
+    }))
+  }, [])
+
+  const handleUpdateParty = useCallback((index: number, updates: Partial<AgreementParty>) => {
+    setAgreement((prev) => ({
+      ...prev,
+      parties: (prev.parties || []).map((p, i) => (i === index ? { ...p, ...updates } : p)),
+      updatedAt: new Date().toISOString(),
+    }))
+  }, [])
+
+  const handleRemoveParty = useCallback((index: number) => {
+    setAgreement((prev) => ({
+      ...prev,
+      parties: (prev.parties || []).filter((_, i) => i !== index),
+      updatedAt: new Date().toISOString(),
+    }))
+  }, [])
+
+  const handleWithdraw = useCallback(
+    (withdrawal: AgreementPartyWithdrawal, safetyReport?: SafetyReport) => {
+      submitAgreementWithdrawal(agreement.id, currentCes, withdrawal, safetyReport)
+      setShowWithdrawal(false)
+      // Refresh local state from storage
+      const refreshed = storage.getExchangeAgreements().find((a) => a.id === agreement.id)
+      if (refreshed) setAgreement(refreshed)
+    },
+    [agreement.id, currentCes, submitAgreementWithdrawal, storage]
+  )
+
+  const handleApproveWithdrawal = useCallback(
+    (ces: string) => {
+      approveAgreementWithdrawal(agreement.id, ces, currentCes)
+      const refreshed = storage.getExchangeAgreements().find((a) => a.id === agreement.id)
+      if (refreshed) setAgreement(refreshed)
+    },
+    [agreement.id, currentCes, approveAgreementWithdrawal, storage]
   )
 
   const updateMainQuest = useCallback((updates: Partial<QuestItem>) => {
@@ -320,6 +416,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       updatedByName: agreement.requesterName,
       changeSummary: changeSummary.trim() || 'Initial proposal',
       approvedBy: [agreement.requesterCes],
+      parties: agreement.parties,
+      mainQuestDirective: agreement.mainQuestDirective,
+      mainQuests: agreement.mainQuests,
+      sideQuests: agreement.sideQuests,
+      safetyReports: agreement.safetyReports,
     }
 
     const next: ExchangeAgreement = {
@@ -377,6 +478,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       updatedByName: user?.name || 'Unknown being',
       changeSummary: amendSummary.trim(),
       approvedBy: [currentCes],
+      parties: agreement.parties,
+      mainQuestDirective: agreement.mainQuestDirective,
+      mainQuests: agreement.mainQuests,
+      sideQuests: agreement.sideQuests,
+      safetyReports: agreement.safetyReports,
     }
 
     const next: ExchangeAgreement = {
@@ -416,7 +522,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     const next: ExchangeAgreement = {
       ...agreement,
       status: 'active',
-      versions: [...agreement.versions, { ...pendingUpdate, approvedBy }],
+      versions: [...agreement.versions, { ...pendingUpdate, parties: agreement.parties, mainQuestDirective: agreement.mainQuestDirective, mainQuests: agreement.mainQuests, sideQuests: agreement.sideQuests, safetyReports: agreement.safetyReports }],
       pendingUpdate: undefined,
       updatedAt: now,
     }
@@ -457,6 +563,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
       updatedByName: user?.name || 'Unknown being',
       changeSummary: amendSummary.trim(),
       approvedBy: [currentCes],
+      parties: agreement.parties,
+      mainQuestDirective: agreement.mainQuestDirective,
+      mainQuests: agreement.mainQuests,
+      sideQuests: agreement.sideQuests,
+      safetyReports: agreement.safetyReports,
     }
     const next: ExchangeAgreement = {
       ...agreement,
@@ -825,6 +936,11 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
             ? `Rescheduled meeting: ${meetingTitle.trim()}`
             : `Proposed new meeting: ${meetingTitle.trim()}`,
         approvedBy: [currentCes],
+        parties: agreement.parties,
+        mainQuestDirective: agreement.mainQuestDirective,
+        mainQuests: agreement.mainQuests,
+        sideQuests: agreement.sideQuests,
+        safetyReports: agreement.safetyReports,
       }
       const withAmendment: ExchangeAgreement = { ...next, pendingUpdate: version, status: 'proposed' }
       setAgreement(withAmendment)
@@ -979,6 +1095,132 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
         </div>
 
         <div className="space-y-6">
+          {/* Main Quest Directive */}
+          <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4">
+            <label className="flex items-center gap-2 text-sm text-gold-400 mb-2">
+              <ScrollText className="w-4 h-4" /> Main Quest Directive
+            </label>
+            <input
+              value={mainQuestDirectiveTitle}
+              onChange={(e) => setMainQuestDirectiveTitle(e.target.value)}
+              onBlur={updateMainQuestDirective}
+              placeholder="What is the central shared intention?"
+              disabled={isProposed && !isRequester(currentCes)}
+              className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none mb-3 disabled:opacity-50"
+            />
+            <textarea
+              value={mainQuestDirectiveDescription}
+              onChange={(e) => setMainQuestDirectiveDescription(e.target.value)}
+              onBlur={updateMainQuestDirective}
+              placeholder="Describe the co-creation in a few sentences..."
+              rows={3}
+              disabled={isProposed && !isRequester(currentCes)}
+              className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
+            />
+          </div>
+
+          {/* Privacy Assurance */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-gold-400" />
+              <span className="text-sm text-lavender/70">Privacy Assurance</span>
+            </div>
+            <p className="text-xs text-lavender/50 mb-4">
+              Each being shares how they will honor confidentiality and sovereignty in this exchange. Only edit your own assurance.
+            </p>
+            {(agreement.parties || []).map((party, idx) => {
+              const isMe = party.ces === currentCes
+              return (
+                <div key={party.ces || idx} className="rounded-lg border border-lavender/10 bg-void-900/40 p-3 mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-cream">
+                      {party.name || 'New being'} {isMe && '<span className="text-lavender/40">(you)</span>'} · {party.role}
+                    </span>
+                  </div>
+                  <textarea
+                    value={party.privacyAssurance || ''}
+                    onChange={(e) => isMe && handlePrivacyAssuranceChange(party.ces, e.target.value, party.privacyAgreed)}
+                    onBlur={() => isMe && persistPrivacyAssurance(party.ces)}
+                    placeholder={SACRED_PROMPT}
+                    rows={3}
+                    disabled={!isMe}
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50 mb-2"
+                  />
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={party.privacyAgreed}
+                      onChange={(e) => {
+                        handlePrivacyAssuranceChange(party.ces, party.privacyAssurance || '', e.target.checked)
+                        if (isMe) persistPrivacyAssurance(party.ces)
+                      }}
+                      disabled={!isMe}
+                      className="mt-0.5 accent-gold-400 disabled:opacity-50"
+                    />
+                    <span className={`text-sm ${isMe ? 'text-lavender/70' : 'text-lavender/40'}`}>
+                      I agree to honor the privacy and sovereignty of all beings.
+                    </span>
+                  </label>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Manage Parties */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gold-400" />
+                <span className="text-sm text-lavender/70">Manage Parties</span>
+              </div>
+              {(!isProposed || isRequester(currentCes)) && (
+                <button
+                  onClick={handleAddParty}
+                  className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+                >
+                  <Plus className="w-3 h-3" /> Add Being
+                </button>
+              )}
+            </div>
+            {(agreement.parties || []).map((party, idx) => (
+              <div key={party.ces || idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2 items-start">
+                <input
+                  value={party.name}
+                  onChange={(e) => handleUpdateParty(idx, { name: e.target.value })}
+                  placeholder="Name"
+                  disabled={isProposed && !isRequester(currentCes)}
+                  className="sm:col-span-3 px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none disabled:opacity-50"
+                />
+                <input
+                  value={party.ces}
+                  onChange={(e) => handleUpdateParty(idx, { ces: e.target.value.replace(/\D/g, '').slice(0, 9) })}
+                  placeholder="C.E.S."
+                  disabled={isProposed && !isRequester(currentCes)}
+                  className="sm:col-span-3 px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none disabled:opacity-50"
+                />
+                <select
+                  value={party.role}
+                  onChange={(e) => handleUpdateParty(idx, { role: e.target.value as ExchangeRole })}
+                  disabled={isProposed && !isRequester(currentCes)}
+                  className="sm:col-span-4 px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none appearance-none disabled:opacity-50"
+                >
+                  {EXCHANGE_ROLES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                {(!isProposed || isRequester(currentCes)) && (
+                  <button
+                    onClick={() => handleRemoveParty(idx)}
+                    className="sm:col-span-2 p-2 rounded-lg text-lavender/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 mx-auto" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Main Quest */}
           <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4">
             <label className="flex items-center gap-2 text-sm text-gold-400 mb-2">
               <ScrollText className="w-4 h-4" /> Main Quest
@@ -1368,7 +1610,18 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
         )}
 
         <div className="mt-8 pt-6 border-t border-lavender/10">
-          {/* Initial proposal / consent / sign flow */}
+          <div className="flex items-center justify-center mb-4">
+            {isParty && agreement.status !== 'withdrawn' && (
+              <button
+                onClick={() => setShowWithdrawal(true)}
+                className="text-xs px-3 py-1.5 rounded-full border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/10 transition-all"
+              >
+                Withdraw from Exchange 🌙
+              </button>
+            )}
+          </div>
+
+          {/* Active / agreed agreement: amendment flow */}
           {!isAgreed ? (
             !isProposed ? (
               <div className="space-y-3">
@@ -1582,6 +1835,13 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
           )}
         </div>
       </motion.div>
+      {showWithdrawal && (
+        <WithdrawalModal
+          agreement={agreement}
+          onClose={() => setShowWithdrawal(false)}
+          onSubmit={handleWithdraw}
+        />
+      )}
     </motion.div>
   )
 }

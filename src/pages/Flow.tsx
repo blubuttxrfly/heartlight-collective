@@ -33,6 +33,7 @@ import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
 import { useSession } from '../lib/session.ts'
 import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor.tsx'
+import { WithdrawalModal } from '../components/exchange/WithdrawalModal.tsx'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../lib/calendar.ts'
 import type {
   ExchangeJourney,
@@ -44,6 +45,9 @@ import type {
   ExchangeAgreement,
   AvailabilityBlock,
   ScheduledMeeting,
+  AgreementParty,
+  AgreementPartyWithdrawal,
+  SafetyReport,
 } from '../types/ces'
 
 /* ─── Codes Data (inline for render, synced with Codes.tsx) ─── */
@@ -1065,7 +1069,7 @@ export default function Flow() {
   }, [storage])
 
   const myAgreements = useMemo(
-    () => agreements.filter((a) => a.requesterCes === currentCes || a.providerCes === currentCes),
+    () => agreements.filter((a) => a.requesterCes === currentCes || a.providerCes === currentCes || a.parties?.some((p) => p.ces === currentCes)),
     [agreements, currentCes]
   )
 
@@ -1077,6 +1081,7 @@ export default function Flow() {
   const [logVisibility, setLogVisibility] = useState<'private' | 'public'>('public')
   const [autoAppliedNotice, setAutoAppliedNotice] = useState<{ summary: string; updatedAt: string } | null>(null)
   const [selectedAgreement, setSelectedAgreement] = useState<ExchangeAgreement | null>(null)
+  const [withdrawingAgreement, setWithdrawingAgreement] = useState<ExchangeAgreement | null>(null)
 
   const persistAgreement = useCallback(
     (ag: ExchangeAgreement) => {
@@ -1182,6 +1187,14 @@ export default function Flow() {
       setView('journey-detail')
     },
     [journeys, maybeApplyAmendment, persistJourneys]
+  )
+
+  const handleAgreementWithdraw = useCallback(
+    (agreement: ExchangeAgreement) => (withdrawal: AgreementPartyWithdrawal, safetyReport?: SafetyReport) => {
+      storage.submitAgreementWithdrawal(agreement.id, currentCes, withdrawal, safetyReport)
+      setWithdrawingAgreement(null)
+    },
+    [storage, currentCes]
   )
 
   return (
@@ -1317,12 +1330,22 @@ export default function Flow() {
                       <ChevronRight className="w-3 h-3" />
                       <span>{a.providerName}</span>
                     </div>
-                    <button
-                      onClick={() => setSelectedAgreement(a)}
-                      className="w-full py-2 rounded-lg border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-xs"
-                    >
-                      Open Agreement ✨
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setSelectedAgreement(a)}
+                        className="flex-1 min-w-[100px] py-2 rounded-lg border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-xs"
+                      >
+                        Open Agreement ✨
+                      </button>
+                      {(a.requesterCes === currentCes || a.providerCes === currentCes || a.parties?.some((p) => p.ces === currentCes)) && a.status !== 'withdrawn' && (
+                        <button
+                          onClick={() => setWithdrawingAgreement(a)}
+                          className="py-2 px-3 rounded-lg border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/10 transition-all text-xs"
+                        >
+                          Withdraw 🌙
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1591,6 +1614,14 @@ export default function Flow() {
           agreement={selectedAgreement}
           onClose={() => setSelectedAgreement(null)}
           onSigned={() => setSelectedAgreement(null)}
+        />
+      )}
+
+      {withdrawingAgreement && (
+        <WithdrawalModal
+          agreement={withdrawingAgreement}
+          onClose={() => setWithdrawingAgreement(null)}
+          onSubmit={handleAgreementWithdraw(withdrawingAgreement)}
         />
       )}
     </div>

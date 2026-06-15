@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting } from '../types/ces';
+import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert } from '../types/ces';
 
 const STORAGE_PREFIX = 'hlc_';
 
@@ -22,6 +22,7 @@ interface StorageState {
   exchangeRequests: ExchangeRequest[];
   exchangeAgreements: ExchangeAgreement[];
   collectivePetitions: CollectivePetition[];
+  exchangeAlerts: ExchangeAlert[];
 }
 
 type StorageKey = keyof StorageState;
@@ -39,6 +40,7 @@ const DEFAULT_STATE: StorageState = {
   exchangeRequests: [],
   exchangeAgreements: [],
   collectivePetitions: [],
+  exchangeAlerts: [],
 };
 
 function readStorageKey<K extends StorageKey>(key: K): StorageState[K] {
@@ -96,10 +98,23 @@ interface StorageContextValue {
   getExchangeAgreements: () => ExchangeAgreement[];
   addExchangeAgreement: (ag: ExchangeAgreement) => void;
   updateExchangeAgreement: (ag: ExchangeAgreement) => void;
-  // ── Quest / Agreement Versioning (Wave 2+) ──
+  // Quest / Agreement Versioning (Wave 2+)
   updateAgreementQuest: (agreementId: string, questId: string, updates: Partial<import('../types/ces').QuestItem>) => void;
   addAgreementVersion: (agreementId: string, version: import('../types/ces').AgreementVersion) => void;
   approveAgreementUpdate: (agreementId: string, cesNumber: string) => void;
+  // Wave 6.9 — Multi-being consent, privacy, withdrawal
+  migrateAgreementToParties: (ag: ExchangeAgreement) => ExchangeAgreement;
+  getAgreementParties: (agreementId: string) => AgreementParty[];
+  updateAgreementPartyPrivacy: (agreementId: string, ces: string, assurance: string, agreed: boolean) => void;
+  addAgreementParty: (agreementId: string, party: AgreementParty) => void;
+  removeAgreementParty: (agreementId: string, ces: string) => void;
+  updateAgreementPartyRole: (agreementId: string, ces: string, role: import('../types/ces').ExchangeRole) => void;
+  submitAgreementWithdrawal: (agreementId: string, ces: string, withdrawal: AgreementPartyWithdrawal, safetyReport?: SafetyReport) => void;
+  approveAgreementWithdrawal: (agreementId: string, ces: string, stewardCes?: string) => void;
+  getExchangeAlerts: () => ExchangeAlert[];
+  addExchangeAlert: (alert: ExchangeAlert) => void;
+  updateExchangeAlert: (alert: ExchangeAlert) => void;
+  markExchangeAlertReviewed: (alertId: string, stewardCes: string) => void;
   getCollectivePetitions: () => CollectivePetition[];
   addCollectivePetition: (petition: CollectivePetition) => void;
   updateCollectivePetition: (petition: CollectivePetition) => void;
@@ -131,6 +146,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       exchangeRequests: readStorageKey('exchangeRequests'),
       exchangeAgreements: readStorageKey('exchangeAgreements'),
       collectivePetitions: readStorageKey('collectivePetitions'),
+      exchangeAlerts: readStorageKey('exchangeAlerts'),
     };
     // Seed Atlas as founding steward if no stewards exist
     if (initial.authorizedCES.length === 0) {
@@ -336,7 +352,229 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   const updateExchangeAgreement = useCallback((ag: ExchangeAgreement) => {
     setState((prev) => ({
       ...prev,
-      exchangeAgreements: prev.exchangeAgreements.map((a) => (a.id === ag.id ? ag : a)),
+      exchangeAgreements: prev.exchangeAgreements.map((a) => (a.id === ag.id ? migrateAgreementToParties(ag) : a)),
+    }));
+  }, []);
+
+  // ── Wave 6.9 — Multi-being consent, privacy, withdrawal helpers ──
+
+  const migrateAgreementToParties = useCallback((ag: ExchangeAgreement): ExchangeAgreement => {
+    if (ag.parties && ag.parties.length > 0) return ag;
+    const now = new Date().toISOString();
+    const requesterParty: AgreementParty = {
+      ces: ag.requesterCes,
+      name: ag.requesterName,
+      role: ag.requesterRole,
+      privacyAssurance: '',
+      privacyAgreed: ag.requesterConsented,
+      joinedAt: ag.createdAt || now,
+    };
+    const providerParty: AgreementParty = {
+      ces: ag.providerCes,
+      name: ag.providerName,
+      role: ag.providerRole,
+      privacyAssurance: '',
+      privacyAgreed: ag.providerConsented,
+      joinedAt: ag.createdAt || now,
+    };
+    return {
+      ...ag,
+      parties: [requesterParty, providerParty],
+      mainQuestDirective: ag.mainQuestDirective || ag.mainQuest,
+      mainQuests: ag.mainQuests && ag.mainQuests.length > 0 ? ag.mainQuests : [ag.mainQuest],
+      safetyReports: ag.safetyReports || [],
+    };
+  }, []);
+
+  const getAgreementParties = useCallback((agreementId: string): AgreementParty[] => {
+    const ag = stateRef.current.exchangeAgreements.find((a) => a.id === agreementId);
+    return migrateAgreementToParties(ag || { id: agreementId } as ExchangeAgreement).parties || [];
+  }, []);
+
+  const updateAgreementPartyPrivacy = useCallback((agreementId: string, ces: string, assurance: string, agreed: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        return {
+          ...next,
+          parties: (next.parties || []).map((p) =>
+            p.ces === ces ? { ...p, privacyAssurance: assurance, privacyAgreed: agreed, joinedAt: p.joinedAt || new Date().toISOString() } : p
+          ),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
+  const addAgreementParty = useCallback((agreementId: string, party: AgreementParty) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        if (next.parties?.some((p) => p.ces === party.ces)) return next;
+        return {
+          ...next,
+          parties: [...(next.parties || []), { ...party, joinedAt: party.joinedAt || new Date().toISOString() }],
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
+  const removeAgreementParty = useCallback((agreementId: string, ces: string) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        return {
+          ...next,
+          parties: (next.parties || []).filter((p) => p.ces !== ces),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
+  const updateAgreementPartyRole = useCallback((agreementId: string, ces: string, role: import('../types/ces').ExchangeRole) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAgreements: prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        return {
+          ...next,
+          parties: (next.parties || []).map((p) => (p.ces === ces ? { ...p, role } : p)),
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    }));
+  }, []);
+
+  const submitAgreementWithdrawal = useCallback((agreementId: string, ces: string, withdrawal: AgreementPartyWithdrawal, safetyReport?: SafetyReport) => {
+    const now = new Date().toISOString();
+    setState((prev) => {
+      const nextAgreements = prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        const withdrawing = next.parties?.find((p) => p.ces === ces);
+        const updatedParties = (next.parties || []).map((p) =>
+          p.ces === ces
+            ? { ...p, withdrawal: { ...withdrawal, requestedAt: withdrawal.requestedAt || now, status: 'submitted' as const }, withdrewAt: undefined }
+            : p
+        );
+        return {
+          ...next,
+          parties: updatedParties,
+          safetyReports: safetyReport ? [...(next.safetyReports || []), safetyReport] : next.safetyReports,
+          updatedAt: now,
+        };
+      });
+
+      const agreement = nextAgreements.find((a) => a.id === agreementId);
+      const withdrawingParty = agreement?.parties?.find((p) => p.ces === ces);
+      const nextAlerts = safetyReport
+        ? [
+            ...prev.exchangeAlerts,
+            {
+              id: `alert_${Date.now()}`,
+              exchangeId: agreementId,
+              exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
+              type: 'safety_report' as const,
+              fromCes: ces,
+              fromName: withdrawingParty?.name || 'Unknown being',
+              message: safetyReport.feelsUnsafe
+                ? `Safety report submitted. ${safetyReport.unsafeBeingName || safetyReport.unsafeBeingCes || 'A being'} was named as feeling unsafe. Contact Guide preference: ${safetyReport.contactGuide}.`
+                : 'Safety report submitted.',
+              status: 'open' as const,
+              createdAt: now,
+              metadata: { safetyReport },
+            },
+          ]
+        : [
+            ...prev.exchangeAlerts,
+            {
+              id: `alert_${Date.now()}`,
+              exchangeId: agreementId,
+              exchangeTitle: agreement?.mainQuest?.title || 'Untitled Exchange',
+              type: 'withdrawal' as const,
+              fromCes: ces,
+              fromName: withdrawingParty?.name || 'Unknown being',
+              message: `Withdrawal requested. Reason: ${withdrawal.reason}${withdrawal.otherReason ? ` — ${withdrawal.otherReason}` : ''}.`,
+              status: 'open' as const,
+              createdAt: now,
+              metadata: { withdrawal },
+            },
+          ];
+
+      return { ...prev, exchangeAgreements: nextAgreements, exchangeAlerts: nextAlerts };
+    });
+  }, []);
+
+  const approveAgreementWithdrawal = useCallback((agreementId: string, ces: string, stewardCes?: string) => {
+    const now = new Date().toISOString();
+    setState((prev) => {
+      const nextAgreements = prev.exchangeAgreements.map((ag) => {
+        if (ag.id !== agreementId) return ag;
+        const next = migrateAgreementToParties(ag);
+        const updatedParties = (next.parties || []).map((p) =>
+          p.ces === ces
+            ? { ...p, withdrewAt: now, withdrawal: p.withdrawal ? { ...p.withdrawal, status: 'approved' as const, approvedBy: stewardCes || 'system' } : p.withdrawal }
+            : p
+        );
+        const activeParties = updatedParties.filter((p) => !p.withdrewAt);
+        const newStatus: ExchangeAgreement['status'] = activeParties.length === 0 ? 'withdrawn' : ag.status;
+        return {
+          ...next,
+          parties: updatedParties,
+          status: newStatus,
+          updatedAt: now,
+        };
+      });
+
+      const agreement = nextAgreements.find((a) => a.id === agreementId);
+      const withdrawingParty = agreement?.parties?.find((p) => p.ces === ces);
+
+      const nextAlerts = prev.exchangeAlerts.map((alert) =>
+        alert.exchangeId === agreementId && alert.type === 'withdrawal' && alert.fromCes === ces
+          ? { ...alert, status: 'resolved' as const, reviewedBy: stewardCes, reviewedAt: now }
+          : alert
+      );
+
+      return {
+        ...prev,
+        exchangeAgreements: nextAgreements,
+        exchangeAlerts: nextAlerts,
+      };
+    });
+  }, []);
+
+  const getExchangeAlerts = useCallback(() => stateRef.current.exchangeAlerts, []);
+
+  const addExchangeAlert = useCallback((alert: ExchangeAlert) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAlerts: [...prev.exchangeAlerts, alert],
+    }));
+  }, []);
+
+  const updateExchangeAlert = useCallback((alert: ExchangeAlert) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeAlerts: prev.exchangeAlerts.map((a) => (a.id === alert.id ? alert : a)),
+    }));
+  }, []);
+
+  const markExchangeAlertReviewed = useCallback((alertId: string, stewardCes: string) => {
+    const now = new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      exchangeAlerts: prev.exchangeAlerts.map((a) =>
+        a.id === alertId ? { ...a, status: 'reviewed' as const, reviewedBy: stewardCes, reviewedAt: now } : a
+      ),
     }));
   }, []);
 
@@ -538,6 +776,19 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     updateAgreementQuest,
     addAgreementVersion,
     approveAgreementUpdate,
+    // Wave 6.9 — Multi-being consent, privacy, withdrawal
+    migrateAgreementToParties,
+    getAgreementParties,
+    updateAgreementPartyPrivacy,
+    addAgreementParty,
+    removeAgreementParty,
+    updateAgreementPartyRole,
+    submitAgreementWithdrawal,
+    approveAgreementWithdrawal,
+    getExchangeAlerts,
+    addExchangeAlert,
+    updateExchangeAlert,
+    markExchangeAlertReviewed,
     getCollectivePetitions,
     addCollectivePetition,
     updateCollectivePetition,

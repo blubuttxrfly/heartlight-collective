@@ -494,5 +494,13 @@ export function useUnifiedStorage() {
     getCollectivePetitions: local.getCollectivePetitions,
     addCollectivePetition: local.addCollectivePetition,
     updateCollectivePetition: local.updateCollectivePetition,
+
+    // Wave 6.9 — multi-being exchange methods
+    getExchangeAgreements: local.getExchangeAgreements,
+    getExchangeAlerts: local.getExchangeAlerts,
+    markExchangeAlertReviewed: local.markExchangeAlertReviewed,
+    submitAgreementWithdrawal: local.submitAgreementWithdrawal,
+    approveAgreementWithdrawal: local.approveAgreementWithdrawal,
+    updateAgreementPartyPrivacy: local.updateAgreementPartyPrivacy,
   }
 }

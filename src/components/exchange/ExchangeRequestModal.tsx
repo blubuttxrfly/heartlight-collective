@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { X, Heart, ArrowRight, Store, MessageSquare, ScrollText, CreditCard, UsersRound, AlertCircle, Clock, Calendar as CalendarIcon, CalendarDays, MapPin } from 'lucide-react'
 import { useStorage } from '../../lib/storage'
-import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock } from '../../types/ces'
+import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock, AgreementParty, QuestItem } from '../../types/ces'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
 
@@ -177,6 +177,31 @@ export function ExchangeRequestModal({
       createdAt: now,
     }
 
+    const mainQuestDirective: QuestItem = {
+      ...mainQuest,
+      id: newQuestId('directive'),
+      title: `${offering.title} — shared directive`,
+    }
+
+    const parties: AgreementParty[] = [
+      {
+        ces: requesterCes,
+        name: requesterName,
+        role: 'Recipient',
+        privacyAssurance: '',
+        privacyAgreed: false,
+        joinedAt: now,
+      },
+      {
+        ces: vendor.ownerCes,
+        name: providerName,
+        role: 'Guide',
+        privacyAssurance: '',
+        privacyAgreed: false,
+        joinedAt: now,
+      },
+    ]
+
     const meeting = buildScheduledMeeting()
     const scheduledMeetings: ScheduledMeeting[] = meeting ? [meeting] : []
 
@@ -191,7 +216,10 @@ export function ExchangeRequestModal({
       message: message.trim(),
       requesterRole: 'Recipient',
       providerRole: 'Guide',
+      parties,
       mainQuest,
+      mainQuestDirective,
+      mainQuests: [mainQuest],
       sideQuests: [],
       scheduledMeetings,
       proposedPriceCents: offering.priceCents,

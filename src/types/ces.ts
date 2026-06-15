@@ -396,6 +396,52 @@ export interface QuestItem {
   }[];
 }
 
+export interface AgreementPartyWithdrawal {
+  reason: string;
+  otherReason?: string;
+  notes?: string;
+  requestedAt: string;
+  approvedBy?: string;
+  status?: 'submitted' | 'approved' | 'reviewed' | 'declined';
+}
+
+export interface AgreementParty {
+  ces: string;
+  name: string;
+  role: ExchangeRole;
+  privacyAssurance?: string;
+  privacyAgreed: boolean;
+  joinedAt?: string;
+  withdrewAt?: string;
+  withdrawal?: AgreementPartyWithdrawal;
+}
+
+export interface SafetyReport {
+  feelsUnsafe: boolean;
+  unsafeBeingCes?: string;
+  unsafeBeingName?: string;
+  unsafeBeingOutside?: string;
+  contactGuide: 'yes' | 'reach_out_first' | 'no';
+  details?: string;
+  submittedAt: string;
+}
+
+export interface ExchangeAlert {
+  id: string;
+  exchangeId: string;
+  exchangeTitle: string;
+  type: 'withdrawal' | 'safety_report' | 'privacy_update';
+  fromCes: string;
+  fromName: string;
+  toCes?: string;
+  message: string;
+  status: 'open' | 'reviewed' | 'resolved';
+  createdAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface AgreementVersion {
   version: number;
   updatedAt: string;
@@ -403,6 +449,12 @@ export interface AgreementVersion {
   updatedByName: string;
   changeSummary: string;
   approvedBy: string[];  // CES numbers who approved this version
+  // Wave 6.9 snapshots
+  parties?: AgreementParty[];
+  mainQuestDirective?: QuestItem;
+  mainQuests?: QuestItem[];
+  sideQuests?: QuestItem[];
+  safetyReports?: SafetyReport[];
 }
 
 export interface ExchangeAgreement {
@@ -415,11 +467,17 @@ export interface ExchangeAgreement {
   providerCes: string;
   providerName: string;
   message: string;               // initial resonance statement
-  // --- ROLES ---
+  // --- ROLES (legacy binary fields kept for backward compat) ---
   requesterRole: ExchangeRole;
   providerRole: ExchangeRole;
+  // --- MULTI-BEING PARTIES (Wave 6.9) ---
+  parties?: AgreementParty[];
   // --- QUESTS ---
   mainQuest: QuestItem;
+  /** Wave 6.9 directive quest summarizing the central shared intention */
+  mainQuestDirective?: QuestItem;
+  /** Wave 6.9 multi-quest list (kept in sync with mainQuest for binary exchanges) */
+  mainQuests?: QuestItem[];
   sideQuests: QuestItem[];
   // --- TERMS ---
   proposedPriceCents?: number;
@@ -429,11 +487,13 @@ export interface ExchangeAgreement {
   // --- SCHEDULE ---
   scheduledMeetings: ScheduledMeeting[];
   // --- CONSENT ---
-  status: 'draft' | 'proposed' | 'agreed' | 'active' | 'fulfilled' | 'completed' | 'declined';
+  status: 'draft' | 'proposed' | 'agreed' | 'active' | 'fulfilled' | 'completed' | 'declined' | 'withdrawn';
   requesterConsented: boolean;
   providerConsented: boolean;
   collectiveFundingRequested: boolean;
   collectiveFundingApproved?: boolean;
+  // --- SAFETY & PRIVACY (Wave 6.9) ---
+  safetyReports?: SafetyReport[];
   // --- LIVING DOCUMENT ---
   versions: AgreementVersion[];
   pendingUpdate?: AgreementVersion;
