@@ -133,18 +133,18 @@ export default function Exchange() {
   const [localRadius, setLocalRadius] = useState(DEFAULT_LOCAL_RADIUS_KM)
 
   const { user } = useSession()
-  const { getProfileByCes } = useStorage()
+  const { findProfileByCES } = useStorage()
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
   useEffect(() => {
     if (user?.ces) {
-      const profile = getProfileByCes(user.ces)
+      const profile = findProfileByCES(user.ces)
       if (profile?.locationData?.lat && profile?.locationData?.lon) {
         setUserLocation({ lat: profile.locationData.lat, lon: profile.locationData.lon })
       }
     }
-  }, [user?.ces, getProfileByCes])
+  }, [user?.ces, findProfileByCES])
 
   const categories = useMemo(() => {
     const cats = new Set(wishes.map(w => w.category))

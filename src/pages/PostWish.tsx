@@ -64,17 +64,17 @@ export default function PostWish() {
   const [submitted, setSubmitted] = useState(false)
 
   const { user } = useSession()
-  const { getProfileByCes } = useStorage()
+  const { findProfileByCES } = useStorage()
 
   // Pre-fill location from signed-in user's profile
   useEffect(() => {
     if (user?.ces) {
-      const profile = getProfileByCes(user.ces)
+      const profile = findProfileByCES(user.ces)
       if (profile?.locationData) {
         setLocationData(profile.locationData)
       }
     }
-  }, [user?.ces, getProfileByCes])
+  }, [user?.ces, findProfileByCES])
 
   const handleResourceToggle = (resource) => {
     setSelectedResources(prev => 
