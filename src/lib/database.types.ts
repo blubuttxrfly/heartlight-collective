@@ -36,6 +36,8 @@ export interface Database {
           directory_wish_status: string
           stewardship: string
           stewardship_note: string
+          peer_payment_methods: Json          // PaymentMethodConfig[]
+          location_data: Json | null           // LocationData
           created_at: string
           updated_at: string
         }
@@ -64,6 +66,8 @@ export interface Database {
           directory_wish_status?: string
           stewardship?: string
           stewardship_note?: string
+          peer_payment_methods?: Json
+          location_data?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -92,6 +96,8 @@ export interface Database {
           directory_wish_status?: string
           stewardship?: string
           stewardship_note?: string
+          peer_payment_methods?: Json
+          location_data?: Json | null
           updated_at?: string
         }
       }

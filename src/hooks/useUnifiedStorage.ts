@@ -44,6 +44,8 @@ function recordToRow(profile: CreatorRecord): Record<string, unknown> {
     numerology: profile.numerology || [],
     guide_guardian_status: profile.guideGuardianStatus || 'not_opted_in',
     guide_guardian_opted_in_at: profile.guideGuardianOptedInAt || null,
+    peer_payment_methods: profile.peerPaymentMethods || [],
+    location_data: profile.locationData || null,
   };
   return row;
 }
@@ -84,6 +86,8 @@ function rowToRecord(row: any): CreatorRecord {
     // Guide & Guardian journey tracking
     guideGuardianStatus: row.guide_guardian_status || 'not_opted_in',
     guideGuardianOptedInAt: row.guide_guardian_opted_in_at || undefined,
+    peerPaymentMethods: Array.isArray(row.peer_payment_methods) ? row.peer_payment_methods : [],
+    locationData: row.location_data || undefined,
     // Legacy optional fields
     ray: undefined,
     rays: undefined,
