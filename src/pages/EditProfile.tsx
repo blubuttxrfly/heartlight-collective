@@ -392,14 +392,12 @@ export default function EditProfile() {
             </div>
 
             <div>
-              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                Location
-              </label>
               <LocationSelect
                 value={locationData}
                 onChange={setLocationData}
                 placeholder="Search city, town, or place…"
                 allowRemote
+                label={undefined}
               />
             </div>
           </div>
