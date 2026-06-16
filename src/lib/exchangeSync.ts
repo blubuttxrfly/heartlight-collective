@@ -471,15 +471,15 @@ function log(op: string, msg: string) {
   console.log(`[ExchangeSync] ${op}: ${msg}`);
 }
 
-async function upsert(table: string, row: Record<string, unknown>): Promise<SyncResult<null>> {
+async function upsert(table: string, row: Record<string, unknown>, onConflict = 'id'): Promise<SyncResult<null>> {
   if (!isSupabaseConfigured()) return { success: true };
   try {
-    const { error } = await supabase.from(table).upsert(row, { onConflict: 'id' });
+    const { error } = await supabase.from(table).upsert(row, { onConflict });
     if (error) {
       log('upsert', `${table} failed: ${error.message}`);
       return { success: false, error: error.message };
     }
-    log('upsert', `${table} succeeded for ${row.id}`);
+    log('upsert', `${table} succeeded for ${row.id || row.ces || JSON.stringify(Object.keys(row))}`);
     return { success: true };
   } catch (err: any) {
     log('upsert', `${table} exception: ${err.message}`);
@@ -527,7 +527,7 @@ export async function deleteExchangeAgreement(id: string) {
 }
 
 export async function syncExchangeCalendar(cal: ExchangeCalendar) {
-  return upsert('exchange_calendars', exchangeCalendarToRow(cal));
+  return upsert('exchange_calendars', exchangeCalendarToRow(cal), 'ces');
 }
 
 export async function syncVendor(v: VendorRecord) {

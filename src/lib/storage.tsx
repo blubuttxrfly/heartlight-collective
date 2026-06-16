@@ -200,10 +200,21 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         exchangeAlerts: hydrated.exchangeAlerts?.length ? hydrated.exchangeAlerts : prev.exchangeAlerts,
       }));
 
-      // Calendars live in their own localStorage key
+      // Calendars live in their own localStorage key. Merge per-CES, keeping the most recent by updatedAt.
       if (hydrated.exchangeCalendars?.length) {
         try {
-          localStorage.setItem('hlc_exchange_calendars', JSON.stringify(hydrated.exchangeCalendars));
+          const localRaw = localStorage.getItem('hlc_exchange_calendars');
+          const localCals: ExchangeCalendar[] = localRaw ? JSON.parse(localRaw) : [];
+          const mergedMap = new Map<string, ExchangeCalendar>();
+          for (const cal of localCals) mergedMap.set(cal.ces, cal);
+          for (const cal of hydrated.exchangeCalendars) {
+            const existing = mergedMap.get(cal.ces);
+            const serverNewer = !existing || new Date(cal.updatedAt).getTime() >= new Date(existing.updatedAt).getTime();
+            if (serverNewer) {
+              mergedMap.set(cal.ces, cal);
+            }
+          }
+          localStorage.setItem('hlc_exchange_calendars', JSON.stringify(Array.from(mergedMap.values())));
         } catch (err) {
           console.warn('Failed to hydrate calendars to localStorage:', err);
         }
