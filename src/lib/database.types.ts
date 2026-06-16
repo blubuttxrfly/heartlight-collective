@@ -476,6 +476,7 @@ export interface Database {
           agreed_price_cents: number | null
           payment_method: string | null
           communication_prefs: string
+          dedication_of_profits: Json | null
           scheduled_meetings: Json            // ScheduledMeeting[]
           status: string
           requester_consented: boolean
@@ -509,6 +510,7 @@ export interface Database {
           agreed_price_cents?: number | null
           payment_method?: string | null
           communication_prefs?: string
+          dedication_of_profits?: Json | null
           scheduled_meetings?: Json
           status?: string
           requester_consented?: boolean
@@ -541,6 +543,7 @@ export interface Database {
           agreed_price_cents?: number | null
           payment_method?: string | null
           communication_prefs?: string
+          dedication_of_profits?: Json | null
           scheduled_meetings?: Json
           status?: string
           requester_consented?: boolean

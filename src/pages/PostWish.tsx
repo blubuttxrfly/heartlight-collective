@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Sparkles, Heart, Clock, Repeat, Upload, X, MapPin, Globe } from 'lucide-react'
 import { PiShootingStar } from 'react-icons/pi'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
 import { SolarGoldButton, SolarGoldLink } from '../components/SolarGoldButton'
 import { useSession } from '../lib/session'
@@ -53,7 +53,9 @@ const RESOURCES = [
 ]
 
 export default function PostWish() {
-  const [wishType, setWishType] = useState('wish')
+  const [searchParams] = useSearchParams()
+  const initialType = searchParams.get('type') === 'gift' ? 'offer' : 'wish'
+  const [wishType, setWishType] = useState(initialType)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
@@ -135,6 +137,7 @@ export default function PostWish() {
   }
 
   const labelText = wishType === 'wish' ? 'Wish' : 'Gift'
+  const actionText = wishType === 'wish' ? 'Cast' : 'Share'
 
   if (submitted) {
     return (
@@ -150,7 +153,7 @@ export default function PostWish() {
           Your {labelText} Is Now in the Field
         </h2>
         <p className="text-lavender/60 mb-8 max-w-md mx-auto">
-          The Heartlight Wish Exchange is matching your {labelText.toLowerCase()} 
+          The Heartlight Exchange is matching your {labelText.toLowerCase()} 
           with resonant beings. You will receive a notification when someone feels called to connect.
         </p>
         <div className="flex gap-4 justify-center">
@@ -158,7 +161,7 @@ export default function PostWish() {
             Browse the Exchange
           </SolarGoldLink>
           <Link
-            to="/cast-wish"
+            to={wishType === 'wish' ? '/cast-wish' : '/share-gift'}
             className="px-6 py-3 rounded-full border border-lavender/20 text-lavender/60 hover:border-lavender/40 transition-all"
             onClick={() => {
               setSubmitted(false)
@@ -168,7 +171,7 @@ export default function PostWish() {
               setIsContinualOffering(false)
             }}
           >
-            Cast Another
+            {actionText} Another
           </Link>
         </div>
       </motion.div>
@@ -188,7 +191,7 @@ export default function PostWish() {
           <PiShootingStar className="w-8 h-8 text-gold-400" />
         </div>
         <h1 className="font-serif text-3xl text-cream mb-2">
-          {wishType === 'wish' ? 'Cast Your Wish' : 'Cast Your Gift'}
+          {wishType === 'wish' ? 'Cast Your Wish' : 'Share Your Gift'}
         </h1>
         <p className="text-lavender/50">
           {wishType === 'wish' 
@@ -216,7 +219,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          I Have a Gift <Sparkles className="w-4 h-4" />
+          I Share a Gift <Sparkles className="w-4 h-4" />
         </button>
       </div>
 

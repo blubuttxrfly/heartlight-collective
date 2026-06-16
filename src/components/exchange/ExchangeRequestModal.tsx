@@ -226,6 +226,18 @@ export function ExchangeRequestModal({
       agreedPriceCents: undefined,
       paymentMethod: effectivePaymentMethod,
       communicationPrefs: '',
+      dedicationOfProfits: {
+        enabled: true,
+        percentage: 99,
+        destinations: [
+          'Earth Conscious Initiatives & Technology 🌍',
+          'Preserving Ancient Wisdom of our Ancestors 📜',
+          'Sovereign Interdependent Communities 🏠',
+          'Healing & Art 💗',
+          'ALL the Living ♾️',
+        ],
+        customNotes: '1% covers operational costs. This is our unanimous living agreement.',
+      },
       status: 'draft',
       requesterConsented: false,
       providerConsented: false,

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Heart, CheckCircle, FileSignature, ArrowRight, ArrowLeft, Plus, Trash2, Users, ScrollText, MessageSquare, CreditCard, AlertCircle, PenLine, Mail, Smartphone, MessageCircle, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -366,6 +366,44 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
     },
     []
   )
+
+  const defaultDedication = {
+    enabled: true,
+    percentage: 99,
+    destinations: [
+      'Earth Conscious Initiatives & Technology 🌍',
+      'Preserving Ancient Wisdom of our Ancestors 📜',
+      'Sovereign Interdependent Communities 🏠',
+      'Healing & Art 💗',
+      'ALL the Living ♾️',
+    ],
+    customNotes: '1% covers operational costs. This is our unanimous living agreement.',
+  }
+
+  const updateDedication = useCallback((patch: Partial<ExchangeAgreement['dedicationOfProfits']>) => {
+    setAgreement((prev) => {
+      const current = prev.dedicationOfProfits || defaultDedication
+      return { ...prev, dedicationOfProfits: { ...current, ...patch }, updatedAt: new Date().toISOString() }
+    })
+  }, [])
+
+  const toggleDestination = useCallback((destination: string) => {
+    setAgreement((prev) => {
+      const current = prev.dedicationOfProfits || defaultDedication
+      const destinations = current.destinations.includes(destination)
+        ? current.destinations.filter((d) => d !== destination)
+        : [...current.destinations, destination]
+      return { ...prev, dedicationOfProfits: { ...current, destinations }, updatedAt: new Date().toISOString() }
+    })
+  }, [])
+
+  const ensureDedication = useCallback(() => {
+    setAgreement((prev) => (prev.dedicationOfProfits ? prev : { ...prev, dedicationOfProfits: defaultDedication, updatedAt: new Date().toISOString() }))
+  }, [])
+
+  useEffect(() => {
+    ensureDedication()
+  }, [ensureDedication])
 
   const updateMainQuestDirective = useCallback(() => {
     const now = new Date().toISOString()
@@ -1440,6 +1478,80 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
               />
             </div>
+          </div>
+
+          {/* ─── Dedication of Profits ─── */}
+          <div className="rounded-xl border border-green-400/20 bg-green-400/5 p-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <label className="flex items-center gap-2 text-sm text-lavender/70">
+                <Heart className="w-4 h-4 text-green-400" /> Dedication of Profits
+              </label>
+              <button
+                type="button"
+                onClick={() => updateDedication({ enabled: !agreement.dedicationOfProfits?.enabled })}
+                className={`px-3 py-1 rounded-full text-xs border transition-all ${
+                  agreement.dedicationOfProfits?.enabled
+                    ? 'bg-green-400/20 border-green-400/40 text-green-300'
+                    : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                }`}
+              >
+                {agreement.dedicationOfProfits?.enabled ? 'Enabled' : 'Enable'}
+              </button>
+            </div>
+            {agreement.dedicationOfProfits?.enabled && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-lavender/60">Percentage dedicated:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={agreement.dedicationOfProfits?.percentage ?? 99}
+                    onChange={(e) => updateDedication({ percentage: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
+                    disabled={isProposed && !isRequester(currentCes)}
+                    className="w-20 px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none disabled:opacity-50"
+                  />
+                  <span className="text-sm text-lavender/60">%</span>
+                </div>
+                <div>
+                  <p className="text-xs text-lavender/50 mb-2">Destinations:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {defaultDedication.destinations.map((destination) => (
+                      <button
+                        key={destination}
+                        type="button"
+                        onClick={() => toggleDestination(destination)}
+                        disabled={isProposed && !isRequester(currentCes)}
+                        className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                          agreement.dedicationOfProfits?.destinations.includes(destination)
+                            ? 'bg-green-400/20 border-green-400/40 text-green-300'
+                            : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                        } disabled:opacity-50`}
+                      >
+                        {destination}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Custom notes</label>
+                  <textarea
+                    value={agreement.dedicationOfProfits?.customNotes || ''}
+                    onChange={(e) => updateDedication({ customNotes: e.target.value })}
+                    placeholder="Any additional dedication intentions..."
+                    rows={2}
+                    disabled={isProposed && !isRequester(currentCes)}
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            )}
+            {!agreement.dedicationOfProfits?.enabled && (
+              <p className="text-xs text-lavender/50 italic mt-2">
+                The Heartlight Collective dedicates 99% of profits to Earth-Conscious Initiatives and Advanced Technology, Preserving Ancient Wisdom, Sovereign Interdependent Communities, Healing & Art, and ALL the Living. 1% covers operational costs.
+              </p>
+            )}
           </div>
 
           {/* ─── Schedule Section ─── */}

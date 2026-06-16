@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.exchange_agreements (
   agreed_price_cents integer,
   payment_method text,
   communication_prefs text DEFAULT '',
+  dedication_of_profits jsonb,
   scheduled_meetings jsonb DEFAULT '[]'::jsonb,
   status text DEFAULT 'draft',
   requester_consented boolean DEFAULT false,

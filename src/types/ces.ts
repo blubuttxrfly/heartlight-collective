@@ -522,6 +522,13 @@ export interface ExchangeAgreement {
   agreedPriceCents?: number;
   paymentMethod?: PaymentMethodType;
   communicationPrefs?: string;   // e.g. "Weekly check-ins via Signal"
+  // --- DEDICATION OF PROFITS ---
+  dedicationOfProfits?: {
+    enabled: boolean;
+    percentage: number;           // default 99 for Heartlight Collective
+    destinations: string[];         // e.g. ['Earth-conscious initiatives', 'Preserving Ancient Wisdom', 'Sovereign Interdependent Communities', 'Healing & Art', 'ALL the Living']
+    customNotes?: string;
+  };
   // --- SCHEDULE ---
   scheduledMeetings: ScheduledMeeting[];
   // --- CONSENT ---

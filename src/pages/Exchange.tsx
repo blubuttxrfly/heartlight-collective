@@ -421,10 +421,10 @@ export default function Exchange() {
           Cast a Wish <PiShootingStar className="w-4 h-4" />
         </Link>
         <Link
-          to="/cast-wish?type=gift"
+          to="/share-gift?type=gift"
           className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center gap-2"
         >
-          Cast a Gift <FaHandHoldingHeart className="w-4 h-4" />
+          Share My Gift <FaHandHoldingHeart className="w-4 h-4" />
         </Link>
         <Link
           to="/directory"

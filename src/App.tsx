@@ -4,7 +4,6 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import Exchange from './pages/Exchange'
 import PostWish from './pages/PostWish'
-import CastWish from './pages/PostWish'
 import Flow from './pages/Flow'
 import Charter from './pages/Charter'
 import Codes from './pages/Codes'
@@ -28,7 +27,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/exchange" element={<Exchange />} />
           <Route path="/post-wish" element={<PostWish />} />
-          <Route path="/cast-wish" element={<CastWish />} />
+          <Route path="/cast-wish" element={<PostWish />} />
+          <Route path="/share-gift" element={<PostWish />} />
           <Route path="/flow" element={<Flow />} />
           <Route path="/directory" element={<Directory />} />
           <Route path="/charter" element={<Charter />} />
