@@ -1005,7 +1005,7 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
 
 /* ─── Vendor Shop Management Dashboard ─── */
 export default function VendorShopManagement() {
-  const { getVendors, addVendor, updateVendor } = useStorage();
+  const { getVendors, addVendor, updateVendor, vendors } = useStorage();
   const { user } = useSession();
   const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
@@ -1013,12 +1013,12 @@ export default function VendorShopManagement() {
   const myCes = user?.ces || null;
   const myVendors = useMemo(() => {
     if (!myCes) return [];
-    return getVendors().filter(
+    return vendors.filter(
       (v) =>
         v.ownerCes === myCes ||
         v.members.some((m) => m.ces === myCes && m.status === 'active')
     );
-  }, [myCes, getVendors]);
+  }, [myCes, vendors]);
 
   function handleCreate(vendor: VendorRecord) {
     addVendor(vendor);

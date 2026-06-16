@@ -31,12 +31,12 @@ const ROLE_ICONS: Record<string, any> = {
 export default function VendorShopBeingView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { getVendors, findProfileByCES } = useStorage();
+  const { getVendors, findProfileByCES, vendors } = useStorage();
   const { user } = useSession();
 
   const vendor = useMemo(() => {
-    return getVendors().find((v) => v.slug === slug);
-  }, [getVendors, slug]);
+    return vendors.find((v) => v.slug === slug);
+  }, [vendors, slug]);
 
   const [selectedOffering, setSelectedOffering] = useState<OfferingItem | null>(null);
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null);

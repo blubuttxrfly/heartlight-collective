@@ -27,6 +27,7 @@ export default function ResourceFlow() {
   const { ces } = useParams<{ ces: string }>();
   const { user } = useSession();
   const storage = useStorage();
+  const { vendors } = storage;
   const [profile, setProfile] = useState<ReturnType<typeof storage.findProfileByCES> | null>(null);
 
   const targetCes = ces || user?.ces;
@@ -46,7 +47,7 @@ export default function ResourceFlow() {
       return [];
     }
   }, []);
-  const allVendors = useMemo(() => storage.getVendors(), [storage]);
+  const allVendors = useMemo(() => vendors, [vendors]);
 
   const myAgreements = useMemo(
     () => allAgreements.filter((a) => a.requesterCes === targetCes || a.providerCes === targetCes || a.parties?.some((p) => p.ces === targetCes)),
