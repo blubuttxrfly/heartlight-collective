@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Send, Sparkles, Heart, Clock, Wand2, Upload, X, MapPin, Globe, Repeat } from 'lucide-react'
+import { ArrowLeft, Sparkles, Heart, Clock, Repeat, Upload, X, MapPin, Globe } from 'lucide-react'
+import { PiShootingStar } from 'react-icons/pi'
 import { Link } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
+import { SolarGoldButton, SolarGoldLink } from '../components/SolarGoldButton'
 import { useSession } from '../lib/session'
 import { useStorage } from '../lib/storage'
 import { syncWish } from '../lib/exchangeSync'
 import { WISH_SCOPE_LABELS } from '../lib/constants'
-import type { LocationData, WishScope } from '../types/ces'
+import type { LocationData, WishScope, ExchangeForm } from '../types/ces'
 
 const CATEGORIES = [
   'Tech & Development',
@@ -33,11 +35,16 @@ const URGENCY_LEVELS = [
   { value: 'time-sensitive', label: 'Time Sensitive', color: 'text-red-400', border: 'border-red-400/30' }
 ]
 
-const AVENUES = [
-  { value: 'direct', label: 'Direct Mutual Aid', desc: 'Being-to-being, no intermediary' },
-  { value: 'collective', label: 'Heartlight Collective', desc: 'Shared mutual aid resources' },
-  { value: 'funded', label: 'Collective Funding', desc: 'Community-supported' },
-  { value: 'partnership', label: 'Co-Creation Partnership', desc: 'Long-term collaboration' }
+/* ═══════════════════════════════════════════════════════════════
+   Exchange Avenues — aligned with the Heartlight Exchange forms
+   ═══════════════════════════════════════════════════════════════ */
+const AVENUES: { value: ExchangeForm; label: string; desc: string }[] = [
+  { value: 'gift', label: 'Gift Economy', desc: 'Freely given, no expectation of return' },
+  { value: 'barter', label: 'Barter / Mutual Exchange', desc: 'Swap skills, resources, or time directly' },
+  { value: 'collective_funded', label: 'Collective-Funded', desc: 'Community resources stewarded for our Greatest & Highest Good' },
+  { value: 'fixed', label: 'Fixed Heartlight Price', desc: 'A clear, agreed price in sovereign exchange' },
+  { value: 'negotiable', label: 'Negotiable / Open', desc: 'Terms discovered together between beings' },
+  { value: 'peer_payment', label: 'Peer Payment Methods', desc: 'Venmo, Cash App, Zelle, Chime, Stripe — direct between beings' }
 ]
 
 const RESOURCES = [
@@ -56,7 +63,7 @@ export default function PostWish() {
   const [urgency, setUrgency] = useState('low')
   const [locationData, setLocationData] = useState<LocationData | null>(null)
   const [scope, setScope] = useState<WishScope>('universal')
-  const [avenue, setAvenue] = useState('direct')
+  const [avenue, setAvenue] = useState<ExchangeForm>('gift')
   const [fundsRequired, setFundsRequired] = useState('')
   const [fundsAvailable, setFundsAvailable] = useState('')
   const [timeCommitment, setTimeCommitment] = useState('')
@@ -78,15 +85,15 @@ export default function PostWish() {
     }
   }, [user?.ces, findProfileByCES])
 
-  const handleResourceToggle = (resource) => {
-    setSelectedResources(prev => 
-      prev.includes(resource) 
+  const handleResourceToggle = (resource: string) => {
+    setSelectedResources(prev =>
+      prev.includes(resource)
         ? prev.filter(r => r !== resource)
         : [...prev, resource]
     )
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -147,14 +154,11 @@ export default function PostWish() {
           with resonant beings. You will receive a notification when someone feels called to connect.
         </p>
         <div className="flex gap-4 justify-center">
-          <Link
-            to="/exchange"
-            className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
-          >
+          <SolarGoldLink to="/exchange">
             Browse the Exchange
-          </Link>
+          </SolarGoldLink>
           <Link
-            to="/post-wish"
+            to="/cast-wish"
             className="px-6 py-3 rounded-full border border-lavender/20 text-lavender/60 hover:border-lavender/40 transition-all"
             onClick={() => {
               setSubmitted(false)
@@ -164,7 +168,7 @@ export default function PostWish() {
               setIsContinualOffering(false)
             }}
           >
-            Post Another
+            Cast Another
           </Link>
         </div>
       </motion.div>
@@ -180,11 +184,11 @@ export default function PostWish() {
       </div>
 
       <div className="text-center mb-10">
-        <div className="w-16 h-16 rounded-full bg-magenta-500/10 border border-magenta-400/20 flex items-center justify-center mx-auto mb-4">
-          <Wand2 className="w-8 h-8 text-magenta-400" />
+        <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
+          <PiShootingStar className="w-8 h-8 text-gold-400" />
         </div>
         <h1 className="font-serif text-3xl text-cream mb-2">
-          {wishType === 'wish' ? 'Share Your Wish' : 'Share Your Gift'}
+          {wishType === 'wish' ? 'Cast Your Wish' : 'Cast Your Gift'}
         </h1>
         <p className="text-lavender/50">
           {wishType === 'wish' 
@@ -196,23 +200,23 @@ export default function PostWish() {
       <div className="flex gap-2 mb-8 justify-center">
         <button
           onClick={() => setWishType('wish')}
-          className={`px-6 py-3 rounded-full border transition-all ${
+          className={`px-6 py-3 rounded-full border transition-all inline-flex items-center gap-2 ${
             wishType === 'wish'
               ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          <Heart className="w-4 h-4 inline mr-2" /> I Have a Wish
+          I Have a Wish <Heart className="w-4 h-4" />
         </button>
         <button
           onClick={() => setWishType('offer')}
-          className={`px-6 py-3 rounded-full border transition-all ${
+          className={`px-6 py-3 rounded-full border transition-all inline-flex items-center gap-2 ${
             wishType === 'offer'
               ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          <Sparkles className="w-4 h-4 inline mr-2" /> I Have a Gift
+          I Have a Gift <Sparkles className="w-4 h-4" />
         </button>
       </div>
 
@@ -389,13 +393,13 @@ export default function PostWish() {
                 key={level.value}
                 type="button"
                 onClick={() => setUrgency(level.value)}
-                className={`px-4 py-3 rounded-xl border text-sm transition-all ${
+                className={`px-4 py-3 rounded-xl border text-sm transition-all inline-flex items-center gap-2 ${
                   urgency === level.value
                     ? `${level.border} ${level.color} bg-void-800`
                     : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                 }`}
               >
-                <Clock className="w-4 h-4 inline mr-2" />
+                <Clock className="w-4 h-4" />
                 {level.label}
               </button>
             ))}
@@ -428,7 +432,7 @@ export default function PostWish() {
                     key={s}
                     type="button"
                     onClick={() => setScope(s)}
-                    className={`px-4 py-2.5 rounded-xl border text-sm transition-all text-left ${
+                    className={`px-4 py-2.5 rounded-xl border text-sm transition-all text-left inline-flex items-center gap-2 ${
                       isActive
                         ? s === 'local'
                           ? 'bg-green-400/10 border-green-400/30 text-green-300'
@@ -438,13 +442,11 @@ export default function PostWish() {
                         : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      {s === 'local' && <MapPin className="w-3.5 h-3.5" />}
-                      {s === 'global' && <Globe className="w-3.5 h-3.5" />}
-                      {s === 'universal' && <Sparkles className="w-3.5 h-3.5" />}
-                      <span className="font-medium">{config.label}</span>
-                    </div>
-                    <div className="text-xs mt-0.5 pl-6 opacity-70">{config.description}</div>
+                    {s === 'local' && <MapPin className="w-3.5 h-3.5" />}
+                    {s === 'global' && <Globe className="w-3.5 h-3.5" />}
+                    {s === 'universal' && <Sparkles className="w-3.5 h-3.5" />}
+                    <span className="font-medium">{config.label}</span>
+                    <span className="text-xs opacity-70">{config.description}</span>
                   </button>
                 )
               })}
@@ -489,7 +491,7 @@ export default function PostWish() {
                 onClick={() => setAvenue(a.value)}
                 className={`px-4 py-3 rounded-xl border text-left transition-all ${
                   avenue === a.value
-                    ? 'bg-magenta-400/10 border-magenta-400/30 text-cream'
+                    ? 'bg-gold-400/10 border-gold-400/30 text-cream'
                     : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                 }`}
               >
@@ -500,16 +502,15 @@ export default function PostWish() {
           </div>
         </div>
 
-        <motion.button
+        <SolarGoldButton
           type="submit"
           disabled={isSubmitting}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-4 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all disabled:opacity-50"
+          icon={<PiShootingStar className="w-5 h-5" />}
+          iconPosition="after"
+          className="w-full py-4 rounded-xl"
         >
-          <Send className="w-5 h-5 inline mr-2" />
-          {isSubmitting ? 'Entering the Field...' : `Share My ${labelText}`}
-        </motion.button>
+          {isSubmitting ? 'Entering the Field...' : `Cast My ${labelText}`}
+        </SolarGoldButton>
       </form>
     </div>
   )

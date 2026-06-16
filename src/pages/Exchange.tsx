@@ -399,7 +399,7 @@ export default function Exchange() {
             Heartlight Exchange
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
-            Cast a Wish, Share a Gift, and Exchange with Fulfillment!
+            Cast a Wish, Cast a Gift, and Exchange with Fulfillment!
           </p>
         </div>
       </div>
@@ -415,16 +415,16 @@ export default function Exchange() {
       {/* Post CTA */}
       <div className="flex flex-wrap gap-3 mb-8 justify-center">
         <Link
-          to="/post-wish?type=wish"
+          to="/cast-wish?type=wish"
           className="px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center gap-2"
         >
           Cast a Wish <PiShootingStar className="w-4 h-4" />
         </Link>
         <Link
-          to="/post-wish?type=gift"
+          to="/cast-wish?type=gift"
           className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center gap-2"
         >
-          Share a Gift <FaHandHoldingHeart className="w-4 h-4" />
+          Cast a Gift <FaHandHoldingHeart className="w-4 h-4" />
         </Link>
         <Link
           to="/directory"
@@ -628,10 +628,10 @@ export default function Exchange() {
             No beings match your search yet. You can be the first to plant your heartlight here.
           </p>
           <Link
-            to="/post-wish"
+            to="/cast-wish"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
           >
-            Share Your Wish <Plus className="w-4 h-4" />
+            Cast a Wish <PiShootingStar className="w-4 h-4" />
           </Link>
         </motion.div>
       ) : (
