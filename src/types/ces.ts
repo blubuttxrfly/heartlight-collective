@@ -425,6 +425,8 @@ export interface QuestItem {
   completedAt?: string;
   completedByCes?: string;
   completedByName?: string;
+  /** If false, checking the box completes the quest immediately without verification. */
+  requiresVerification?: boolean;
   verifications?: {
     verifierCes: string;
     verifierName: string;

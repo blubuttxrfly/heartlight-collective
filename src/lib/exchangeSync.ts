@@ -17,6 +17,7 @@ import type {
   AgreementRecord,
   Wish,
   OfferingItem,
+  ExchangeJourney,
 } from '../types/ces';
 
 export type ExchangeEntityKey =
@@ -29,7 +30,8 @@ export type ExchangeEntityKey =
   | 'exchangeAlerts'
   | 'agreements'
   | 'exchangeCalendars'
-  | 'wishes';
+  | 'wishes'
+  | 'exchangeJourneys';
 
 /* ═══════════════════════════════════════════════════════════════
    Row mappers: app entity ↔ Supabase row
@@ -398,6 +400,51 @@ export function rowToExchangeRequest(row: any): ExchangeRequest {
   };
 }
 
+export function exchangeJourneyToRow(j: ExchangeJourney): Record<string, unknown> {
+  return {
+    id: j.id,
+    agreement_id: j.agreementId,
+    requester_ces: j.wishingCes,
+    provider_ces: j.coCreatorCes,
+    party_ces: [j.wishingCes, j.coCreatorCes].filter(Boolean),
+    status: j.status,
+    main_quest: j.mainQuest,
+    side_quests: j.sideQuests,
+    logs: j.logs,
+    created_at: j.createdAt,
+    updated_at: j.updatedAt,
+  };
+}
+
+export function rowToExchangeJourney(row: any): ExchangeJourney {
+  const agreementId = String(row.agreement_id);
+  const requesterCes = String(row.requester_ces);
+  const providerCes = String(row.provider_ces);
+  return {
+    id: String(row.id),
+    agreementId,
+    title: '', // derived from linked agreement in UI layer
+    description: '', // derived from linked agreement in UI layer
+    wishingCes: requesterCes,
+    wishingName: '', // derived from linked agreement in UI layer
+    coCreatorCes: providerCes,
+    coCreatorName: '', // derived from linked agreement in UI layer
+    status: String(row.status) as ExchangeJourney['status'],
+    currentPhase: 'quests',
+    selectedCodes: [],
+    logs: Array.isArray(row.logs) ? row.logs : [],
+    mainQuest: row.main_quest || { id: 'main', title: '', status: 'open' },
+    sideQuests: Array.isArray(row.side_quests) ? row.side_quests : [],
+    scheduledMeetings: [], // derived from linked agreement in UI layer
+    fulfillmentNotes: '',
+    fulfillmentSignedAt: null,
+    fulfillmentSignedBy: [],
+    adaptationConsent: false,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
 export function wishToRow(w: Wish): Record<string, unknown> {
   const anyWish = w as any;
   return {
@@ -585,6 +632,14 @@ export async function deleteWish(id: string) {
   return removeById('wishes', id);
 }
 
+export async function syncExchangeJourney(j: ExchangeJourney) {
+  return upsert('exchange_journeys', exchangeJourneyToRow(j));
+}
+
+export async function deleteExchangeJourney(id: string) {
+  return removeById('exchange_journeys', id);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Hydration: pull collective memory from Supabase into localStorage shape
    ═══════════════════════════════════════════════════════════════ */
@@ -599,6 +654,7 @@ export interface HydratedExchangeState {
   exchangeAlerts: ExchangeAlert[];
   exchangeCalendars: ExchangeCalendar[];
   wishes: Wish[];
+  exchangeJourneys: ExchangeJourney[];
 }
 
 export async function hydrateExchangeState(requireSession = false): Promise<Partial<HydratedExchangeState>> {
@@ -625,6 +681,7 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     exchangeAlerts,
     exchangeCalendars,
     wishes,
+    exchangeJourneys,
   ] = await Promise.all([
     fetchAll('exchange_agreements', rowToExchangeAgreement),
     fetchAll('exchange_requests', rowToExchangeRequest),
@@ -636,6 +693,7 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     fetchAll('exchange_alerts', rowToExchangeAlert),
     fetchAll('exchange_calendars', rowToExchangeCalendar),
     fetchAll('wishes', rowToWish),
+    fetchAll('exchange_journeys', rowToExchangeJourney),
   ]);
 
   // Merge offerings into their parent vendors
@@ -651,7 +709,7 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     if (v) v.joinRequests.push(r);
   }
 
-  log('hydrate', `Loaded: ${exchangeAgreements.length} agreements, ${vendors.length} vendors (${offerings.length} offerings), ${exchangeCalendars.length} calendars, ${wishes.length} wishes`);
+  log('hydrate', `Loaded: ${exchangeAgreements.length} agreements, ${vendors.length} vendors (${offerings.length} offerings), ${exchangeCalendars.length} calendars, ${wishes.length} wishes, ${exchangeJourneys.length} journeys`);
   return {
     exchangeAgreements,
     exchangeRequests,
@@ -662,5 +720,6 @@ export async function hydrateExchangeState(requireSession = false): Promise<Part
     exchangeAlerts,
     exchangeCalendars,
     wishes,
+    exchangeJourneys,
   };
 }

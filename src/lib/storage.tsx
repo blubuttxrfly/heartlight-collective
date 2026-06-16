@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert } from '../types/ces';
+import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert, ExchangeJourney } from '../types/ces';
 import { seedDevData } from './seedData';
 import {
   syncVendor,
@@ -19,6 +19,7 @@ import {
   syncCollectivePetition,
   syncExchangeAlert,
   syncExchangeCalendar,
+  syncExchangeJourney,
   hydrateExchangeState,
 } from './exchangeSync';
 
@@ -38,6 +39,7 @@ const DEFAULT_STATE: StorageState = {
   vendorJoinRequests: [],
   exchangeRequests: [],
   exchangeAgreements: [],
+  exchangeJourneys: [],
   collectivePetitions: [],
   exchangeAlerts: [],
 };
@@ -98,6 +100,11 @@ interface StorageContextValue {
   getExchangeAgreements: () => ExchangeAgreement[];
   addExchangeAgreement: (ag: ExchangeAgreement) => void;
   updateExchangeAgreement: (ag: ExchangeAgreement) => void;
+  // Quest / Journey Sync (Wave H+)
+  getExchangeJourneys: () => ExchangeJourney[];
+  addExchangeJourney: (journey: ExchangeJourney) => void;
+  updateExchangeJourney: (journey: ExchangeJourney) => void;
+  removeExchangeJourney: (id: string) => void;
   // Quest / Agreement Versioning (Wave 2+)
   updateAgreementQuest: (agreementId: string, questId: string, updates: Partial<import('../types/ces').QuestItem>) => void;
   addAgreementVersion: (agreementId: string, version: import('../types/ces').AgreementVersion) => void;
@@ -141,6 +148,7 @@ export interface StorageState {
   vendorJoinRequests: VendorJoinRequest[];
   exchangeRequests: ExchangeRequest[];
   exchangeAgreements: ExchangeAgreement[];
+  exchangeJourneys: ExchangeJourney[];
   collectivePetitions: CollectivePetition[];
   exchangeAlerts: ExchangeAlert[];
 }
@@ -161,6 +169,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       vendorJoinRequests: readStorageKey('vendorJoinRequests'),
       exchangeRequests: readStorageKey('exchangeRequests'),
       exchangeAgreements: readStorageKey('exchangeAgreements'),
+      exchangeJourneys: readStorageKey('exchangeJourneys'),
       collectivePetitions: readStorageKey('collectivePetitions'),
       exchangeAlerts: readStorageKey('exchangeAlerts'),
     };
@@ -194,6 +203,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         exchangeAgreements: hydrated.exchangeAgreements?.length ? hydrated.exchangeAgreements : prev.exchangeAgreements,
         exchangeRequests: hydrated.exchangeRequests?.length ? hydrated.exchangeRequests : prev.exchangeRequests,
+        exchangeJourneys: hydrated.exchangeJourneys?.length ? hydrated.exchangeJourneys : prev.exchangeJourneys,
         vendors: hydrated.vendors?.length ? hydrated.vendors : prev.vendors,
         vendorInvites: hydrated.vendorInvites?.length ? hydrated.vendorInvites : prev.vendorInvites,
         vendorJoinRequests: hydrated.vendorJoinRequests?.length ? hydrated.vendorJoinRequests : prev.vendorJoinRequests,
@@ -471,6 +481,36 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     }));
     syncExchangeAgreement(migrated);
   }, [migrateAgreementToParties]);
+
+  // ── Exchange Journeys (Wave H+ Quest Tracker sync) ──
+  const getExchangeJourneys = useCallback(() => stateRef.current.exchangeJourneys, []);
+
+  const addExchangeJourney = useCallback((journey: ExchangeJourney) => {
+    const now = new Date().toISOString();
+    const next = { ...journey, createdAt: journey.createdAt || now, updatedAt: now };
+    setState((prev) => ({
+      ...prev,
+      exchangeJourneys: [...prev.exchangeJourneys, next],
+    }));
+    syncExchangeJourney(next);
+  }, []);
+
+  const updateExchangeJourney = useCallback((journey: ExchangeJourney) => {
+    const next = { ...journey, updatedAt: new Date().toISOString() };
+    setState((prev) => ({
+      ...prev,
+      exchangeJourneys: prev.exchangeJourneys.map((j) => (j.id === journey.id ? next : j)),
+    }));
+    syncExchangeJourney(next);
+  }, []);
+
+  const removeExchangeJourney = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      exchangeJourneys: prev.exchangeJourneys.filter((j) => j.id !== id),
+    }));
+    // deleteExchangeJourney(id); // uncomment once soft-delete policy is confirmed
+  }, []);
 
   const getAgreementParties = useCallback((agreementId: string): AgreementParty[] => {
     const ag = stateRef.current.exchangeAgreements.find((a) => a.id === agreementId);
@@ -891,6 +931,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     getExchangeAgreements,
     addExchangeAgreement,
     updateExchangeAgreement,
+    // Quest / Journey Sync (Wave H+)
+    getExchangeJourneys,
+    addExchangeJourney,
+    updateExchangeJourney,
+    removeExchangeJourney,
     // Quest / Agreement Versioning (Wave 2+)
     updateAgreementQuest,
     addAgreementVersion,

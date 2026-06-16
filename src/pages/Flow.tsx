@@ -29,6 +29,8 @@ import {
   X,
   Download,
   HandHeart,
+  Hourglass,
+  Circle,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
@@ -37,6 +39,7 @@ import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreemen
 import { WithdrawalModal } from '../components/exchange/WithdrawalModal.tsx'
 import { VendorInbox } from '../components/VendorInbox.tsx'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../lib/calendar.ts'
+import { hydrateExchangeState } from '../lib/exchangeSync.ts'
 import type {
   ExchangeJourney,
   CodeLogEntry,
@@ -417,6 +420,10 @@ function JourneyCard({
   onSelect: () => void
 }) {
   const lastLog = journey.logs[journey.logs.length - 1]
+  const allQuests = [journey.mainQuest, ...journey.sideQuests]
+  const completedCount = allQuests.filter((q) => q.status === 'completed').length
+  const pendingVerificationCount = allQuests.filter((q) => q.status === 'verification_pending').length
+  const totalQuests = allQuests.length
   const statusColor =
     journey.status === 'active'
       ? 'border-green-500/20 bg-green-500/5 text-green-400'
@@ -442,6 +449,21 @@ function JourneyCard({
         {lastLog && <span className="text-[10px] text-lavender/30">{timeAgo(lastLog.timestamp)}</span>}
       </div>
       <h4 className="text-sm font-medium text-cream mb-1 leading-snug">{journey.title}</h4>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {completedCount > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded border border-green-400/20 bg-green-400/10 text-green-300 inline-flex items-center gap-1">
+            <Check className="w-3 h-3" /> {completedCount} Complete
+          </span>
+        )}
+        {pendingVerificationCount > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded border border-magenta-400/20 bg-magenta-400/10 text-magenta-300 inline-flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> {pendingVerificationCount} Awaiting verification
+          </span>
+        )}
+        {completedCount === 0 && pendingVerificationCount === 0 && (
+          <span className="text-[10px] text-lavender/30">{totalQuests} quest{totalQuests !== 1 ? 's' : ''}</span>
+        )}
+      </div>
       <div className="flex items-center gap-1.5 text-[10px] text-lavender/40">
         <span>{journey.wishingName}</span>
         <ChevronRight className="w-3 h-3" />
@@ -587,15 +609,40 @@ function QuestTracker({
   function handleMarkDone(quest: QuestItem) {
     if (!canCompleteQuest(quest)) return
     const now = new Date().toISOString()
+    const nextStatus: QuestItem['status'] = quest.requiresVerification === false ? 'completed' : 'verification_pending'
     const markedQuest: QuestItem = {
       ...quest,
-      status: 'verification_pending',
+      status: nextStatus,
       completedAt: now,
       completedByCes: currentCes,
       completedByName: currentName,
       verifications: quest.verifications || [],
     }
-    updateQuest(markedQuest)
+    updateQuest(markedQuest, { mainQuestToFulfillmentReview: nextStatus === 'completed' && quest.id === journey.mainQuest.id })
+  }
+
+  function handleCheckboxToggle(quest: QuestItem, checked: boolean) {
+    if (!isJourneyActive || !currentCes) return
+    if (checked) {
+      handleMarkDone(quest)
+    } else {
+      // Unchecking returns the quest to open if the current user is the one who marked it
+      if (
+        quest.status !== 'verification_pending' &&
+        quest.status !== 'completed' &&
+        quest.status !== 'in_progress'
+      )
+        return
+      if (quest.completedByCes && quest.completedByCes !== currentCes) return
+      const reopened: QuestItem = {
+        ...quest,
+        status: 'open',
+        completedAt: undefined,
+        completedByCes: undefined,
+        completedByName: undefined,
+      }
+      updateQuest(reopened)
+    }
   }
 
   function handleVerifyQuest(quest: QuestItem) {
@@ -774,27 +821,27 @@ function QuestTracker({
     switch (status) {
       case 'completed':
         return (
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-green-400/20 bg-green-400/10 text-green-300">
-            ✓ Completed
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-green-400/20 bg-green-400/10 text-green-300 inline-flex items-center gap-1">
+            Complete ✓
           </span>
         )
       case 'verification_pending':
         return (
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-magenta-400/20 bg-magenta-400/10 text-magenta-300">
-            🔍 Verification Pending
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-magenta-400/20 bg-magenta-400/10 text-magenta-300 inline-flex items-center gap-1">
+            Verification Pending 🔍
           </span>
         )
       case 'in_progress':
         return (
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-blue-400/20 bg-blue-400/10 text-blue-300">
-            🌊 In Progress
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-blue-400/20 bg-blue-400/10 text-blue-300 inline-flex items-center gap-1">
+            In Progress <Hourglass className="w-3 h-3" />
           </span>
         )
       case 'open':
       default:
         return (
-          <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 bg-lavender/5 text-lavender/50">
-            🌌 Open
+          <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 bg-lavender/5 text-lavender/50 inline-flex items-center gap-1">
+            Open <Circle className="w-3 h-3" />
           </span>
         )
     }
@@ -808,6 +855,10 @@ function QuestTracker({
     const canVerify = canVerifyQuest(quest)
     const canReject = canRequestMoreWork(quest)
     const assignedNames = getAssignedNames(quest)
+    const checkboxDisabled = !isJourneyActive || !currentCes || (!canMark && !isCompleted && !isVerificationPending && status !== 'in_progress')
+    const canUncheck =
+      (status === 'verification_pending' || status === 'completed' || status === 'in_progress') &&
+      (!quest.completedByCes || quest.completedByCes === currentCes)
 
     return (
       <div
@@ -822,7 +873,21 @@ function QuestTracker({
         }`}
       >
         <div className="flex items-start gap-3">
-          <div className="shrink-0 pt-0.5">{statusBadge(status)}</div>
+          <div className="shrink-0 pt-0.5 flex flex-col items-center gap-1">
+            <label className="relative inline-flex items-center cursor-pointer" aria-label={isCompleted ? 'Quest complete' : canMark ? 'Mark quest progress' : 'Quest progress'}>
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={isCompleted || isVerificationPending}
+                disabled={checkboxDisabled && !canUncheck}
+                onChange={(e) => handleCheckboxToggle(quest, e.target.checked)}
+              />
+              <span className="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all peer-checked:bg-green-400/20 peer-checked:border-green-400/60 peer-checked:text-green-300 border-lavender/20 text-lavender/30 hover:border-lavender/40">
+                {(isCompleted || isVerificationPending) && <Check className="w-4 h-4" />}
+              </span>
+            </label>
+            {statusBadge(status)}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className={`font-medium leading-snug ${isMain ? 'text-cream' : 'text-lavender/80'}`}>
@@ -833,8 +898,8 @@ function QuestTracker({
                   🧭 {assignedNames.join(', ')}
                 </span>
               ) : (
-                <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 text-lavender/50 bg-void-900/40">
-                  🌐 Open
+                <span className="text-[10px] px-2 py-0.5 rounded-full border border-lavender/10 text-lavender/50 bg-void-900/40 inline-flex items-center gap-1">
+                  Open <Circle className="w-3 h-3" />
                 </span>
               )}
               {isMain && (
@@ -856,7 +921,7 @@ function QuestTracker({
                 onClick={() => handleMarkDone(quest)}
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all mb-2"
               >
-                <Check className="w-3 h-3" /> Mark as Done ✨
+                <Check className="w-3 h-3" /> Complete ✨
               </button>
             )}
 
@@ -1125,9 +1190,13 @@ export default function Flow() {
   const updateJourney = useCallback(
     (updated: ExchangeJourney) => {
       const next = journeys.map((j) => (j.id === updated.id ? updated : j))
-      persistJourneys(next)
+      setJourneys(next)
+      writeJourneysToStorage(next)
+      if ('updateExchangeJourney' in storage && typeof (storage as any).updateExchangeJourney === 'function') {
+        ;(storage as any).updateExchangeJourney(updated)
+      }
     },
-    [journeys, persistJourneys]
+    [journeys, storage]
   )
 
   useEffect(() => {
@@ -1136,6 +1205,46 @@ export default function Flow() {
       setSelectedJourneyId(journeys[0].id)
     }
   }, [journeys, selectedJourneyId])
+
+  // Poll Supabase for cross-being journey updates every 20 seconds
+  useEffect(() => {
+    let cancelled = false
+    async function poll() {
+      const hydrated = await hydrateExchangeState(true)
+      if (cancelled || !hydrated?.exchangeJourneys?.length) return
+      const remoteMap = new Map(hydrated.exchangeJourneys.map((j) => [j.id, j]))
+      setJourneys((prev) => {
+        let changed = false
+        const merged = prev.map((local) => {
+          const remote = remoteMap.get(local.id)
+          if (!remote) return local
+          const remoteTime = new Date(remote.updatedAt).getTime()
+          const localTime = new Date(local.updatedAt).getTime()
+          if (remoteTime > localTime) {
+            changed = true
+            return remote
+          }
+          return local
+        })
+        // Append any remote journeys we don't have locally
+        const localIds = new Set(prev.map((j) => j.id))
+        for (const remote of hydrated.exchangeJourneys!) {
+          if (!localIds.has(remote.id)) {
+            merged.push(remote)
+            changed = true
+          }
+        }
+        if (changed) writeJourneysToStorage(merged)
+        return changed ? merged : prev
+      })
+    }
+    poll()
+    const interval = setInterval(poll, 20000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [currentCes])
 
   const journey = useMemo(
     () => journeys.find((j) => j.id === selectedJourneyId) ?? journeys[0],
@@ -1199,6 +1308,23 @@ export default function Flow() {
     [storage, currentCes]
   )
 
+  // Cross-journey quest progress stats for the current being
+  const awaitingMyVerificationCount = useMemo(() => {
+    return journeys.reduce((acc, j) => {
+      if (j.status !== 'active') return acc
+      const myJourney = j.wishingCes === currentCes || j.coCreatorCes === currentCes
+      if (!myJourney) return acc
+      const pending = [j.mainQuest, ...j.sideQuests].filter(
+        (q) => q.status === 'verification_pending' && q.completedByCes && q.completedByCes !== currentCes
+      ).length
+      return acc + pending
+    }, 0)
+  }, [journeys, currentCes])
+
+  const totalCompletedQuests = useMemo(() => {
+    return journeys.reduce((acc, j) => acc + [j.mainQuest, ...j.sideQuests].filter((q) => q.status === 'completed').length, 0)
+  }, [journeys])
+
   return (
     <div className="px-4 pb-12 max-w-5xl mx-auto">
       <div className="mb-6">
@@ -1220,6 +1346,26 @@ export default function Flow() {
       {/* ─── DASHBOARD VIEW ─── */}
       {view === 'dashboard' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl mx-auto">
+          {awaitingMyVerificationCount > 0 && (
+            <div className="mb-4 rounded-xl border border-magenta-400/20 bg-magenta-400/5 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full border border-magenta-400/30 bg-magenta-400/10 flex items-center justify-center text-magenta-300 font-serif text-lg">
+                  {awaitingMyVerificationCount}
+                </div>
+                <div>
+                  <p className="text-sm text-cream font-medium">Quest{awaitingMyVerificationCount !== 1 ? 's' : ''} awaiting your verification 🌿</p>
+                  <p className="text-xs text-lavender/50">Your co-creator marked these ready for completion. Review and verify when aligned.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setView('quest-tracker')}
+                className="text-xs px-3 py-1.5 rounded-full border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/10 transition-all whitespace-nowrap"
+              >
+                Open Quest Tracker ✨
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <AspectCard
               icon={ScrollText}
@@ -1418,6 +1564,28 @@ export default function Flow() {
               ← Back to Flow Dashboard
             </button>
           </div>
+
+          {/* Cross-journey progress summary */}
+          <div className="mb-6 rounded-xl border border-lavender/10 bg-void-800/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <ClipboardList className="w-5 h-5 text-gold-400" />
+                <div>
+                  <p className="text-sm font-medium text-cream">Quest Tracker Summary 🌟</p>
+                  <p className="text-xs text-lavender/50">
+                    {totalCompletedQuests} quest{totalCompletedQuests !== 1 ? 's' : ''} completed across {journeys.length} journey{journeys.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+              {awaitingMyVerificationCount > 0 && (
+                <div className="text-xs px-3 py-1.5 rounded-full border border-magenta-400/30 bg-magenta-400/10 text-magenta-300 inline-flex items-center gap-1.5">
+                  <AlertTriangle className="w-3 h-3" />
+                  {awaitingMyVerificationCount} awaiting your verification
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-[280px_1fr] gap-6">
             <div className="space-y-3">
               <h2 className="text-xs uppercase tracking-widest text-lavender/40 font-sans">Select Journey</h2>
