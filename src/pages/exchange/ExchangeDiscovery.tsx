@@ -198,46 +198,42 @@ function loadWishes() {
   return [...INITIAL_WISHES, ...stored]
 }
 
-function loadVendorOfferings() {
-  try {
-    const vendors = JSON.parse(localStorage.getItem('hlc_vendors') || '[]')
-    const offerings: any[] = []
-    for (const v of vendors) {
-      if (!v.offerings || !Array.isArray(v.offerings)) continue
-      for (const o of v.offerings) {
-        offerings.push({
-          ...o,
-          type: 'offering',
-          postedByCes: v.ownerCes,
-          postedByName: v.name,
-          status: 'open',
-          vendorName: v.name,
-          vendorId: v.id,
-          // Normalize fields the grid expects
-          skills: [],
-          resources: [],
-          roles: [],
-          urgency: 'low',
-          scope: 'universal',
-          location: 'Remote / Anywhere',
-          locationData: { continent: 'Anywhere', city: 'Remote', country: 'Anywhere' },
-          fundsRequired: o.priceCents || 0,
-          fundsAvailable: 0,
-          timeCommitment: '',
-          isContinualOffering: false,
-          claims: [],
-          exchangeAvenue: 'vendor',
-        })
-      }
+/* ─── Helper: load vendor offerings from storage context ─── */
+function buildVendorOfferings(vendors: VendorRecord[]) {
+  const offerings: any[] = []
+  for (const v of vendors) {
+    if (!v.offerings || !Array.isArray(v.offerings)) continue
+    for (const o of v.offerings) {
+      offerings.push({
+        ...o,
+        type: 'offering',
+        postedByCes: v.ownerCes,
+        postedByName: v.name,
+        status: 'open',
+        vendorName: v.name,
+        vendorId: v.id,
+        // Normalize fields the grid expects
+        skills: [],
+        resources: [],
+        roles: [],
+        urgency: 'low',
+        scope: 'universal',
+        location: 'Remote / Anywhere',
+        locationData: { continent: 'Anywhere', city: 'Remote', country: 'Anywhere' },
+        fundsRequired: o.priceCents || 0,
+        fundsAvailable: 0,
+        timeCommitment: '',
+        isContinualOffering: false,
+        claims: [],
+        exchangeAvenue: 'vendor',
+      })
     }
-    return offerings
-  } catch {
-    return []
   }
+  return offerings
 }
 
-function loadAllItems() {
-  return [...loadWishes(), ...loadVendorOfferings()]
+function loadAllItems(vendors: VendorRecord[]) {
+  return [...loadWishes(), ...buildVendorOfferings(vendors)]
 }
 
 const CATEGORY_EMOJIS = {
@@ -270,7 +266,16 @@ interface ExchangeDiscoveryProps {
 }
 
 export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps) {
-  const [wishes, setWishes] = useState(loadAllItems)
+  const { user } = useSession()
+  const { findProfileByCES, findVendorById, vendors } = useStorage()
+  const navigate = useNavigate()
+
+  const [wishes, setWishes] = useState(loadWishes)
+  // Merge vendor offerings from storage context (includes Supabase-hydrated vendors)
+  useEffect(() => {
+    setWishes([...loadWishes(), ...buildVendorOfferings(vendors)])
+  }, [vendors])
+
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedWish, setSelectedWish] = useState(null)
@@ -280,10 +285,6 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
   const [requestModalOffering, setRequestModalOffering] = useState<OfferingItem | null>(null)
   const [requestModalVendor, setRequestModalVendor] = useState<VendorRecord | null>(null)
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null)
-
-  const { user } = useSession()
-  const { findProfileByCES, findVendorById } = useStorage()
-  const navigate = useNavigate()
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)

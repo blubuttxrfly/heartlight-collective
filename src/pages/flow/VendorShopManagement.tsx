@@ -41,7 +41,9 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
   const [error, setError] = useState('');
 
   const { user } = useSession();
+  const { findProfileByCES } = useStorage();
   const myCes = user?.ces || null;
+  const myName = (myCes ? findProfileByCES(myCes)?.name : undefined) || user?.name || 'Atlas Island Being';
 
   const updatePayment = (type: string, key: string, value: unknown) => {
     setPaymentConfig(prev =>
@@ -60,7 +62,7 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
       slug: slugify(name.trim()),
       description: description.trim(),
       ownerCes: myCes,
-      ownerName: '', // filled from profile
+      ownerName: myName,
       members: [],
       offerings: [],
       paymentMethods: paymentConfig,

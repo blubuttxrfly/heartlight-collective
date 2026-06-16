@@ -109,7 +109,7 @@ export interface Database {
           name: string
           slug: string
           description: string
-          core_directive: string          // Vendor Shop bio / mission
+          core_directive: string | null     // Vendor Shop bio / mission (nullable)
           logo_url: string | null
           owner_ces: string
           owner_name: string
@@ -128,7 +128,7 @@ export interface Database {
           name: string
           slug: string
           description?: string
-          core_directive?: string
+          core_directive?: string | null
           logo_url?: string | null
           owner_ces: string
           owner_name: string
@@ -146,7 +146,7 @@ export interface Database {
           name?: string
           slug?: string
           description?: string
-          core_directive?: string
+          core_directive?: string | null
           logo_url?: string | null
           owner_ces?: string
           owner_name?: string

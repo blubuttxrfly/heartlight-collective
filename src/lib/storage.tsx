@@ -79,6 +79,7 @@ interface StorageContextValue {
   addSteward: (entry: AuthorizedStewardEntry) => void;
   getStewards: () => AuthorizedStewardEntry[];
   // ── Vendor / Marketplace (Wave B+) ──
+  vendors: VendorRecord[];            // reactive state — prefer this for reads
   getVendors: () => VendorRecord[];
   addVendor: (vendor: VendorRecord) => void;
   updateVendor: (vendor: VendorRecord) => void;
@@ -871,6 +872,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
     addSteward,
     getStewards,
     // ── Vendor / Marketplace ──
+    vendors: state.vendors,
     getVendors,
     addVendor,
     updateVendor,
