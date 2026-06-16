@@ -19,7 +19,7 @@ export function StorefrontCard({ vendor, showOfferings = true }: StorefrontCardP
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl border border-blue-400/15 bg-void-800/30 p-5 hover:border-blue-400/30 transition-all"
     >
-      <Link to={`/storefront/${vendor.slug}`} className="block">
+      <Link to={`/flow/vendor-shop/${vendor.slug}`} className="block">
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-full bg-blue-400/10 border border-blue-400/20 flex items-center justify-center shrink-0">
             {vendor.logoUrl ? (

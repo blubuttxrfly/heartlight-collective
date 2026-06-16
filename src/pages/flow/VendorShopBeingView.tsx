@@ -8,19 +8,19 @@ import {
   MapPin,
   Mail,
   Heart,
-  ChevronRight,
   CheckCircle,
   X,
   Shield,
   Crown,
   PenTool,
+  Sparkles,
 } from 'lucide-react';
-import { useStorage } from '../lib/storage';
-import { useSession } from '../lib/session';
-import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges';
-import { ExchangeRequestModal } from '../components/exchange/ExchangeRequestModal';
-import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor';
-import type { OfferingItem, VendorRecord, ExchangeAgreement } from '../types/ces';
+import { useStorage } from '../../lib/storage';
+import { useSession } from '../../lib/session';
+import { ExchangePolicyBadges } from '../../components/ExchangePolicyBadges';
+import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal';
+import { ExchangeAgreementEditor } from '../../components/exchange/ExchangeAgreementEditor';
+import type { OfferingItem, VendorRecord, ExchangeAgreement } from '../../types/ces';
 
 const ROLE_ICONS: Record<string, any> = {
   owner: Crown,
@@ -28,7 +28,7 @@ const ROLE_ICONS: Record<string, any> = {
   contributor: PenTool,
 };
 
-export default function Storefront() {
+export default function VendorShopBeingView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { getVendors, findProfileByCES } = useStorage();
@@ -45,7 +45,7 @@ export default function Storefront() {
     return (
       <div className="px-4 py-16 max-w-4xl mx-auto text-center">
         <Store className="w-12 h-12 text-lavender/20 mx-auto mb-4" />
-        <h1 className="font-serif text-2xl text-cream mb-2">Storefront not found</h1>
+        <h1 className="font-serif text-2xl text-cream mb-2">Vendor Shop not found</h1>
         <p className="text-lavender/50 mb-6">This Vendor Shop has not appeared in the collective memory yet.</p>
         <Link
           to="/directory"
@@ -128,7 +128,7 @@ export default function Storefront() {
           <div className="flex flex-col gap-2">
             {canManage && (
               <Link
-                to="/my-storefronts"
+                to="/flow/vendor-shop"
                 className="px-4 py-2 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-300 text-sm inline-flex items-center gap-1.5 hover:bg-gold-400/20 transition-all"
               >
                 <PenTool className="w-4 h-4" /> Manage Shop
@@ -141,6 +141,43 @@ export default function Storefront() {
             )}
           </div>
         </div>
+      </motion.div>
+
+      {/* Core Directive / Bio */}
+      {(vendor.coreDirective || vendor.description) && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-2xl border border-lavender/10 bg-void-800/30 p-6 mb-8"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-gold-400" />
+            <h2 className="font-serif text-xl text-cream">Core Directive</h2>
+          </div>
+          <p className="text-lavender/60 text-sm leading-relaxed">
+            {vendor.coreDirective || vendor.description}
+          </p>
+        </motion.div>
+      )}
+
+      {/* Accepted Exchange Forms */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="rounded-2xl border border-lavender/10 bg-void-800/30 p-6 mb-8"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <CheckCircle className="w-5 h-5 text-green-400" />
+          <h2 className="font-serif text-xl text-cream">Accepted Exchange Forms</h2>
+        </div>
+        <ExchangePolicyBadges policy={vendor.exchangePolicy} size="md" />
+        {!vendor.exchangePolicy?.length && (
+          <p className="text-sm text-lavender/50 mt-2">
+            This shop has not yet set explicit exchange forms. Reach out to ask what feels aligned.
+          </p>
+        )}
       </motion.div>
 
       {/* Members */}
@@ -168,14 +205,6 @@ export default function Storefront() {
           <h2 className="font-serif text-xl text-cream inline-flex items-center gap-2">
             <Store className="w-5 h-5 text-blue-400" /> Offerings
           </h2>
-          {canManage && (
-            <Link
-              to="/my-storefronts"
-              className="text-xs text-lavender/50 hover:text-gold-400 transition-colors inline-flex items-center gap-1"
-            >
-              Add offering <ChevronRight className="w-3 h-3" />
-            </Link>
-          )}
         </div>
 
         {vendor.offerings.length === 0 ? (
@@ -313,7 +342,7 @@ function OfferingRow({
               onClick={onRequest}
               className="px-4 py-2 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-300 text-xs inline-flex items-center gap-1.5 hover:bg-gold-400/20 transition-all"
             >
-              <Heart className="w-3.5 h-3.5" /> Request Exchange
+              <Heart className="w-3.5 h-3.5" /> Request Aligned Exchange
             </button>
           </div>
         </div>

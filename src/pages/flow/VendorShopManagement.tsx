@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Image, Tag, DollarSign, Gift, UsersRound } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useStorage } from '../lib/storage';
-import { useSession } from '../lib/session';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory } from '../types/ces';
-import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../lib/constants';
+import { useStorage } from '../../lib/storage';
+import { useSession } from '../../lib/session';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory } from '../../types/ces';
+import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
 function slugify(name: string): string {
@@ -1001,8 +1001,8 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
   );
 }
 
-/* ─── My Storefronts Dashboard ─── */
-export default function MyStorefronts() {
+/* ─── Vendor Shop Management Dashboard ─── */
+export default function VendorShopManagement() {
   const { getVendors, addVendor, updateVendor } = useStorage();
   const { user } = useSession();
   const navigate = useNavigate();
@@ -1033,7 +1033,7 @@ export default function MyStorefronts() {
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center gap-3 mb-2">
-          <Link to="/exchange" className="text-lavender/40 hover:text-cream transition-colors">
+          <Link to="/flow" className="text-lavender/40 hover:text-cream transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-cream tracking-tight">Vendor Shops</h1>

@@ -1,19 +1,15 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, ArrowLeft, Plus, Tag, Globe, Navigation, Repeat, Store, Inbox } from 'lucide-react'
-import { PiShootingStar, PiHeartLight } from 'react-icons/pi'
-import { FaHandHoldingHeart } from 'react-icons/fa'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation } from 'lucide-react'
+import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
-import { useSession } from '../lib/session'
-import { useStorage } from '../lib/storage'
-import { haversineDistance, formatDistance } from '../lib/geo'
-import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS, PAYMENT_METHOD_LABELS } from '../lib/constants'
-import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord } from '../types/ces'
-import { ExchangeRequestModal } from '../components/exchange/ExchangeRequestModal'
-import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor'
-import { VendorInbox } from '../components/VendorInbox'
-import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges'
-import { StorefrontCard } from '../components/StorefrontCard'
+import { useSession } from '../../lib/session'
+import { useStorage } from '../../lib/storage'
+import { haversineDistance, formatDistance } from '../../lib/geo'
+import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../../lib/constants'
+import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord } from '../../types/ces'
+import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal'
+import { ExchangeAgreementEditor } from '../../components/exchange/ExchangeAgreementEditor'
 
 /* ─── Codes Data (for display) ─── */
 const CODES_DATA = [
@@ -269,7 +265,11 @@ const URGENCY_CONFIG = {
 }
 
 /* ─── Exchange Portal ─── */
-export default function Exchange() {
+interface ExchangeDiscoveryProps {
+  typeFilter: 'all' | 'wish' | 'offer' | 'offering'
+}
+
+export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps) {
   const [wishes, setWishes] = useState(loadAllItems)
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -277,17 +277,13 @@ export default function Exchange() {
   const [viewScope, setViewScope] = useState<WishScope>('universal')
   const [selectedContinent, setSelectedContinent] = useState<string>('')
   const [localRadius, setLocalRadius] = useState(DEFAULT_LOCAL_RADIUS_KM)
-  const [typeFilter, setTypeFilter] = useState<'all' | 'wish' | 'offer' | 'offering'>('all')
   const [requestModalOffering, setRequestModalOffering] = useState<OfferingItem | null>(null)
   const [requestModalVendor, setRequestModalVendor] = useState<VendorRecord | null>(null)
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null)
 
   const { user } = useSession()
-  const { findProfileByCES, findVendorById, getVendors } = useStorage()
+  const { findProfileByCES, findVendorById } = useStorage()
   const navigate = useNavigate()
-
-  const [vendorDiscoveryOpen, setVendorDiscoveryOpen] = useState(false)
-  const [showVendorInbox, setShowVendorInbox] = useState(false)
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
@@ -376,34 +372,9 @@ export default function Exchange() {
   const offerCount = wishes.filter(w => w.type === 'offer').length
   const offeringCount = wishes.filter(w => w.type === 'offering').length
 
-  const typeLabels = [
-    { key: 'all', label: 'ALL', count: wishes.length, icon: null },
-    { key: 'wish', label: 'Wishes', count: wishCount, icon: Heart },
-    { key: 'offer', label: 'Gifts', count: offerCount, icon: Sparkles },
-    { key: 'offering', label: 'Offerings', count: offeringCount, icon: Store },
-  ] as const;
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-lavender/60 hover:text-gold-400 transition-colors text-sm mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to Collective
-        </Link>
-
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
-            <PiHeartLight className="w-8 h-8 text-gold-400" aria-label="Heartlight" />
-          </div>
-          <h1 className="font-serif text-3xl text-gold-400 mb-2">
-            Heartlight Exchange
-          </h1>
-          <p className="text-lavender/50 max-w-lg mx-auto">
-            Cast a Wish, Cast a Gift, and Exchange with Fulfillment!
-          </p>
-        </div>
-      </div>
-
       {/* Stats Bar */}
       <div className="flex items-center justify-center gap-6 mb-8 text-xs text-lavender/40 flex-wrap">
         <span><Heart className="w-3 h-3 inline mr-1 text-magenta-400" />{wishCount} wishes</span>
@@ -411,94 +382,6 @@ export default function Exchange() {
         <span><Store className="w-3 h-3 inline mr-1 text-blue-400" />{offeringCount} offerings</span>
         <span><Tag className="w-3 h-3 inline mr-1 text-lavender/50" />{categories.length} categories</span>
       </div>
-
-      {/* Post CTA */}
-      <div className="flex flex-wrap gap-3 mb-8 justify-center">
-        <Link
-          to="/cast-wish?type=wish"
-          className="px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center gap-2"
-        >
-          Cast a Wish <PiShootingStar className="w-4 h-4" />
-        </Link>
-        <Link
-          to="/share-gift?type=gift"
-          className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center gap-2"
-        >
-          Share My Gift <FaHandHoldingHeart className="w-4 h-4" />
-        </Link>
-        <Link
-          to="/directory"
-          className="px-6 py-3 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all inline-flex items-center gap-2"
-        >
-          Find a Vendor <Store className="w-4 h-4" />
-        </Link>
-      </div>
-
-      <button
-        onClick={() => setShowVendorInbox((v) => !v)}
-        className="mx-auto mb-6 flex items-center gap-2 px-4 py-2 rounded-full border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-sm"
-      >
-        {showVendorInbox ? 'Close Vendor Inbox' : 'Open Vendor Inbox'}
-        <Inbox className="w-4 h-4" />
-      </button>
-
-      {showVendorInbox && (
-        <div className="mb-8">
-          <VendorInbox embedded onClose={() => setShowVendorInbox(false)} />
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-3 mb-8 justify-center">
-        <button
-          onClick={() => setVendorDiscoveryOpen((v) => !v)}
-          className={`px-5 py-2 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
-            vendorDiscoveryOpen
-              ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
-              : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-          }`}
-        >
-          Vendor Shops <Store className="w-4 h-4" />
-        </button>
-      </div>
-
-      {vendorDiscoveryOpen && (
-        <div className="mb-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getVendors()
-            .filter((v) => v.status === 'active')
-            .map((vendor) => (
-              <StorefrontCard key={vendor.id} vendor={vendor} />
-            ))}
-        </div>
-      )}
-
-      {/* Type Filter Tabs */}
-      <div className="flex flex-wrap gap-2 justify-center mb-6">
-        {typeLabels.map(t => {
-          const Icon = t.icon
-          const isActive = typeFilter === t.key
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTypeFilter(t.key)}
-              className={`px-4 py-2 rounded-full border text-sm transition-all inline-flex items-center gap-2 ${
-                isActive
-                  ? t.key === 'wish'
-                    ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
-                    : t.key === 'offer'
-                    ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
-                    : t.key === 'offering'
-                    ? 'bg-blue-400/10 border-blue-400/30 text-blue-300'
-                    : 'bg-lavender/10 border-lavender/30 text-cream'
-                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/20 hover:text-lavender/70'
-              }`}
-            >
-              {t.icon && <Icon className="w-3.5 h-3.5" />}
-              {t.label} <span className="text-[10px] opacity-60">({t.count})</span>
-            </button>
-          )
-        })}
-      </div>
-
       {/* View Scope Toggle: Local | Regional | Universal */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 justify-center">
@@ -567,7 +450,6 @@ export default function Exchange() {
           </div>
         )}
       </div>
-
       {/* Search + Filters */}
       <div className="mb-6 space-y-4">
         <div className="flex gap-3">
@@ -614,8 +496,6 @@ export default function Exchange() {
           {filtered.length} {filtered.length === 1 ? 'being' : 'beings'} in the exchange field
         </p>
       </div>
-
-      {/* Wishes Grid */}
       {filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -628,7 +508,7 @@ export default function Exchange() {
             No beings match your search yet. You can be the first to plant your heartlight here.
           </p>
           <Link
-            to="/cast-wish"
+            to="/exchange/wish/cast-wish?type=wish"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
           >
             Cast a Wish <PiShootingStar className="w-4 h-4" />
@@ -750,7 +630,6 @@ export default function Exchange() {
           ))}
         </div>
       )}
-
       {/* Wish Detail Modal */}
       {/* Wish Detail Modal */}
       <AnimatePresence>
@@ -856,34 +735,10 @@ export default function Exchange() {
           />
         )}
       </AnimatePresence>
-
-      {/* 99% Earth-Conscious Dedication */}
-      <div className="mt-16 text-center">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="rounded-2xl border border-green-400/20 bg-green-400/5 p-8"
-        >
-          <div className="text-4xl mb-4">🌍</div>
-          <h3 className="font-serif text-xl text-cream mb-3">99% Flows Back to Earth</h3>
-          <p className="text-lavender/60 max-w-xl mx-auto mb-4 text-sm">
-            The Heartlight Collective is dedicated to directing 99% of all profits back to 
-            Earth-conscious initiatives, climate action, sovereign communities, and ALL the Living. 
-            1% covers operational costs. This is our unanimous living agreement.
-          </p>
-          <div className="flex gap-4 justify-center text-xs text-lavender/40">
-            <span>🌍 Earth Initiatives</span>
-            <span>🏠 Sovereign Homes</span>
-            <span>♾️ ALL the Living</span>
-          </div>
-        </motion.div>
-      </div>
     </div>
   )
 }
 
-/* ─── Wish / Gift / Offering Detail Modal ─── */
 function WishDetailModal({ wish, onClose, onClaim }) {
   const u = URGENCY_CONFIG[wish.urgency]
   const isOffering = wish.type === 'offering'
@@ -1118,3 +973,4 @@ function WishDetailModal({ wish, onClose, onClaim }) {
     </motion.div>
   )
 }
+
