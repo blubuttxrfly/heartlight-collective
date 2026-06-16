@@ -115,7 +115,7 @@ export default function Header() {
                   className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  My Storefronts
+                  Vendor Shops
                 </Link>
                 {isSteward && (
                   <Link

@@ -1,26 +1,15 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Image, Tag, DollarSign, Gift, UsersRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../lib/storage';
+import { useSession } from '../lib/session';
 import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory } from '../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
-/* ─── Helper: find user's C.E.S. from profile ─── */
-function getMyCES(): string | null {
-  try {
-    const queues = ['pending', 'approved', 'returned'] as const;
-    for (const q of queues) {
-      const list = JSON.parse(localStorage.getItem(`hlc_${q}`) || '[]') as { cesNumber?: string }[];
-      if (list.length > 0 && list[0].cesNumber) return list[0].cesNumber;
-    }
-  } catch { /* silent */ }
-  return null;
 }
 
 /* ─── Payment method badge helper ─── */
@@ -51,7 +40,8 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
   ]);
   const [error, setError] = useState('');
 
-  const myCes = getMyCES();
+  const { user } = useSession();
+  const myCes = user?.ces || null;
 
   const updatePayment = (type: string, key: string, value: unknown) => {
     setPaymentConfig(prev =>
@@ -1013,14 +1003,20 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
 
 /* ─── My Storefronts Dashboard ─── */
 export default function MyStorefronts() {
-  const { getVendors, addVendor, updateVendor, findVendorByOwner } = useStorage();
+  const { getVendors, addVendor, updateVendor } = useStorage();
+  const { user } = useSession();
+  const navigate = useNavigate();
   const [showCreate, setShowCreate] = useState(false);
 
-  const myCes = getMyCES();
+  const myCes = user?.ces || null;
   const myVendors = useMemo(() => {
     if (!myCes) return [];
-    return findVendorByOwner(myCes);
-  }, [myCes, findVendorByOwner, getVendors()]);
+    return getVendors().filter(
+      (v) =>
+        v.ownerCes === myCes ||
+        v.members.some((m) => m.ces === myCes && m.status === 'active')
+    );
+  }, [myCes, getVendors]);
 
   function handleCreate(vendor: VendorRecord) {
     addVendor(vendor);
@@ -1030,6 +1026,8 @@ export default function MyStorefronts() {
     updateVendor(vendor);
   }
 
+  const isSignedIn = !!myCes;
+
   return (
     <div className="min-h-[calc(100vh-8rem)]">
       {/* Header */}
@@ -1038,54 +1036,62 @@ export default function MyStorefronts() {
           <Link to="/exchange" className="text-lavender/40 hover:text-cream transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-bold text-cream tracking-tight">My Storefronts</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-cream tracking-tight">Vendor Shops</h1>
         </div>
         <p className="text-lavender/50 text-sm ml-8">
-          Manage your offerings, payment methods, and co-creator invites
+          Co-create and manage the Vendor Shops you are part of
         </p>
       </div>
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 pb-12">
-        {!myCes ? (
+        {!isSignedIn ? (
           <div className="text-center py-16">
             <Store className="w-12 h-12 text-lavender/20 mx-auto mb-4" />
-            <h2 className="text-lg font-medium text-lavender/60 mb-2">No C.E.S. Profile Found</h2>
+            <h2 className="text-lg font-medium text-lavender/60 mb-2">Sign in to see your Vendor Shops</h2>
             <p className="text-sm text-lavender/40 mb-6 max-w-md mx-auto">
-              You need a Core Energetic Signature profile before you can create a storefront and offer your gifts to the Collective.
+              Your session C.E.S. was not found. Sign in from the top-right menu to join or co-create Vendor Shops.
             </p>
-            <Link
-              to="/create-profile"
+            <button
+              onClick={() => navigate('/sign-in')}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
             >
-              <Plus className="w-4 h-4" /> Create C.E.S. Profile
-            </Link>
+              Sign In
+            </button>
           </div>
         ) : myVendors.length === 0 ? (
           <div className="text-center py-16">
             <Store className="w-12 h-12 text-lavender/20 mx-auto mb-4" />
-            <h2 className="text-lg font-medium text-lavender/60 mb-2">No Storefronts Yet</h2>
+            <h2 className="text-lg font-medium text-lavender/60 mb-2">No Vendor Shops yet</h2>
             <p className="text-sm text-lavender/40 mb-6 max-w-md mx-auto">
-              Your offerings deserve a vessel. Create your first storefront to share your gifts, services, and creations with the Heartlight Collective.
+              You are not yet part of any Vendor Shop. Co-create a new shop or browse the Directory to join one.
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" /> Create Storefront
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => setShowCreate(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" /> Co-Create Vendor Shop
+              </button>
+              <Link
+                to="/directory"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-lavender/10 text-lavender/70 hover:text-cream hover:border-lavender/30 transition-all text-sm font-medium"
+              >
+                <Users className="w-4 h-4" /> Join a Shop
+              </Link>
+            </div>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-lavender/40">
-                {myVendors.length} storefront{myVendors.length !== 1 ? 's' : ''}
+                {myVendors.length} shop{myVendors.length !== 1 ? 's' : ''} you belong to
               </p>
               <button
                 onClick={() => setShowCreate(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> New Storefront
+                <Plus className="w-4 h-4" /> New Vendor Shop
               </button>
             </div>
 
