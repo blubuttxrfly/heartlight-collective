@@ -1071,13 +1071,13 @@ export default function MyStorefronts() {
                 onClick={() => setShowCreate(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> Co-Create Vendor Shop
+                Co-Create Vendor Shop <Plus className="w-4 h-4" />
               </button>
               <Link
                 to="/directory"
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-lavender/10 text-lavender/70 hover:text-cream hover:border-lavender/30 transition-all text-sm font-medium"
               >
-                <Users className="w-4 h-4" /> Join a Shop
+                Join a Shop <Users className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -1091,7 +1091,7 @@ export default function MyStorefronts() {
                 onClick={() => setShowCreate(true)}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-400/20 border border-gold-400/30 text-gold-400 hover:bg-gold-400/30 transition-all text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> New Vendor Shop
+                New Vendor Shop <Plus className="w-4 h-4" />
               </button>
             </div>
 
