@@ -217,6 +217,9 @@ function buildVendorOfferings(vendors: VendorRecord[]) {
         skills: [],
         resources: [],
         roles: o.fulfillers?.map((f: any) => f.role).filter(Boolean) || [],
+        vendorLogoUrl: v.logoUrl,
+        vendorLinks: v.links,
+        gallery: o.gallery,
         urgency: 'low',
         scope: (o.offeringType === 'virtual_session' || o.location?.type === 'virtual') ? 'universal' : 'local',
         location: o.location?.label || o.location?.address || 'Remote / Anywhere',
@@ -670,7 +673,29 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
               </div>
 
               {/* Title */}
-              <h3 className="font-serif text-lg text-cream mb-2 line-clamp-2">{wish.title}</h3>
+              <div className="flex items-start gap-3 mb-2">
+                <h3 className="font-serif text-lg text-cream line-clamp-2 flex-1">{wish.title}</h3>
+                {wish.type === 'offering' && wish.vendorLogoUrl && (
+                  <img src={wish.vendorLogoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-lavender/10 shrink-0" />
+                )}
+              </div>
+
+              {/* Gallery thumbnail */}
+              {wish.gallery && wish.gallery.length > 0 && (
+                <div className="mb-3 rounded-xl overflow-hidden border border-lavender/10">
+                  <img
+                    src={wish.gallery[0].url}
+                    alt={wish.gallery[0].caption || ''}
+                    className="w-full h-40 object-cover"
+                  />
+                  {wish.gallery.length > 1 && (
+                    <div className="px-3 py-1.5 bg-void-900 text-xs text-lavender/40 flex items-center justify-between">
+                      <span>{wish.gallery[0].caption || 'Gallery'}</span>
+                      <span>+{wish.gallery.length - 1} more</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Description */}
               <p className="text-lavender/60 text-sm mb-3 line-clamp-2">
@@ -782,6 +807,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
                   location: selectedWish.location,
                   requiresScheduling: selectedWish.requiresScheduling,
                   fulfillers: selectedWish.fulfillers,
+                  gallery: selectedWish.gallery,
                   createdAt: selectedWish.createdAt,
                   updatedAt: selectedWish.updatedAt,
                 }
@@ -938,6 +964,47 @@ function WishDetailModal({ wish, onClose, onClaim }) {
         </div>
 
         <div className="space-y-5">
+          {/* Vendor icon + name */}
+          {isOffering && (wish.vendorLogoUrl || wish.vendorLinks?.length > 0) && (
+            <div className="flex items-center gap-3 rounded-xl border border-lavender/10 bg-void-800/40 p-3">
+              {wish.vendorLogoUrl && (
+                <img src={wish.vendorLogoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-lavender/10" />
+              )}
+              <div className="flex-1">
+                <p className="text-xs text-lavender/50 mb-1">Vendor Shop</p>
+                <p className="text-sm text-cream">{wish.vendorName || wish.postedByName}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {wish.vendorLinks?.filter((l: any) => l.url.trim()).map((l: any) => (
+                  <a
+                    key={l.id}
+                    href={l.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs px-2 py-1 rounded-full bg-lavender/5 border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/30 transition-colors"
+                  >
+                    {l.label || 'Link'}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Gallery */}
+          {wish.gallery && wish.gallery.length > 0 && (
+            <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
+              <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">Gallery</label>
+              <div className="grid grid-cols-2 gap-2">
+                {wish.gallery.map((item: any) => (
+                  <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="block rounded-lg overflow-hidden border border-lavender/10">
+                    <img src={item.url} alt={item.caption || ''} className="w-full h-32 object-cover" />
+                    {item.caption && <p className="text-[10px] text-lavender/40 px-2 py-1 truncate">{item.caption}</p>}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
             <label className="block text-xs text-lavender/50 mb-1.5 uppercase tracking-wider">Description</label>

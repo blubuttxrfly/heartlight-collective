@@ -55,6 +55,19 @@ export function StorefrontCard({ vendor, showOfferings = true }: StorefrontCardP
           <ExchangePolicyBadges policy={vendor.exchangePolicy} />
         </div>
 
+        {vendor.links && vendor.links.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {vendor.links.filter((l) => l.url.trim()).map((l) => (
+              <span
+                key={l.id}
+                className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-lavender/5 border border-lavender/10 text-lavender/60"
+              >
+                🔗 {l.label || 'Link'}
+              </span>
+            ))}
+          </div>
+        )}
+
         {showOfferings && firstOffering && (
           <div className="mt-4 pt-4 border-t border-lavender/5">
             <p className="text-xs text-lavender/40 mb-1">Featured offering</p>

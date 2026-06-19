@@ -118,6 +118,7 @@ export interface Database {
           exchange_policy: Json          // ExchangeForm[]
           location_data: Json | null     // LocationData
           tags: string[]
+          links: Json | null             // VendorLink[]
           status: string                // 'active' | 'paused' | 'under_review'
           collective_funded: boolean
           created_at: string
@@ -137,6 +138,7 @@ export interface Database {
           exchange_policy?: Json
           location_data?: Json | null
           tags?: string[]
+          links?: Json | null             // VendorLink[]
           status?: string
           collective_funded?: boolean
           created_at?: string
@@ -155,6 +157,7 @@ export interface Database {
           exchange_policy?: Json
           location_data?: Json | null
           tags?: string[]
+          links?: Json | null             // VendorLink[]
           status?: string
           collective_funded?: boolean
           updated_at?: string
@@ -186,6 +189,7 @@ export interface Database {
           location: Json | null             // ExchangeLocation
           requires_scheduling: boolean
           fulfillers: Json | null           // OfferingFulfiller[]
+          gallery: Json | null              // PortfolioItem[]
           created_at: string
           updated_at: string
         }
@@ -211,6 +215,7 @@ export interface Database {
           location?: Json | null
           requires_scheduling?: boolean
           fulfillers?: Json | null
+          gallery?: Json | null              // PortfolioItem[]
           created_at?: string
           updated_at?: string
         }
@@ -235,6 +240,7 @@ export interface Database {
           location?: Json | null
           requires_scheduling?: boolean
           fulfillers?: Json | null
+          gallery?: Json | null              // PortfolioItem[]
           updated_at?: string
         }
       }

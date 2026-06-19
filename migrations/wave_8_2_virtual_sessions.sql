@@ -62,6 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_offerings_location_gin ON public.offerings USING 
 
 -- Fulfillment team for each offering
 ALTER TABLE offerings ADD COLUMN IF NOT EXISTS fulfillers JSONB DEFAULT NULL;
+ALTER TABLE offerings ADD COLUMN IF NOT EXISTS gallery JSONB DEFAULT NULL;
 
 -- ═══════════════════════════════════════════════════════════════
 --  2. Vendors — ensure public discovery + owner management
@@ -98,6 +99,9 @@ CREATE INDEX IF NOT EXISTS idx_vendors_slug ON public.vendors(slug);
 CREATE INDEX IF NOT EXISTS idx_vendors_owner_ces ON public.vendors(owner_ces);
 CREATE INDEX IF NOT EXISTS idx_vendors_status_discovery ON public.vendors(status, discovery_eligible)
   WHERE status = 'active' AND discovery_eligible = true;
+
+-- Vendor links + icon
+ALTER TABLE public.vendors ADD COLUMN IF NOT EXISTS links JSONB DEFAULT NULL;
 
 -- ═══════════════════════════════════════════════════════════════
 --  3. Exchange Requests — hybrid payment + proposed meeting slot

@@ -151,6 +151,7 @@ export function vendorToRow(v: VendorRecord): Record<string, unknown> {
     exchange_policy: v.exchangePolicy || [],
     location_data: v.locationData || null,
     tags: v.tags || [],
+    links: v.links || null,
     status: v.status,
     collective_funded: v.collectiveFunded,
     created_at: v.createdAt,
@@ -174,6 +175,7 @@ export function rowToVendor(row: any): VendorRecord {
     exchangePolicy: Array.isArray(row.exchange_policy) ? row.exchange_policy : undefined,
     locationData: row.location_data || undefined,
     tags: Array.isArray(row.tags) ? row.tags : undefined,
+    links: Array.isArray(row.links) ? row.links : undefined,
     status: String(row.status) as VendorRecord['status'],
     collectiveFunded: Boolean(row.collective_funded),
     joinRequests: [], // merged from vendor_join_requests during hydration
@@ -206,6 +208,7 @@ export function offeringToRow(o: OfferingItem): Record<string, unknown> {
     location: o.location || null,
     requires_scheduling: o.requiresScheduling ?? false,
     fulfillers: o.fulfillers || null,
+    gallery: o.gallery || null,
     created_at: o.createdAt,
     updated_at: o.updatedAt,
   };
@@ -235,6 +238,7 @@ export function rowToOffering(row: any): OfferingItem {
     location: row.location || undefined,
     requiresScheduling: Boolean(row.requires_scheduling),
     fulfillers: row.fulfillers || undefined,
+    gallery: Array.isArray(row.gallery) ? row.gallery : undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData } from '../../types/ces';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData, PortfolioItem, VendorLink } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 import LocationSelect from '../../components/LocationSelect';
 
@@ -39,6 +39,8 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
     { type: 'zelle', enabled: false },
     { type: 'collective', enabled: false, collectivePriority: false },
   ]);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [links, setLinks] = useState<VendorLink[]>([]);
   const [error, setError] = useState('');
 
   const { user } = useSession();
@@ -66,9 +68,11 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
       ownerName: myName,
       members: [],
       offerings: [],
+      logoUrl: logoUrl.trim() || undefined,
       paymentMethods: paymentConfig,
       status: 'active',
       collectiveFunded,
+      links: links.length ? links : undefined,
       joinRequests: [],
       createdAt: now,
       updatedAt: now,
@@ -134,6 +138,59 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
                 <span className="block text-xs text-lavender/40">Allow aligned exchanges to flow through the Collective treasury</span>
               </span>
             </label>
+
+            {/* Profile Icon URL */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Vendor Shop Icon URL</label>
+              <div className="flex items-center gap-3">
+                <input
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://... (upload support coming in a future wave)"
+                  className="flex-1 bg-void-800 border border-lavender/10 rounded-xl px-4 py-3 text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors"
+                />
+                {logoUrl && (
+                  <img src={logoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-lavender/10" />
+                )}
+              </div>
+              <p className="text-xs text-lavender/40 mt-1">Paste an image URL. Direct upload will arrive in a future wave.</p>
+            </div>
+
+            {/* Links */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Vendor Links</label>
+              <div className="space-y-2">
+                {links.map((l, i) => (
+                  <div key={l.id} className="flex items-center gap-2">
+                    <input
+                      value={l.label}
+                      onChange={(e) => setLinks(prev => prev.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                      placeholder="Label"
+                      className="flex-1 bg-void-800 border border-lavender/10 rounded-xl px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors"
+                    />
+                    <input
+                      value={l.url}
+                      onChange={(e) => setLinks(prev => prev.map((x, j) => j === i ? { ...x, url: e.target.value } : x))}
+                      placeholder="https://..."
+                      className="flex-[2] bg-void-800 border border-lavender/10 rounded-xl px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:outline-none focus:border-gold-400/50 transition-colors"
+                    />
+                    <button
+                      onClick={() => setLinks(prev => prev.filter((_, j) => j !== i))}
+                      className="p-2 rounded-lg text-lavender/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setLinks(prev => [...prev, { id: `${Date.now()}_${Math.random().toString(36).slice(2)}`, label: '', url: '' }])}
+                  className="inline-flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add link
+                </button>
+              </div>
+            </div>
 
             {/* Payment Methods */}
             <div>
@@ -559,6 +616,12 @@ function AddOfferingModal({
     return [];
   });
 
+  // Multi-image gallery for this offering
+  const [gallery, setGallery] = useState<PortfolioItem[]>(() => {
+    if (offering?.gallery) return offering.gallery;
+    return [];
+  });
+
   const categories = OFFERING_CATEGORIES;
   const priceTypes = [
     { value: 'fixed', label: 'Fixed Price', desc: 'A clear exchange amount' },
@@ -648,6 +711,7 @@ function AddOfferingModal({
       location: finalLocation,
       requiresScheduling: finalRequiresScheduling,
       fulfillers,
+      gallery,
       updatedAt: new Date().toISOString(),
     };
 
@@ -1281,6 +1345,47 @@ function AddOfferingModal({
                 <span className="text-cream">Consent required before exchange</span> — Beings must read and agree to your boundaries before requesting
               </label>
             </div>
+
+            {/* Multi-Image Gallery */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-2 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" /> Gallery Images
+              </label>
+              <div className="space-y-2">
+                {gallery.map((item, i) => (
+                  <div key={item.id} className="flex items-start gap-2 rounded-xl border border-lavender/10 bg-void-800/50 p-2">
+                    <img src={item.url} alt={item.caption || ''} className="w-16 h-16 rounded-lg object-cover border border-lavender/10" />
+                    <div className="flex-1 space-y-2">
+                      <input
+                        value={item.url}
+                        onChange={(e) => setGallery(prev => prev.map((x, j) => j === i ? { ...x, url: e.target.value } : x))}
+                        placeholder="https://..."
+                        className="w-full bg-void-900 border border-lavender/10 rounded-lg px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/50 focus:outline-none"
+                      />
+                      <input
+                        value={item.caption || ''}
+                        onChange={(e) => setGallery(prev => prev.map((x, j) => j === i ? { ...x, caption: e.target.value } : x))}
+                        placeholder="Caption (optional)"
+                        className="w-full bg-void-900 border border-lavender/10 rounded-lg px-3 py-2 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/50 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() => setGallery(prev => prev.filter((_, j) => j !== i))}
+                      className="p-2 rounded-lg text-lavender/40 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setGallery(prev => [...prev, { id: `${Date.now()}_${Math.random().toString(36).slice(2)}`, type: 'image', url: '', caption: '' }])}
+                  className="inline-flex items-center gap-2 text-sm text-gold-400 hover:text-gold-300 transition-colors"
+                >
+                  <Plus className="w-4 h-4" /> Add image
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1373,8 +1478,12 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gold-400/10 border border-gold-400/20 flex items-center justify-center">
-              <Store className="w-5 h-5 text-gold-400" />
+            <div className="w-10 h-10 rounded-xl bg-gold-400/10 border border-gold-400/20 flex items-center justify-center overflow-hidden">
+              {vendor.logoUrl ? (
+                <img src={vendor.logoUrl} alt={vendor.name} className="w-full h-full object-cover" />
+              ) : (
+                <Store className="w-5 h-5 text-gold-400" />
+              )}
             </div>
             <div>
               <h3 className="font-semibold text-cream">{vendor.name}</h3>
@@ -1411,11 +1520,28 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
         </div>
 
         {/* Payment badges */}
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-1.5 mb-2">
           {vendor.paymentMethods.map((m) => (
             <PaymentBadge key={m.type} method={m} />
           ))}
         </div>
+
+        {/* Vendor links */}
+        {vendor.links && vendor.links.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {vendor.links.filter((l) => l.url.trim()).map((l) => (
+              <a
+                key={l.id}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-lavender/5 border border-lavender/10 text-lavender/70 hover:text-cream hover:border-lavender/30 transition-colors"
+              >
+                <Link2 className="w-3 h-3" /> {l.label || 'Link'}
+              </a>
+            ))}
+          </div>
+        )}
 
         {/* Offerings List */}
         <StorefrontOfferings vendor={vendor} onUpdate={onUpdate} />

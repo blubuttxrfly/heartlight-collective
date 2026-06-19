@@ -37,7 +37,7 @@ export default function ExchangeLayout() {
             <Heart className="w-8 h-8 text-gold-400" aria-label="Heartlight" />
           </div>
           <h1 className="font-serif text-3xl text-gold-400 mb-2">
-            Heartlight Exchange
+            Wish & Gift Exchange
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
             Cast a Wish, Cast a Gift, and Exchange with Fulfillment!

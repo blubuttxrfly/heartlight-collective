@@ -387,6 +387,7 @@ export interface OfferingItem {
   priceCents?: number;          // For Stripe fixed-price (in cents)
   currency: CurrencyCode;
   imageUrl?: string;
+  gallery?: PortfolioItem[];      // Multi-image gallery for the offering
   availability: 'available' | 'limited' | 'waitlist' | 'unavailable';
   consentRequired: boolean;      // Must read provider's boundaries before booking
   maxParticipants?: number;      // For group sessions / events
@@ -411,6 +412,12 @@ export interface OfferingFulfiller {
   role: string; // e.g. "Guide", "Facilitator", "Coordinator", "Logistics", "Instructor"
 }
 
+export interface VendorLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface VendorRecord {
   id: string;                    // vendor_123456
   name: string;                  // "Luna's Star Readings"
@@ -426,6 +433,7 @@ export interface VendorRecord {
   exchangePolicy?: ExchangeForm[]; // Accepted forms of exchange
   locationData?: import('./ces').LocationData;
   tags?: string[];
+  links?: VendorLink[];          // Free-form vendor links (website, social, booking)
   status: VendorStatus;
   collectiveFunded: boolean;     // Accepts collective-funded requests
   joinRequests: VendorJoinRequest[]; // Incoming membership requests
