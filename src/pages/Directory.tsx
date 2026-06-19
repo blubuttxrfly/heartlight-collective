@@ -6,7 +6,7 @@ import { useStorage } from '../lib/storage';
 import { CREATOR_TAGS } from '../lib/constants';
 import { StorefrontCard } from '../components/StorefrontCard';
 import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges';
-import { Store, MapPin } from 'lucide-react';
+import { Store, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { CreatorRecord, VendorRecord, ExchangeForm, OfferingItem } from '../types/ces';
 
 export default function Directory() {
@@ -18,6 +18,10 @@ export default function Directory() {
   const [search, setSearch] = useState('');
   const [resultType, setResultType] = useState<'all' | 'beings' | 'vendors' | 'offerings'>('all');
   const [selectedExchangeForm, setSelectedExchangeForm] = useState<ExchangeForm | ''>('');
+
+  // Pagination: 9 items per page across all result types
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 9;
 
   const allVendors = useMemo(() => vendors.filter((v) => v.status === 'active'), [vendors]);
 
@@ -102,7 +106,28 @@ export default function Directory() {
   const visibleVendors = resultType === 'all' || resultType === 'vendors' ? filteredVendors : [];
   const visibleOfferings = resultType === 'all' || resultType === 'offerings' ? filteredOfferings : [];
 
-  const totalCount = visibleBeings.length + visibleVendors.length + visibleOfferings.length;
+  // For pagination, flatten visible results into a single ordered list of 9 per page.
+  // Cards render by type based on item shape, so slicing once preserves type grouping.
+  const flatResults = useMemo(() => {
+    const list: ({ type: 'being'; data: CreatorRecord } | { type: 'vendor'; data: VendorRecord } | { type: 'offering'; data: { vendor: VendorRecord; offering: OfferingItem } })[] = [];
+    if (resultType === 'all' || resultType === 'beings') visibleBeings.forEach((b) => list.push({ type: 'being', data: b }));
+    if (resultType === 'all' || resultType === 'vendors') visibleVendors.forEach((v) => list.push({ type: 'vendor', data: v }));
+    if (resultType === 'all' || resultType === 'offerings') visibleOfferings.forEach((o) => list.push({ type: 'offering', data: o }));
+    return list;
+  }, [visibleBeings, visibleVendors, visibleOfferings, resultType]);
+
+  const totalCount = flatResults.length;
+  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE) || 1;
+
+  const paginatedResults = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return flatResults.slice(start, start + ITEMS_PER_PAGE);
+  }, [flatResults, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedTags, selectedExchangeForm, resultType]);
 
   const exchangeForms: ExchangeForm[] = ['gift', 'barter', 'fixed', 'negotiable', 'collective_funded', 'peer_payment'];
   const typeTabs = [
@@ -211,115 +236,133 @@ export default function Directory() {
         </div>
       )}
 
-      {visibleBeings.length > 0 && (
+      {totalCount > 0 && (
         <section className="mb-10">
-          <h2 className="text-sm uppercase tracking-widest text-lavender/40 mb-4 font-sans">Beings ({visibleBeings.length})</h2>
+          <h2 className="text-sm uppercase tracking-widest text-lavender/40 mb-4 font-sans">
+            {resultType === 'all' ? 'All Results' : resultType === 'beings' ? 'Beings' : resultType === 'vendors' ? 'Vendor Shops' : 'Offerings'}
+            {' '}({totalCount})
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visibleBeings.map((profile) => (
+            {paginatedResults.map((item, i) => (
               <motion.div
-                key={profile.id}
+                key={
+                  item.type === 'being' ? item.data.id :
+                  item.type === 'vendor' ? item.data.id :
+                  `${item.data.vendor.id}-${item.data.offering.id}`
+                }
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-lavender/10 bg-void-900/40 p-6 hover:border-gold-400/30 hover:bg-void-900/60 transition-all"
+                transition={{ delay: i * 0.05 }}
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 rounded-full border-2 border-lavender/20 overflow-hidden bg-void-800 flex items-center justify-center">
-                    {profile.photo ? (
-                      <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-serif text-cream/80">{profile.emoji || '✦'}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-serif text-lg text-cream truncate">{profile.name}</h3>
-                    {profile.title && <p className="text-sm text-lavender/60 truncate">{profile.title}</p>}
-                    <p className="text-xs font-mono text-gold-400/80 mt-1">C.E.S. {profile.cesNumber}</p>
-                  </div>
-                </div>
-
-                {profile.bio && <p className="text-sm text-lavender/70 mb-4 line-clamp-3">{profile.bio}</p>}
-
-                {(profile.sunPlacement || profile.moonPlacement) && (
-                  <div className="flex gap-3 text-xs text-lavender/50 mb-4">
-                    {profile.sunPlacement && <span>☀️ {profile.sunPlacement}</span>}
-                    {profile.moonPlacement && <span>🌙 {profile.moonPlacement}</span>}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2 mb-4 max-w-full">
-                  {profile.wishAvailability === 'accepting' && (
-                    <span className="text-xs px-3 py-1 rounded-full bg-green-400/10 text-green-300 border border-green-400/20">
-                      🌱 Accepting
-                    </span>
-                  )}
-                  {(profile.tags || []).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60 whitespace-nowrap"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {profile.guideGuardianStatus === 'active' && (
-                    <span className="text-xs px-3 py-1 rounded-full bg-gold-400/10 text-gold-300 border border-gold-400/20">
-                      🛡️ Guide & Guardian
-                    </span>
-                  )}
-                </div>
-
-                {profile.publicContactVisibility && profile.contactMethods && (
-                  <div className="border-t border-lavender/10 pt-4 mt-4">
-                    <p className="text-xs text-lavender/50 mb-2">Connect:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(profile.contactMethods)
-                        .filter(([key]) => (profile.contactVisibility as any)[key])
-                        .map(([key]) => (
-                          <span
-                            key={key}
-                            className="text-xs px-2 py-1 rounded-lg bg-void-800/60 border border-lavender/10 text-lavender/60"
-                          >
-                            {key}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <Link
-                    to={`/profile/${profile.cesNumber}`}
-                    className="block w-full text-center px-4 py-2 rounded-full border border-heartlight-green/30 bg-heartlight-green/10 text-heartlight-green hover:bg-heartlight-green/20 transition-all text-sm"
-                  >
-                    View Profile
-                  </Link>
-                </div>
+                {item.type === 'being' && <BeingDirectoryCard profile={item.data} />}
+                {item.type === 'vendor' && <StorefrontCard vendor={item.data} />}
+                {item.type === 'offering' && <OfferingDirectoryCard vendor={item.data.vendor} offering={item.data.offering} />}
               </motion.div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-full border border-lavender/20 text-lavender/70 hover:border-gold-400/40 hover:text-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="text-sm text-lavender/60">Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-full border border-lavender/20 text-lavender/70 hover:border-gold-400/40 hover:text-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </section>
+      )}
+    </div>
+  );
+}
+
+function BeingDirectoryCard({ profile }: { profile: CreatorRecord }) {
+  return (
+    <div className="rounded-2xl border border-lavender/10 bg-void-900/40 p-6 hover:border-gold-400/30 hover:bg-void-900/60 transition-all h-full flex flex-col">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-16 h-16 rounded-full border-2 border-lavender/20 overflow-hidden bg-void-800 flex items-center justify-center">
+          {profile.photo ? (
+            <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl font-serif text-cream/80">{profile.emoji || '✦'}</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-serif text-lg text-cream truncate">{profile.name}</h3>
+          {profile.title && <p className="text-sm text-lavender/60 truncate">{profile.title}</p>}
+          <p className="text-xs font-mono text-gold-400/80 mt-1">C.E.S. {profile.cesNumber}</p>
+        </div>
+      </div>
+
+      {profile.bio && <p className="text-sm text-lavender/70 mb-4 line-clamp-3">{profile.bio}</p>}
+
+      {(profile.sunPlacement || profile.moonPlacement) && (
+        <div className="flex gap-3 text-xs text-lavender/50 mb-4">
+          {profile.sunPlacement && <span>☀️ {profile.sunPlacement}</span>}
+          {profile.moonPlacement && <span>🌙 {profile.moonPlacement}</span>}
+        </div>
       )}
 
-      {visibleVendors.length > 0 && (
-        <section className="mb-10">
-          <h2 className="text-sm uppercase tracking-widest text-lavender/40 mb-4 font-sans">Vendor Shops ({visibleVendors.length})</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visibleVendors.map((vendor) => (
-              <StorefrontCard key={vendor.id} vendor={vendor} />
-            ))}
+      <div className="flex flex-wrap gap-2 mb-4 max-w-full">
+        {profile.wishAvailability === 'accepting' && (
+          <span className="text-xs px-3 py-1 rounded-full bg-green-400/10 text-green-300 border border-green-400/20">
+            🌱 Accepting
+          </span>
+        )}
+        {(profile.tags || []).map((tag) => (
+          <span
+            key={tag}
+            className="text-xs px-3 py-1 rounded-full bg-void-800/60 border border-lavender/10 text-lavender/60 whitespace-nowrap"
+          >
+            {tag}
+          </span>
+        ))}
+        {profile.guideGuardianStatus === 'active' && (
+          <span className="text-xs px-3 py-1 rounded-full bg-gold-400/10 text-gold-300 border border-gold-400/20">
+            🛡️ Guide & Guardian
+          </span>
+        )}
+      </div>
+
+      {profile.publicContactVisibility && profile.contactMethods && (
+        <div className="border-t border-lavender/10 pt-4 mt-auto">
+          <p className="text-xs text-lavender/50 mb-2">Connect:</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(profile.contactMethods)
+              .filter(([key]) => (profile.contactVisibility as any)[key])
+              .map(([key]) => (
+                <span
+                  key={key}
+                  className="text-xs px-2 py-1 rounded-lg bg-void-800/60 border border-lavender/10 text-lavender/60"
+                >
+                  {key}
+                </span>
+              ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {visibleOfferings.length > 0 && (
-        <section className="mb-10">
-          <h2 className="text-sm uppercase tracking-widest text-lavender/40 mb-4 font-sans">Offerings ({visibleOfferings.length})</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visibleOfferings.map(({ vendor, offering }) => (
-              <OfferingDirectoryCard key={`${vendor.id}-${offering.id}`} vendor={vendor} offering={offering} />
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="mt-4">
+        <Link
+          to={`/profile/${profile.cesNumber}`}
+          className="block w-full text-center px-4 py-2 rounded-full border border-heartlight-green/30 bg-heartlight-green/10 text-heartlight-green hover:bg-heartlight-green/20 transition-all text-sm"
+        >
+          View Profile
+        </Link>
+      </div>
     </div>
   );
 }

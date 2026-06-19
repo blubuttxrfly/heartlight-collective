@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown } from 'lucide-react';
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
@@ -302,6 +302,10 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
   const [requestModalVendor, setRequestModalVendor] = useState<VendorRecord | null>(null)
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null)
 
+  // Pagination: 9 items per page
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 9
+
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
   const [recentLocations, setRecentLocations] = useState<LocationData[]>(() => {
@@ -348,6 +352,11 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     })
     return Array.from(set).sort()
   }, [wishes])
+
+  // Reset pagination when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, selectedCategory, selectedRole, selectedEntityType, viewScope, selectedContinent, localRadius, typeFilter])
 
   const filtered = useMemo(() => {
     let list = [...wishes]
@@ -442,6 +451,12 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
     return list
   }, [wishes, search, selectedCategory, selectedRole, selectedEntityType, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, currentPage])
 
   const wishCount = wishes.filter(w => w.type === 'wish').length
   const offerCount = wishes.filter(w => w.type === 'offer').length
@@ -737,8 +752,9 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           </Link>
         </motion.div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((wish, i) => (
+        <>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginated.map((wish, i) => (
             <motion.div
               key={wish.id}
               initial={{ opacity: 0, y: 20 }}
@@ -875,6 +891,32 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
             </motion.div>
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-full border border-lavender/20 text-lavender/70 hover:border-gold-400/40 hover:text-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm text-lavender/60">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-full border border-lavender/20 text-lavender/70 hover:border-gold-400/40 hover:text-gold-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              aria-label="Next page"
+            >
+              <ChevronRightIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+        </>
       )}
       {/* Wish Detail Modal */}
       {/* Wish Detail Modal */}
