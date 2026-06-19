@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Sparkles, HandHeart, Clock, Repeat, Upload, X, MapPin, Globe } from 'lucide-react'
+import { PiShootingStar } from 'react-icons/pi'
 import { Link, useSearchParams } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
 import { SolarGoldButton, SolarGoldLink } from '../components/SolarGoldButton'
@@ -187,7 +188,7 @@ export default function PostWish() {
 
       <div className="text-center mb-10">
         <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
-          {wishType === 'wish' ? <Sparkles className="w-8 h-8 text-gold-400" /> : <HandHeart className="w-8 h-8 text-gold-400" />}
+          {wishType === 'wish' ? <PiShootingStar className="w-8 h-8 text-gold-400" /> : <HandHeart className="w-8 h-8 text-gold-400" />}
         </div>
         <h1 className="font-serif text-3xl text-cream mb-2">
           {wishType === 'wish' ? 'Cast a Wish' : 'Share a Gift'}
@@ -208,7 +209,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          Cast a Wish <Sparkles className="w-4 h-4" />
+          Cast a Wish <PiShootingStar className="w-4 h-4" />
         </button>
         <button
           onClick={() => setWishType('offer')}
@@ -507,7 +508,7 @@ export default function PostWish() {
         <SolarGoldButton
           type="submit"
           disabled={isSubmitting}
-          icon={wishType === 'wish' ? <Sparkles className="w-5 h-5" /> : <HandHeart className="w-5 h-5" />}
+          icon={wishType === 'wish' ? <PiShootingStar className="w-5 h-5" /> : <HandHeart className="w-5 h-5" />}
           iconPosition="after"
           className="w-full py-4 rounded-xl"
         >
