@@ -1,7 +1,5 @@
 import { Outlet, NavLink, useLocation, Link } from 'react-router-dom'
-import { Heart, Sparkles, Store, Search } from 'lucide-react'
-import { PiShootingStar } from 'react-icons/pi'
-import { FaHandHoldingHeart } from 'react-icons/fa'
+import { Heart, Sparkles, Store, Search, HandHeart } from 'lucide-react'
 import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
 import { StorefrontCard } from '../../components/StorefrontCard'
@@ -9,7 +7,7 @@ import { StorefrontCard } from '../../components/StorefrontCard'
 const tabs = [
   { path: '/exchange', label: 'Discover', icon: Search },
   { path: '/exchange/wishes', label: 'Wishes', icon: Heart },
-  { path: '/exchange/gifts', label: 'Gifts', icon: FaHandHoldingHeart },
+  { path: '/exchange/gifts', label: 'Gifts', icon: HandHeart },
   { path: '/exchange/vendors', label: 'Vendors', icon: Store },
 ]
 
@@ -43,13 +41,13 @@ export default function ExchangeLayout() {
           to="/exchange/wish/cast-wish?type=wish"
           className="px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all inline-flex items-center gap-2"
         >
-          Cast a Wish <PiShootingStar className="w-4 h-4" />
+          Cast a Wish <Sparkles className="w-4 h-4" />
         </Link>
         <Link
           to="/exchange/gift/share-gift?type=gift"
           className="px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all inline-flex items-center gap-2"
         >
-          Share a Gift <FaHandHoldingHeart className="w-4 h-4" />
+          Share a Gift <HandHeart className="w-4 h-4" />
         </Link>
       </div>
 
