@@ -39,7 +39,7 @@ const URGENCY_LEVELS = [
    Exchange Avenues — aligned with the Heartlight Exchange forms
    ═══════════════════════════════════════════════════════════════ */
 const AVENUES: { value: ExchangeForm; label: string; desc: string }[] = [
-  { value: 'gift', label: 'Gift Economy', desc: 'Freely given, no expectation of return' },
+  { value: 'gift', label: 'Wish & Gift Mutual Aid', desc: 'Freely given as an aligned exchange, no expectation of return' },
   { value: 'barter', label: 'Barter / Mutual Exchange', desc: 'Swap skills, resources, or time directly' },
   { value: 'collective_funded', label: 'Collective-Funded', desc: 'Community resources stewarded for our Greatest & Highest Good' },
   { value: 'fixed', label: 'Fixed Heartlight Price', desc: 'A clear, agreed price in sovereign exchange' },
@@ -191,7 +191,7 @@ export default function PostWish() {
           <PiShootingStar className="w-8 h-8 text-gold-400" />
         </div>
         <h1 className="font-serif text-3xl text-cream mb-2">
-          {wishType === 'wish' ? 'Cast Your Wish' : 'Share Your Gift'}
+          {wishType === 'wish' ? 'Cast a Wish' : 'Share a Gift'}
         </h1>
         <p className="text-lavender/50">
           {wishType === 'wish' 
@@ -209,7 +209,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          I Have a Wish <Heart className="w-4 h-4" />
+          Cast a Wish <Heart className="w-4 h-4" />
         </button>
         <button
           onClick={() => setWishType('offer')}
@@ -219,7 +219,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          I Share a Gift <Sparkles className="w-4 h-4" />
+          Share a Gift <Sparkles className="w-4 h-4" />
         </button>
       </div>
 
@@ -512,7 +512,7 @@ export default function PostWish() {
           iconPosition="after"
           className="w-full py-4 rounded-xl"
         >
-          {isSubmitting ? 'Entering the Field...' : `Cast My ${labelText}`}
+          {isSubmitting ? 'Entering the Field...' : wishType === 'wish' ? 'Cast My Wish' : 'Share My Gift'}
         </SolarGoldButton>
       </form>
     </div>
