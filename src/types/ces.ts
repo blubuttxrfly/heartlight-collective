@@ -279,6 +279,52 @@ export type ExchangeForm =
   | 'collective_funded'
   | 'peer_payment';
 
+export type OfferingType = 'product' | 'service' | 'virtual_session' | 'work_study_exchange';
+
+export type MeetingPlatform = 'google_meet' | 'zoom' | 'jitsi' | 'teams' | 'other';
+
+export interface VirtualSessionConfig {
+  durationMinutes: number;
+  platform: MeetingPlatform;
+  meetingLink?: string;
+  platformNote?: string;
+  bufferMinutes: number;
+  maxDailySessions?: number;
+}
+
+export type ExchangeLocationType = 'virtual' | 'physical_address' | 'community' | 'work_study_site';
+
+export interface ExchangeLocation {
+  type: ExchangeLocationType;
+  label?: string;
+  address?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  locationData?: LocationData;
+  directions?: string;
+  accessibilityNotes?: string;
+  associatedOrganization?: string;
+  websiteUrl?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
+export interface WorkStudyExchangeConfig {
+  programName?: string;
+  durationWeeks?: number;
+  hoursPerWeek?: number;
+  accommodationType?: 'onsite' | 'nearby' | 'self_arranged';
+  mealsIncluded?: boolean;
+  stipendCents?: number;
+  learningOutcomes?: string[];
+  prerequisites?: string;
+  location: ExchangeLocation;
+}
+
 export interface PaymentMethodConfig {
   type: PaymentMethodType;
   enabled: boolean;
@@ -347,6 +393,12 @@ export interface OfferingItem {
   stripePriceId?: string;        // Stripe Price object ID
   exchangePolicy?: ExchangeForm[]; // Accepted forms of exchange
   tags?: string[];
+  // Wave 8.2 — session type and location
+  offeringType?: OfferingType;
+  virtualSession?: VirtualSessionConfig;
+  workStudyExchange?: WorkStudyExchangeConfig;
+  location?: ExchangeLocation;
+  requiresScheduling?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -373,6 +425,19 @@ export interface VendorRecord {
   updatedAt: string;
 }
 
+export interface HybridPaymentConfig {
+  monetaryCents: number;              // Direct money component (0 if none)
+  serviceExchangeOfferingId?: string;   // Requester's own offering they are contributing
+  serviceExchangeFallback?: string;   // Free-text description if no offering selected
+}
+
+export interface ProposedMeetingSlot {
+  startAt: string;   // ISO 8601
+  endAt: string;
+  timeZone: string;  // IANA tz, e.g. "America/Los_Angeles"
+  platform?: MeetingPlatform;
+}
+
 export interface ExchangeRequest {
   id: string;
   offeringId: string;
@@ -384,6 +449,9 @@ export interface ExchangeRequest {
   message: string;               // Personal message / need statement
   priceType: OfferingPriceType;
   paymentMethod?: PaymentMethodType;
+  // Wave 8.2 — hybrid payment + calendar booking
+  hybridPayment?: HybridPaymentConfig;
+  proposedMeetingSlot?: ProposedMeetingSlot;
   status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
   collectivePetitionId?: string; // If collective-funded
   consentAcknowledged: boolean;
@@ -524,6 +592,9 @@ export interface ExchangeAgreement {
   agreedPriceCents?: number;
   paymentMethod?: PaymentMethodType;
   communicationPrefs?: string;   // e.g. "Weekly check-ins via Signal"
+  // Wave 8.2 — hybrid payment + scheduled meeting slot
+  hybridPayment?: HybridPaymentConfig;
+  confirmedMeetingSlot?: ProposedMeetingSlot;
   // --- DEDICATION OF PROFITS ---
   dedicationOfProfits?: {
     enabled: boolean;

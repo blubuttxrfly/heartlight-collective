@@ -60,6 +60,9 @@ export function exchangeAgreementToRow(ag: ExchangeAgreement): Record<string, un
     payment_method: ag.paymentMethod || null,
     communication_prefs: ag.communicationPrefs || '',
     dedication_of_profits: ag.dedicationOfProfits || null,
+    // Wave 8.2
+    hybrid_payment: ag.hybridPayment || null,
+    confirmed_meeting_slot: ag.confirmedMeetingSlot || null,
     scheduled_meetings: ag.scheduledMeetings || [],
     status: ag.status,
     requester_consented: ag.requesterConsented,
@@ -97,6 +100,9 @@ export function rowToExchangeAgreement(row: any): ExchangeAgreement {
     paymentMethod: row.payment_method || undefined,
     communicationPrefs: row.communication_prefs || undefined,
     dedicationOfProfits: row.dedication_of_profits || undefined,
+    // Wave 8.2
+    hybridPayment: row.hybrid_payment || undefined,
+    confirmedMeetingSlot: row.confirmed_meeting_slot || undefined,
     scheduledMeetings: Array.isArray(row.scheduled_meetings) ? row.scheduled_meetings : [],
     status: String(row.status) as ExchangeAgreement['status'],
     requesterConsented: Boolean(row.requester_consented),
@@ -193,6 +199,12 @@ export function offeringToRow(o: OfferingItem): Record<string, unknown> {
     stripe_price_id: o.stripePriceId || null,
     exchange_policy: o.exchangePolicy || [],
     tags: o.tags || [],
+    // Wave 8.2
+    offering_type: o.offeringType || null,
+    virtual_session: o.virtualSession || null,
+    work_study_exchange: o.workStudyExchange || null,
+    location: o.location || null,
+    requires_scheduling: o.requiresScheduling ?? false,
     created_at: o.createdAt,
     updated_at: o.updatedAt,
   };
@@ -215,6 +227,12 @@ export function rowToOffering(row: any): OfferingItem {
     stripePriceId: row.stripe_price_id || undefined,
     exchangePolicy: Array.isArray(row.exchange_policy) ? row.exchange_policy : undefined,
     tags: Array.isArray(row.tags) ? row.tags : undefined,
+    // Wave 8.2
+    offeringType: row.offering_type || undefined,
+    virtualSession: row.virtual_session || undefined,
+    workStudyExchange: row.work_study_exchange || undefined,
+    location: row.location || undefined,
+    requiresScheduling: Boolean(row.requires_scheduling),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -372,6 +390,9 @@ export function exchangeRequestToRow(r: ExchangeRequest): Record<string, unknown
     message: r.message,
     price_type: r.priceType,
     payment_method: r.paymentMethod || null,
+    // Wave 8.2
+    hybrid_payment: r.hybridPayment || null,
+    proposed_meeting_slot: r.proposedMeetingSlot || null,
     status: r.status,
     collective_petition_id: r.collectivePetitionId || null,
     consent_acknowledged: r.consentAcknowledged,
@@ -392,6 +413,9 @@ export function rowToExchangeRequest(row: any): ExchangeRequest {
     message: String(row.message),
     priceType: String(row.price_type) as ExchangeRequest['priceType'],
     paymentMethod: row.payment_method || undefined,
+    // Wave 8.2
+    hybridPayment: row.hybrid_payment || undefined,
+    proposedMeetingSlot: row.proposed_meeting_slot || undefined,
     status: String(row.status) as ExchangeRequest['status'],
     collectivePetitionId: row.collective_petition_id || undefined,
     consentAcknowledged: Boolean(row.consent_acknowledged),

@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory } from '../../types/ces';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 
 /* ─── Helper: slugify for URLs ─── */
@@ -491,6 +491,7 @@ function AddOfferingModal({
   onClose: () => void;
   onSave: (vendor: VendorRecord) => void;
 }) {
+  // Core fields
   const [title, setTitle] = useState(offering?.title || '');
   const [description, setDescription] = useState(offering?.description || '');
   const [category, setCategory] = useState<OfferingCategory>(offering?.category || 'Astrology & Cosmic Guidance');
@@ -499,7 +500,57 @@ function AddOfferingModal({
   const [availability, setAvailability] = useState<'available' | 'limited' | 'waitlist' | 'unavailable'>(offering?.availability || 'available');
   const [maxParticipants, setMaxParticipants] = useState(offering?.maxParticipants?.toString() || '');
   const [consentRequired, setConsentRequired] = useState(offering?.consentRequired ?? true);
+  const [tags, setTags] = useState(offering?.tags?.join(', ') || '');
   const [error, setError] = useState('');
+
+  // Wave 8.2 — offering type
+  const [offeringType, setOfferingType] = useState<OfferingType>(offering?.offeringType || 'service');
+  const [requiresScheduling, setRequiresScheduling] = useState(offering?.requiresScheduling ?? (offering?.offeringType === 'virtual_session' || offering?.offeringType === 'work_study_exchange'));
+
+  // Wave 8.2 — accepted exchange forms
+  const [exchangeForms, setExchangeForms] = useState<Record<string, boolean>>(() => {
+    const all = ['gift', 'barter', 'fixed', 'negotiable', 'collective_funded', 'peer_payment'];
+    const enabled = offering?.exchangePolicy || [];
+    return Object.fromEntries(all.map((f) => [f, enabled.includes(f as any)]));
+  });
+
+  // Wave 8.2 — virtual session config
+  const defaultVirtual: VirtualSessionConfig = {
+    durationMinutes: 60,
+    platform: 'google_meet',
+    bufferMinutes: 15,
+    maxDailySessions: 4,
+  };
+  const [virtualSession, setVirtualSession] = useState<VirtualSessionConfig>(() => {
+    if (offering?.virtualSession) return offering.virtualSession;
+    return defaultVirtual;
+  });
+
+  // Wave 8.2 — work/study config
+  const [workStudy, setWorkStudy] = useState<WorkStudyExchangeConfig>(() => {
+    if (offering?.workStudyExchange) return offering.workStudyExchange;
+    return {
+      programName: '',
+      durationWeeks: 4,
+      hoursPerWeek: 20,
+      accommodationType: 'self_arranged',
+      mealsIncluded: false,
+      stipendCents: 0,
+      learningOutcomes: [],
+      prerequisites: '',
+      location: { type: 'work_study_site' },
+    };
+  });
+
+  // Wave 8.2 — shared location
+  const [location, setLocation] = useState<ExchangeLocation>(() => {
+    if (offering?.location) return offering.location;
+    if (offering?.workStudyExchange?.location) {
+      return { ...offering.workStudyExchange.location };
+    }
+    return { type: 'physical_address' };
+  });
+  const [locationQuery, setLocationQuery] = useState(location.label || '');
 
   const categories = OFFERING_CATEGORIES;
   const priceTypes = [
@@ -514,6 +565,28 @@ function AddOfferingModal({
     { value: 'waitlist', label: 'Waitlist Open' },
     { value: 'unavailable', label: 'Currently Unavailable' },
   ] as const;
+  const offeringTypes = [
+    { value: 'product', label: 'Product', icon: Package, desc: 'A physical or digital good' },
+    { value: 'service', label: 'Service', icon: PenTool, desc: 'In-person or remote skill share' },
+    { value: 'virtual_session', label: 'Virtual Session', icon: Video, desc: 'Meet via Google Meet, Zoom, etc.' },
+    { value: 'work_study_exchange', label: 'Work / Study Exchange', icon: Sprout, desc: 'Onsite program with learning' },
+  ] as const;
+  const platforms: { value: MeetingPlatform; label: string }[] = [
+    { value: 'google_meet', label: 'Google Meet' },
+    { value: 'zoom', label: 'Zoom' },
+    { value: 'jitsi', label: 'Jitsi' },
+    { value: 'teams', label: 'Microsoft Teams' },
+    { value: 'other', label: 'Other platform' },
+  ];
+  const accommodationTypes = [
+    { value: 'onsite', label: 'Onsite accommodation included' },
+    { value: 'nearby', label: 'Nearby / supported finding' },
+    { value: 'self_arranged', label: 'Self-arranged' },
+  ] as const;
+
+  function toggleExchangeForm(form: string) {
+    setExchangeForms((prev) => ({ ...prev, [form]: !prev[form] }));
+  }
 
   function handleSave() {
     if (!title.trim()) { setError('A title is required'); return; }
@@ -523,6 +596,16 @@ function AddOfferingModal({
     // Convert dollars input to cents for storage
     const parsedDollars = priceType === 'fixed' ? parseFloat(priceCents) : undefined;
     const finalCents = parsedDollars != null && !isNaN(parsedDollars) ? Math.round(parsedDollars * 100) : undefined;
+
+    const selectedForms = (Object.keys(exchangeForms).filter((k) => exchangeForms[k]) as OfferingItem['exchangePolicy']);
+
+    const finalVirtual = offeringType === 'virtual_session' ? virtualSession : undefined;
+    const finalWorkStudy = offeringType === 'work_study_exchange' ? {
+      ...workStudy,
+      location,
+    } : undefined;
+    const finalLocation = (offeringType === 'work_study_exchange' || location.address || location.label) ? location : undefined;
+    const finalRequiresScheduling = requiresScheduling || offeringType === 'virtual_session' || offeringType === 'work_study_exchange';
 
     const newOffering: OfferingItem = {
       ...(offering || {
@@ -539,6 +622,14 @@ function AddOfferingModal({
       availability,
       consentRequired,
       maxParticipants: maxParticipants ? parseInt(maxParticipants, 10) : undefined,
+      exchangePolicy: selectedForms.length > 0 ? selectedForms : undefined,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      // Wave 8.2
+      offeringType,
+      virtualSession: finalVirtual,
+      workStudyExchange: finalWorkStudy,
+      location: finalLocation,
+      requiresScheduling: finalRequiresScheduling,
       updatedAt: new Date().toISOString(),
     };
 
@@ -564,14 +655,14 @@ function AddOfferingModal({
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
+        className="bg-void-900 border border-lavender/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Package className="w-5 h-5 text-gold-400" />
-              <h2 className="text-xl font-semibold text-cream">Add Offering</h2>
+              <h2 className="text-xl font-semibold text-cream">{offering ? 'Edit Offering' : 'Add Offering'}</h2>
             </div>
             <button onClick={onClose} className="text-lavender/40 hover:text-cream transition-colors">
               <X className="w-5 h-5" />
@@ -584,14 +675,45 @@ function AddOfferingModal({
             </div>
           )}
 
-          <div className="space-y-5">
+          <div className="space-y-6">
+            {/* Offering Type */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-2">Offering Type</label>
+              <div className="grid grid-cols-2 gap-2">
+                {offeringTypes.map((ot) => {
+                  const Icon = ot.icon;
+                  return (
+                    <button
+                      key={ot.value}
+                      onClick={() => {
+                        setOfferingType(ot.value);
+                        if (ot.value === 'virtual_session' || ot.value === 'work_study_exchange') {
+                          setRequiresScheduling(true);
+                        }
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        offeringType === ot.value
+                          ? 'border-gold-400/30 bg-gold-400/10 text-cream'
+                          : 'border-lavender/10 text-lavender/50 hover:border-lavender/20 hover:text-lavender/70'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Icon className="w-4 h-4" /> {ot.label}
+                      </span>
+                      <span className="block text-[10px] mt-0.5 opacity-70">{ot.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Title */}
             <div>
               <label className="block text-sm text-lavender/70 mb-1.5">What do you offer?</label>
               <input
                 value={title}
                 onChange={(e) => { setTitle(e.target.value); setError(''); }}
-                placeholder="e.g., Evolutionary Astrology Reading — 90 min"
+                placeholder={offeringType === 'virtual_session' ? 'e.g., Evolutionary Astrology Reading — 90 min' : offeringType === 'work_study_exchange' ? 'e.g., Permaculture Work/Study Program' : 'e.g., Handwoven scarf'}
                 className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
               />
             </div>
@@ -665,6 +787,33 @@ function AddOfferingModal({
               </div>
             )}
 
+            {/* Accepted exchange forms */}
+            <div className="p-4 rounded-xl border border-lavender/10 bg-white/[0.02]">
+              <label className="block text-sm text-lavender/70 mb-3">Accepted Exchange Forms</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: 'gift', label: 'Gift' },
+                  { key: 'barter', label: 'Barter' },
+                  { key: 'fixed', label: 'Fixed' },
+                  { key: 'negotiable', label: 'Negotiable' },
+                  { key: 'collective_funded', label: 'Collective Funded' },
+                  { key: 'peer_payment', label: 'Peer Payment' },
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => toggleExchangeForm(f.key)}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
+                      exchangeForms[f.key]
+                        ? 'bg-gold-400/20 border-gold-400/40 text-gold-400'
+                        : 'bg-void-800/50 border-lavender/10 text-lavender/50 hover:border-lavender/20'
+                    }`}
+                  >
+                    {exchangeForms[f.key] ? '✓ ' : ''}{f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Availability */}
             <div>
               <label className="block text-sm text-lavender/70 mb-1.5">Availability</label>
@@ -690,6 +839,335 @@ function AddOfferingModal({
                 placeholder="Leave blank for one-on-one"
                 className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
               />
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Tags (comma separated)</label>
+              <input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="e.g., astrology, guidance, virtual"
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+              />
+            </div>
+
+            {/* Virtual Session Config */}
+            {offeringType === 'virtual_session' && (
+              <div className="p-4 rounded-xl border border-lavender/10 bg-white/[0.02] space-y-4">
+                <div className="flex items-center gap-2 text-gold-400">
+                  <Video className="w-4 h-4" />
+                  <span className="text-sm font-medium">Virtual Session Details</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Duration (minutes)</label>
+                    <input
+                      type="number"
+                      min="15"
+                      step="15"
+                      value={virtualSession.durationMinutes}
+                      onChange={(e) => setVirtualSession({ ...virtualSession, durationMinutes: parseInt(e.target.value) || 60 })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Buffer between sessions (minutes)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="5"
+                      value={virtualSession.bufferMinutes}
+                      onChange={(e) => setVirtualSession({ ...virtualSession, bufferMinutes: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Meeting Platform</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {platforms.map((p) => (
+                      <button
+                        key={p.value}
+                        onClick={() => setVirtualSession({ ...virtualSession, platform: p.value })}
+                        className={`px-3 py-2 rounded-lg border text-xs transition-all ${
+                          virtualSession.platform === p.value
+                            ? 'bg-gold-400/20 border-gold-400/40 text-gold-400'
+                            : 'bg-void-800/50 border-lavender/10 text-lavender/60 hover:border-lavender/20'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Default meeting link (optional)</label>
+                  <input
+                    type="url"
+                    value={virtualSession.meetingLink || ''}
+                    onChange={(e) => setVirtualSession({ ...virtualSession, meetingLink: e.target.value })}
+                    placeholder="https://meet.google.com/... or https://zoom.us/j/..."
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                  <p className="text-[10px] text-lavender/30 mt-1">A link can also be generated later when the agreement is confirmed.</p>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Platform note (optional)</label>
+                  <input
+                    value={virtualSession.platformNote || ''}
+                    onChange={(e) => setVirtualSession({ ...virtualSession, platformNote: e.target.value })}
+                    placeholder="e.g., I will send the Zoom link 24 hours before our session"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Max daily sessions (optional)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={virtualSession.maxDailySessions || ''}
+                    onChange={(e) => setVirtualSession({ ...virtualSession, maxDailySessions: e.target.value ? parseInt(e.target.value) : undefined })}
+                    placeholder="Leave blank for no daily cap"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Work/Study Exchange Config */}
+            {offeringType === 'work_study_exchange' && (
+              <div className="p-4 rounded-xl border border-lavender/10 bg-white/[0.02] space-y-4">
+                <div className="flex items-center gap-2 text-gold-400">
+                  <Sprout className="w-4 h-4" />
+                  <span className="text-sm font-medium">Work / Study Program Details</span>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Program name</label>
+                  <input
+                    value={workStudy.programName || ''}
+                    onChange={(e) => setWorkStudy({ ...workStudy, programName: e.target.value })}
+                    placeholder="e.g., Spring Permaculture Intensive"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Duration (weeks)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={workStudy.durationWeeks || ''}
+                      onChange={(e) => setWorkStudy({ ...workStudy, durationWeeks: parseInt(e.target.value) || undefined })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Hours per week</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={workStudy.hoursPerWeek || ''}
+                      onChange={(e) => setWorkStudy({ ...workStudy, hoursPerWeek: parseInt(e.target.value) || undefined })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-2">Accommodation</label>
+                  <div className="flex flex-wrap gap-2">
+                    {accommodationTypes.map((a) => (
+                      <button
+                        key={a.value}
+                        onClick={() => setWorkStudy({ ...workStudy, accommodationType: a.value })}
+                        className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
+                          workStudy.accommodationType === a.value
+                            ? 'bg-gold-400/20 border-gold-400/40 text-gold-400'
+                            : 'bg-void-800/50 border-lavender/10 text-lavender/50 hover:border-lavender/20'
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={workStudy.mealsIncluded || false}
+                    onChange={(e) => setWorkStudy({ ...workStudy, mealsIncluded: e.target.checked })}
+                    className="w-4 h-4 accent-gold-400"
+                  />
+                  <span className="text-sm text-lavender/70">Meals included</span>
+                </label>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Weekly stipend (USD, optional)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lavender/30">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={workStudy.stipendCents ? (workStudy.stipendCents / 100).toFixed(2) : ''}
+                      onChange={(e) => {
+                        const dollars = parseFloat(e.target.value);
+                        setWorkStudy({ ...workStudy, stipendCents: !isNaN(dollars) ? Math.round(dollars * 100) : 0 });
+                      }}
+                      placeholder="0.00"
+                      className="w-full pl-7 pr-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Learning outcomes (one per line)</label>
+                  <textarea
+                    value={(workStudy.learningOutcomes || []).join('\n')}
+                    onChange={(e) => setWorkStudy({ ...workStudy, learningOutcomes: e.target.value.split('\n').map((s) => s.trim()).filter(Boolean) })}
+                    placeholder="e.g., Design regenerative food systems&#10;e.g., Build community governance skills"
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Prerequisites</label>
+                  <input
+                    value={workStudy.prerequisites || ''}
+                    onChange={(e) => setWorkStudy({ ...workStudy, prerequisites: e.target.value })}
+                    placeholder="e.g., Able to lift 25 lbs, comfortable camping"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Location editor (shared) */}
+            {(offeringType === 'product' || offeringType === 'service' || offeringType === 'work_study_exchange') && (
+              <div className="p-4 rounded-xl border border-lavender/10 bg-white/[0.02] space-y-4">
+                <div className="flex items-center gap-2 text-gold-400">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm font-medium">
+                    {offeringType === 'work_study_exchange' ? 'Program Location' : 'Location'}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Label / venue name</label>
+                  <input
+                    value={location.label || ''}
+                    onChange={(e) => setLocation({ ...location, label: e.target.value })}
+                    placeholder="e.g., Heartlight Commons, Online, or Remote / Anywhere"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Address</label>
+                  <textarea
+                    value={location.address || ''}
+                    onChange={(e) => setLocation({ ...location, address: e.target.value })}
+                    placeholder="Street address, city, country"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">City</label>
+                    <input
+                      value={location.city || ''}
+                      onChange={(e) => setLocation({ ...location, city: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Region / State</label>
+                    <input
+                      value={location.region || ''}
+                      onChange={(e) => setLocation({ ...location, region: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Country</label>
+                    <input
+                      value={location.country || ''}
+                      onChange={(e) => setLocation({ ...location, country: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Postal code</label>
+                    <input
+                      value={location.postalCode || ''}
+                      onChange={(e) => setLocation({ ...location, postalCode: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Directions / how to arrive</label>
+                  <textarea
+                    value={location.directions || ''}
+                    onChange={(e) => setLocation({ ...location, directions: e.target.value })}
+                    placeholder="Nearest bus stop, parking, ferry, or shuttle details"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Accessibility notes</label>
+                  <textarea
+                    value={location.accessibilityNotes || ''}
+                    onChange={(e) => setLocation({ ...location, accessibilityNotes: e.target.value })}
+                    placeholder="e.g., Wheelchair ramp available, scent-free space, etc."
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Associated organization / community</label>
+                  <input
+                    value={location.associatedOrganization || ''}
+                    onChange={(e) => setLocation({ ...location, associatedOrganization: e.target.value })}
+                    placeholder="e.g., Traditional Dream Factory"
+                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Contact email</label>
+                    <input
+                      type="email"
+                      value={location.contactEmail || ''}
+                      onChange={(e) => setLocation({ ...location, contactEmail: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Contact phone</label>
+                    <input
+                      type="tel"
+                      value={location.contactPhone || ''}
+                      onChange={(e) => setLocation({ ...location, contactPhone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Scheduling toggle */}
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-lavender/10 bg-white/[0.02]">
+              <input
+                type="checkbox"
+                id="scheduling"
+                checked={requiresScheduling}
+                onChange={(e) => setRequiresScheduling(e.target.checked)}
+                className="w-4 h-4 accent-gold-400"
+              />
+              <label htmlFor="scheduling" className="text-sm text-lavender/70 cursor-pointer">
+                <span className="text-cream">Requires scheduling</span> — Beings will pick from calendar availability before the exchange is confirmed
+              </label>
             </div>
 
             {/* Consent Required */}

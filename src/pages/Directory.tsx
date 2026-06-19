@@ -11,7 +11,7 @@ import type { CreatorRecord, VendorRecord, ExchangeForm, OfferingItem } from '..
 
 export default function Directory() {
   const unified = useUnifiedStorage();
-  const { getVendors } = useStorage();
+  const { vendors } = useStorage();
   const [profiles, setProfiles] = useState<CreatorRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -19,7 +19,7 @@ export default function Directory() {
   const [resultType, setResultType] = useState<'all' | 'beings' | 'vendors' | 'offerings'>('all');
   const [selectedExchangeForm, setSelectedExchangeForm] = useState<ExchangeForm | ''>('');
 
-  const allVendors = useMemo(() => getVendors().filter((v) => v.status === 'active'), [getVendors]);
+  const allVendors = useMemo(() => vendors.filter((v) => v.status === 'active'), [vendors]);
 
   useEffect(() => {
     loadProfiles();

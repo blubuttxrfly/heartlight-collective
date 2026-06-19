@@ -8,7 +8,7 @@ import type { ExchangeAgreement, ExchangeRole, QuestItem, PaymentMethodType, Pay
 import { getPaymentUrl, formatPaymentLabel, paymentTypeIcon } from '../../lib/payments'
 import { WithdrawalModal } from './WithdrawalModal'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
-import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check, ExternalLink } from 'lucide-react'
+import { Clock, Calendar as CalendarIcon, MapPin, CalendarDays, Check, ExternalLink, Sparkles } from 'lucide-react'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 
 const EXCHANGE_ROLES: ExchangeRole[] = [
@@ -558,11 +558,15 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
 
     const providerConsented = true
     const requesterConsented = agreement.requesterConsented
-    const status: ExchangeAgreement['status'] =
-      requesterConsented && providerConsented ? 'agreed' : 'proposed'
+    const bothApproved = requesterConsented && providerConsented
+    const status: ExchangeAgreement['status'] = bothApproved ? 'agreed' : 'proposed'
+
+    const withConfirmedSlot = bothApproved && agreement.confirmedMeetingSlot
+      ? confirmScheduledMeetings(agreement)
+      : agreement
 
     const next: ExchangeAgreement = {
-      ...agreement,
+      ...withConfirmedSlot,
       status,
       providerConsented,
       versions: nextVersion ? agreement.versions.map((v) => (v.version === nextVersion.version ? nextVersion : v)) : agreement.versions,
@@ -571,6 +575,13 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
 
     setAgreement(next)
     updateExchangeAgreement(next)
+  }
+
+  function confirmScheduledMeetings(ag: ExchangeAgreement): ExchangeAgreement {
+    const slot = ag.confirmedMeetingSlot || ag.scheduledMeetings[0]
+    if (!slot) return ag
+    const confirmedMeetings = ag.scheduledMeetings.map((m) => ({ ...m, status: 'confirmed' as const }))
+    return { ...ag, scheduledMeetings: confirmedMeetings }
   }
 
   function handleProposeAmendment() {
@@ -1248,7 +1259,7 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 <div key={party.ces || idx} className="rounded-lg border border-lavender/10 bg-void-900/40 p-3 mb-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-cream">
-                      {party.name || 'New being'} {isMe && '<span className="text-lavender/40">(you)</span>'} · {party.role}
+                      {party.name || 'New being'} {isMe && <span className="text-lavender/40">(you)</span>} · {party.role}
                     </span>
                   </div>
                   <textarea
@@ -1462,6 +1473,33 @@ export function ExchangeAgreementEditor({ agreement: initialAgreement, onClose, 
                 <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" /> Collective funding requested
                 </p>
+              )}
+
+              {/* Wave 8.2 — Hybrid exchange summary */}
+              {agreement.hybridPayment && (
+                <div className="mt-3 p-3 rounded-lg border border-gold-400/20 bg-gold-400/5">
+                  <p className="text-xs text-cream font-medium flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-gold-400" /> Hybrid Exchange
+                  </p>
+                  {agreement.hybridPayment.monetaryCents > 0 && (
+                    <p className="text-xs text-lavender/70 mt-1">
+                      Monetary: ${(agreement.hybridPayment.monetaryCents / 100).toFixed(2)}
+                    </p>
+                  )}
+                  {agreement.hybridPayment.serviceExchangeOfferingId && (
+                    <p className="text-xs text-lavender/70 mt-1">
+                      Service exchange: selected offering #{agreement.hybridPayment.serviceExchangeOfferingId.slice(-6)}
+                    </p>
+                  )}
+                  {agreement.hybridPayment.serviceExchangeFallback && (
+                    <p className="text-xs text-lavender/70 mt-1">
+                      Service exchange: {agreement.hybridPayment.serviceExchangeFallback}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-green-300 mt-2">
+                    99% of monetary profits → Heartlight Collective 🌿
+                  </p>
+                </div>
               )}
             </div>
 

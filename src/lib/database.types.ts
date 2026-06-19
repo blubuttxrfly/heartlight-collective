@@ -179,6 +179,12 @@ export interface Database {
           stripe_price_id: string | null
           exchange_policy: Json          // ExchangeForm[]
           tags: string[]
+          // Wave 8.2 — session type and location
+          offering_type: string | null      // 'product' | 'service' | 'virtual_session' | 'work_study_exchange'
+          virtual_session: Json | null      // VirtualSessionConfig
+          work_study_exchange: Json | null  // WorkStudyExchangeConfig
+          location: Json | null             // ExchangeLocation
+          requires_scheduling: boolean
           created_at: string
           updated_at: string
         }
@@ -198,6 +204,12 @@ export interface Database {
           stripe_price_id?: string | null
           exchange_policy?: Json
           tags?: string[]
+          // Wave 8.2
+          offering_type?: string | null
+          virtual_session?: Json | null
+          work_study_exchange?: Json | null
+          location?: Json | null
+          requires_scheduling?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -214,6 +226,12 @@ export interface Database {
           stripe_price_id?: string | null
           exchange_policy?: Json
           tags?: string[]
+          // Wave 8.2
+          offering_type?: string | null
+          virtual_session?: Json | null
+          work_study_exchange?: Json | null
+          location?: Json | null
+          requires_scheduling?: boolean
           updated_at?: string
         }
       }
@@ -326,6 +344,9 @@ export interface Database {
           message: string
           price_type: string
           payment_method: string | null
+          // Wave 8.2 — hybrid payment + calendar booking
+          hybrid_payment: Json | null        // HybridPaymentConfig
+          proposed_meeting_slot: Json | null  // ProposedMeetingSlot
           status: string               // 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
           collective_petition_id: string | null
           consent_acknowledged: boolean
@@ -343,6 +364,9 @@ export interface Database {
           message?: string
           price_type?: string
           payment_method?: string | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          proposed_meeting_slot?: Json | null
           status?: string
           collective_petition_id?: string | null
           consent_acknowledged?: boolean
@@ -353,6 +377,9 @@ export interface Database {
           status?: string
           collective_petition_id?: string | null
           consent_acknowledged?: boolean
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          proposed_meeting_slot?: Json | null
           updated_at?: string
         }
       }
@@ -477,6 +504,9 @@ export interface Database {
           payment_method: string | null
           communication_prefs: string
           dedication_of_profits: Json | null
+          // Wave 8.2 — hybrid payment + confirmed meeting slot
+          hybrid_payment: Json | null        // HybridPaymentConfig
+          confirmed_meeting_slot: Json | null // ProposedMeetingSlot
           scheduled_meetings: Json            // ScheduledMeeting[]
           status: string
           requester_consented: boolean
@@ -511,6 +541,9 @@ export interface Database {
           payment_method?: string | null
           communication_prefs?: string
           dedication_of_profits?: Json | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          confirmed_meeting_slot?: Json | null
           scheduled_meetings?: Json
           status?: string
           requester_consented?: boolean
@@ -544,6 +577,9 @@ export interface Database {
           payment_method?: string | null
           communication_prefs?: string
           dedication_of_profits?: Json | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          confirmed_meeting_slot?: Json | null
           scheduled_meetings?: Json
           status?: string
           requester_consented?: boolean

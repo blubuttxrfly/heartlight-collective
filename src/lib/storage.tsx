@@ -178,7 +178,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       initial.authorizedCES = [
         {
           id: 'steward_atlas',
-          name: 'Atlas Morphoenix',
+          name: 'Atlas',
           ces: '111111111',
           passphrase: 'sovereign42',
           role: 'Founding Steward',
@@ -186,6 +186,42 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
           status: 'active',
         },
       ];
+    }
+
+    // Dev-mode: ensure Atlas profile exists for sign-in testing
+    const hasAtlasProfile = [...initial.pending, ...initial.approved, ...initial.returned].some(
+      (p) => p.cesNumber === '111111111'
+    );
+    if (!hasAtlasProfile) {
+      const atlasProfile: CreatorRecord = {
+        id: 'profile_111111111',
+        name: 'Atlas',
+        pronouns: 'they/them',
+        title: 'Founding Steward',
+        location: 'Earth, Milky Way',
+        emoji: '🌟',
+        photo: null,
+        bio: 'Dev-mode founding steward profile for Atlas.',
+        tags: ['steward', 'founder'],
+        numerology: [],
+        accessibility: [],
+        consent: 'I consent to co-create in alignment with our Greatest & Highest Good.',
+        portfolioLink: '',
+        portfolioItems: [],
+        contactMethods: { email: '', phone: '', instagram: '', youtube: '', threads: '', spotify: '', discord: '', telegram: '', signal: '' },
+        contactVisibility: { email: false, phone: false, instagram: false, youtube: false, threads: false, spotify: false, discord: false, telegram: false, signal: false },
+        publicContactVisibility: false,
+        contactMethod: 'other',
+        cesNumber: '111111111',
+        passphrase: 'sovereign42',
+        wishAvailability: 'accepting',
+        directoryWishStatus: 'accepting',
+        stewardship: 'active',
+        stewardshipNote: 'Dev-only founding steward',
+        guideGuardianStatus: 'not_opted_in',
+        locationData: { raw: 'Earth, Milky Way', city: 'Earth', region: 'Milky Way', country: 'Gaia', continent: 'Gaia', lat: 0, lon: 0 },
+      };
+      initial.approved = [atlasProfile, ...initial.approved];
     }
 
     // Dev-only: seed interconnected mock exchange data when storage is empty

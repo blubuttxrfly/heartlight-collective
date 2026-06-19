@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { X, Heart, ArrowRight, Store, MessageSquare, ScrollText, CreditCard, UsersRound, AlertCircle, Clock, Calendar as CalendarIcon, CalendarDays, MapPin } from 'lucide-react'
+import { X, Heart, ArrowRight, Store, MessageSquare, ScrollText, CreditCard, UsersRound, AlertCircle, Clock, Calendar as CalendarIcon, CalendarDays, MapPin, Video, Sparkles } from 'lucide-react'
 import { useStorage } from '../../lib/storage'
-import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRequest, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock, AgreementParty, QuestItem } from '../../types/ces'
+import type { OfferingItem, VendorRecord, ExchangeAgreement, ExchangeRequest, ExchangeRole, PaymentMethodType, ScheduledMeeting, AvailabilityBlock, AgreementParty, QuestItem, ProposedMeetingSlot, HybridPaymentConfig } from '../../types/ces'
 import { PAYMENT_METHOD_LABELS } from '../../lib/constants'
 import { googleCalendarEventUrl, downloadICS, formatMeetingTime } from '../../lib/calendar'
 
@@ -19,25 +19,7 @@ const EXCHANGE_ROLES: ExchangeRole[] = [
   'Co-Creator',
 ]
 
-interface ExchangeRequestModalProps {
-  offering: OfferingItem
-  vendor: VendorRecord
-  requesterCes: string
-  requesterName: string
-  onClose: () => void
-  onAgreementCreated: (agreement: ExchangeAgreement) => void
-}
-
-function newQuestId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
-}
-
-const SCHEDULING_KEYWORDS = ['healing', 'wellness', 'reading', 'session', 'consultation', 'mentorship', 'coaching', 'breathwork', 'astrology', 'guidance', 'facilitation', 'event', 'workshop']
-
-function offeringSuggestsScheduling(offering: OfferingItem): boolean {
-  const text = `${offering.title} ${offering.description} ${offering.category}`.toLowerCase()
-  return SCHEDULING_KEYWORDS.some((kw) => text.includes(kw))
-}
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function toISODateTime(date: string, time: string): string {
   if (!date || !time) return ''
@@ -58,6 +40,32 @@ function nextOccurrenceForBlock(block: AvailabilityBlock): string {
   return target.toISOString().slice(0, 10)
 }
 
+function getMonthDays(year: number, month: number) {
+  const firstDay = new Date(year, month, 1).getDay()
+  const lastDate = new Date(year, month + 1, 0).getDate()
+  const days: (number | null)[] = []
+  for (let i = 0; i < firstDay; i++) days.push(null)
+  for (let d = 1; d <= lastDate; d++) days.push(d)
+  return days
+}
+
+function isSameDay(a: string, b: string): boolean {
+  return a.slice(0, 10) === b.slice(0, 10)
+}
+
+interface ExchangeRequestModalProps {
+  offering: OfferingItem
+  vendor: VendorRecord
+  requesterCes: string
+  requesterName: string
+  onClose: () => void
+  onAgreementCreated: (agreement: ExchangeAgreement) => void
+}
+
+function newQuestId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+}
+
 export function ExchangeRequestModal({
   offering,
   vendor,
@@ -66,28 +74,39 @@ export function ExchangeRequestModal({
   onClose,
   onAgreementCreated,
 }: ExchangeRequestModalProps) {
-  const { addExchangeAgreement, addExchangeRequest, findProfileByCES, getExchangeCalendar, addScheduledMeeting } = useStorage()
+  const { addExchangeAgreement, addExchangeRequest, findProfileByCES, getExchangeCalendar, addScheduledMeeting, vendors } = useStorage()
   const [message, setMessage] = useState('')
   const [proposedTerms, setProposedTerms] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType | ''>('')
   const [collectiveFundingRequested, setCollectiveFundingRequested] = useState(false)
   const [error, setError] = useState('')
 
-  const wantsScheduling = useMemo(() => offeringSuggestsScheduling(offering), [offering])
+  const needsScheduling = offering.requiresScheduling || offering.offeringType === 'virtual_session' || offering.offeringType === 'work_study_exchange'
   const providerCalendar = useMemo(() => getExchangeCalendar(vendor.ownerCes), [getExchangeCalendar, vendor.ownerCes])
   const providerAvailability = useMemo(
     () => providerCalendar?.availabilityBlocks.filter((b) => b.type === 'available') || [],
     [providerCalendar]
   )
 
-  const [includeSchedule, setIncludeSchedule] = useState(wantsScheduling)
+  const [includeSchedule, setIncludeSchedule] = useState(needsScheduling)
   const [selectedSlotId, setSelectedSlotId] = useState('')
   const [customDate, setCustomDate] = useState('')
   const [customStartTime, setCustomStartTime] = useState('')
   const [customEndTime, setCustomEndTime] = useState('')
   const [customTimeZone, setCustomTimeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
-  const [customLocation, setCustomLocation] = useState('')
   const [scheduleNotes, setScheduleNotes] = useState('')
+  const [viewMonth, setViewMonth] = useState(new Date())
+
+  // Hybrid payment state
+  const [hybridEnabled, setHybridEnabled] = useState(false)
+  const [monetaryAmount, setMonetaryAmount] = useState('')
+  const [serviceOfferingId, setServiceOfferingId] = useState('')
+  const [serviceFallback, setServiceFallback] = useState('')
+  const requesterVendors = useMemo(() => vendors.filter((v) => v.ownerCes === requesterCes), [vendors, requesterCes])
+  const requesterOfferings = useMemo(
+    () => requesterVendors.flatMap((v) => v.offerings.map((o) => ({ ...o, vendorName: v.name, vendorId: v.id }))),
+    [requesterVendors]
+  )
 
   const enabledMethods = useMemo(
     () => vendor.paymentMethods.filter((m) => m.enabled),
@@ -101,22 +120,36 @@ export function ExchangeRequestModal({
 
   const hasPriceDiscussion = offering.priceType === 'fixed' || offering.priceType === 'negotiable'
 
-  function buildScheduledMeeting(): ScheduledMeeting | undefined {
-    if (!includeSchedule) return undefined
-    const slot = providerAvailability.find((b) => b.id === selectedSlotId)
-    const timeZone = slot?.timeZone || customTimeZone
+  const selectedSlot: AvailabilityBlock | undefined = useMemo(
+    () => providerAvailability.find((b) => b.id === selectedSlotId),
+    [providerAvailability, selectedSlotId]
+  )
 
+  const selectedDate = useMemo(() => {
+    if (selectedSlot) return nextOccurrenceForBlock(selectedSlot)
+    return customDate
+  }, [selectedSlot, customDate])
+
+  const slotsForSelectedDate = useMemo(() => {
+    const target = selectedDate
+    if (!target) return []
+    return providerAvailability.filter((b) => {
+      if (b.date && isSameDay(b.date, target)) return true
+      const blockDate = nextOccurrenceForBlock(b)
+      return blockDate === target
+    })
+  }, [providerAvailability, selectedDate])
+
+  function buildProposedSlot(): ProposedMeetingSlot | undefined {
+    if (!includeSchedule) return undefined
     let startAt: string
     let endAt: string
-    let title = `Session for ${offering.title}`
+    const timeZone = selectedSlot?.timeZone || customTimeZone
 
-    if (slot) {
-      const date = nextOccurrenceForBlock(slot)
-      startAt = toISODateTime(date, slot.startTime)
-      endAt = toISODateTime(date, slot.endTime)
-      if (slot.dayOfWeek != null) {
-        title = `${offering.title} — ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][slot.dayOfWeek]}`
-      }
+    if (selectedSlot) {
+      const date = nextOccurrenceForBlock(selectedSlot)
+      startAt = toISODateTime(date, selectedSlot.startTime)
+      endAt = toISODateTime(date, selectedSlot.endTime)
     } else if (customDate && customStartTime && customEndTime) {
       startAt = toISODateTime(customDate, customStartTime)
       endAt = toISODateTime(customDate, customEndTime)
@@ -124,18 +157,49 @@ export function ExchangeRequestModal({
       return undefined
     }
 
+    if (!startAt || !endAt || new Date(endAt) <= new Date(startAt)) return undefined
+
     return {
-      id: newQuestId('meeting'),
-      title,
       startAt,
       endAt,
       timeZone,
-      location: customLocation.trim() || 'TBD',
+      platform: offering.virtualSession?.platform || 'other',
+    }
+  }
+
+  function buildScheduledMeeting(): ScheduledMeeting | undefined {
+    const slot = buildProposedSlot()
+    if (!slot) return undefined
+
+    const link = offering.virtualSession?.meetingLink || offering.virtualSession?.platformNote || `[${offering.virtualSession?.platform || 'platform'} link to be shared]`
+    const location = offering.offeringType === 'virtual_session'
+      ? link
+      : offering.location?.label || offering.location?.address || 'TBD'
+
+    return {
+      id: newQuestId('meeting'),
+      title: `${offering.title} — ${requesterName} × ${providerName}`,
+      startAt: slot.startAt,
+      endAt: slot.endAt,
+      timeZone: slot.timeZone,
+      location,
       status: 'proposed',
       proposedByCes: requesterCes,
       proposedByName: requesterName,
       confirmedByCes: [requesterCes],
       notes: scheduleNotes.trim() || undefined,
+    }
+  }
+
+  function buildHybridPayment(): HybridPaymentConfig | undefined {
+    if (!hybridEnabled) return undefined
+    const dollars = parseFloat(monetaryAmount)
+    const cents = !isNaN(dollars) && dollars > 0 ? Math.round(dollars * 100) : 0
+    const selectedOffering = requesterOfferings.find((o) => o.id === serviceOfferingId)
+    return {
+      monetaryCents: cents,
+      serviceExchangeOfferingId: selectedOffering?.id,
+      serviceExchangeFallback: serviceFallback.trim() || undefined,
     }
   }
 
@@ -146,22 +210,21 @@ export function ExchangeRequestModal({
       return
     }
 
+    const hybridPayment = buildHybridPayment()
+    const monetaryCents = hybridPayment?.monetaryCents || 0
+
+    if (hybridEnabled) {
+      if (monetaryCents <= 0 && !serviceOfferingId && !serviceFallback.trim()) {
+        setError('Please include either a monetary amount or a service exchange contribution.')
+        return
+      }
+    }
+
     if (includeSchedule) {
-      if (selectedSlotId) {
-        const slot = providerAvailability.find((b) => b.id === selectedSlotId)
-        if (!slot) {
-          setError('Please choose an available slot from the provider, or propose a custom time.')
-          return
-        }
-      } else {
-        if (!customDate || !customStartTime || !customEndTime) {
-          setError('Please pick a date and time for the proposed session, or select an available slot.')
-          return
-        }
-        if (new Date(toISODateTime(customDate, customEndTime)) <= new Date(toISODateTime(customDate, customStartTime))) {
-          setError('The session end time must be after the start time.')
-          return
-        }
+      const slot = buildProposedSlot()
+      if (!slot) {
+        setError('Please choose a date and time from the provider calendar, or propose a custom slot.')
+        return
       }
     }
 
@@ -203,7 +266,34 @@ export function ExchangeRequestModal({
     ]
 
     const meeting = buildScheduledMeeting()
+    const proposedSlot = buildProposedSlot()
     const scheduledMeetings: ScheduledMeeting[] = meeting ? [meeting] : []
+
+    const dedicationOfProfits = monetaryCents > 0
+      ? {
+          enabled: true,
+          percentage: 99,
+          destinations: [
+            'Earth Conscious Initiatives & Technology 🌍',
+            'Preserving Ancient Wisdom of our Ancestors 📜',
+            'Sovereign Interdependent Communities 🏠',
+            'Healing & Art 💗',
+            'ALL the Living ♾️',
+          ],
+          customNotes: '1% covers operational costs. This is our unanimous living agreement.',
+        }
+      : {
+          enabled: true,
+          percentage: 99,
+          destinations: [
+            'Earth Conscious Initiatives & Technology 🌍',
+            'Preserving Ancient Wisdom of our Ancestors 📜',
+            'Sovereign Interdependent Communities 🏠',
+            'Healing & Art 💗',
+            'ALL the Living ♾️',
+          ],
+          customNotes: 'No monetary component in this exchange. Dedication held for future monetary flows.',
+        }
 
     const agreement: ExchangeAgreement = {
       id: agreementId,
@@ -225,19 +315,10 @@ export function ExchangeRequestModal({
       proposedPriceCents: offering.priceCents,
       agreedPriceCents: undefined,
       paymentMethod: effectivePaymentMethod,
+      hybridPayment,
+      confirmedMeetingSlot: proposedSlot,
       communicationPrefs: '',
-      dedicationOfProfits: {
-        enabled: true,
-        percentage: 99,
-        destinations: [
-          'Earth Conscious Initiatives & Technology 🌍',
-          'Preserving Ancient Wisdom of our Ancestors 📜',
-          'Sovereign Interdependent Communities 🏠',
-          'Healing & Art 💗',
-          'ALL the Living ♾️',
-        ],
-        customNotes: '1% covers operational costs. This is our unanimous living agreement.',
-      },
+      dedicationOfProfits,
       status: 'draft',
       requesterConsented: false,
       providerConsented: false,
@@ -267,6 +348,8 @@ export function ExchangeRequestModal({
       message: message.trim(),
       priceType: offering.priceType,
       paymentMethod: effectivePaymentMethod,
+      hybridPayment,
+      proposedMeetingSlot: proposedSlot,
       status: 'pending',
       collectivePetitionId: undefined,
       consentAcknowledged: true,
@@ -277,6 +360,8 @@ export function ExchangeRequestModal({
 
     onAgreementCreated(agreement)
   }
+
+  const previewMeeting = useMemo(() => buildScheduledMeeting(), [includeSchedule, selectedSlot, customDate, customStartTime, customEndTime, customTimeZone, scheduleNotes])
 
   return (
     <motion.div
@@ -291,7 +376,7 @@ export function ExchangeRequestModal({
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl border border-gold-400/20 bg-void-900/95 p-6 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gold-400/20 bg-void-900/95 p-6 shadow-2xl"
       >
         <button
           onClick={onClose}
@@ -323,6 +408,16 @@ export function ExchangeRequestModal({
               <div>
                 <p className="text-sm text-cream font-medium">{offering.title}</p>
                 <p className="text-xs text-lavender/50 mt-0.5">{vendor.name}</p>
+                {offering.offeringType === 'virtual_session' && offering.virtualSession && (
+                  <p className="text-xs text-blue-300 mt-1 flex items-center gap-1">
+                    <Video className="w-3 h-3" /> {offering.virtualSession.durationMinutes} min virtual session · {offering.virtualSession.platform.replace('_', ' ')}
+                  </p>
+                )}
+                {offering.offeringType === 'work_study_exchange' && offering.workStudyExchange && (
+                  <p className="text-xs text-green-300 mt-1 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> {offering.workStudyExchange.durationWeeks} week work/study · {offering.workStudyExchange.hoursPerWeek} hrs/week
+                  </p>
+                )}
                 {hasPriceDiscussion && (
                   <p className="text-xs text-gold-400 mt-1">
                     Aligned exchange value: {offering.priceCents != null ? `$${(offering.priceCents / 100).toFixed(2)}` : 'To be discussed'}
@@ -345,7 +440,7 @@ export function ExchangeRequestModal({
             />
           </div>
 
-          {wantsScheduling && (
+          {needsScheduling && (
             <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-4">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -359,34 +454,85 @@ export function ExchangeRequestModal({
                     <CalendarIcon className="w-3.5 h-3.5 text-gold-400" /> Include a proposed session time
                   </span>
                   <span className="block text-xs text-lavender/40 mt-0.5">
-                    This offering feels like it wants to be scheduled. Pick from the provider's availability or propose your own.
+                    This offering requires scheduling. Pick from the provider's availability or propose your own.
                   </span>
                 </span>
               </label>
 
               {includeSchedule && (
                 <>
-                  {providerAvailability.length > 0 && (
+                  {/* Month navigator */}
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded-lg border border-lavender/10"
+                    >
+                      ← Prev
+                    </button>
+                    <span className="text-sm text-cream font-medium">
+                      {viewMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded-lg border border-lavender/10"
+                    >
+                      Next →
+                    </button>
+                  </div>
+
+                  {/* Calendar grid */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-lavender/40 mb-1">
+                    {DAYS.map((d) => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {getMonthDays(viewMonth.getFullYear(), viewMonth.getMonth()).map((day, idx) => {
+                      if (!day) return <div key={idx} />
+                      const dateStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                      const hasAvailability = providerAvailability.some((b) => {
+                        if (b.date && isSameDay(b.date, dateStr)) return true
+                        return nextOccurrenceForBlock(b) === dateStr
+                      })
+                      const isSelected = selectedDate === dateStr
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setCustomDate(dateStr)
+                            setSelectedSlotId('')
+                          }}
+                          className={`aspect-square rounded-lg text-xs flex flex-col items-center justify-center transition-all ${
+                            isSelected
+                              ? 'ring-2 ring-gold-400 bg-gold-400/15 text-cream'
+                              : hasAvailability
+                                ? 'border border-green-400/40 bg-green-400/10 text-green-300 hover:bg-green-400/20'
+                                : 'border border-lavender/5 bg-void-800/40 text-lavender/40 hover:border-lavender/20'
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Slots for selected day */}
+                  {selectedDate && slotsForSelectedDate.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-[10px] uppercase tracking-wider text-lavender/40">
-                        Provider availability 🌿
+                        Available windows 🌿
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {providerAvailability.map((block) => {
+                        {slotsForSelectedDate.map((block) => {
                           const isSelected = selectedSlotId === block.id
-                          const date = nextOccurrenceForBlock(block)
-                          const label = block.date
-                            ? `${block.date}`
-                            : block.dayOfWeek != null
-                              ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][block.dayOfWeek]
-                              : 'Any day'
                           return (
                             <button
                               key={block.id}
                               type="button"
                               onClick={() => {
                                 setSelectedSlotId(isSelected ? '' : block.id)
-                                setCustomDate(date)
+                                setCustomDate(nextOccurrenceForBlock(block))
                                 setCustomStartTime(block.startTime)
                                 setCustomEndTime(block.endTime)
                                 setCustomTimeZone(block.timeZone)
@@ -397,7 +543,7 @@ export function ExchangeRequestModal({
                                   : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                               }`}
                             >
-                              {label} {block.startTime}–{block.endTime} {block.timeZone}
+                              {block.startTime}–{block.endTime} {block.timeZone}
                             </button>
                           )
                         })}
@@ -443,53 +589,42 @@ export function ExchangeRequestModal({
                   </div>
                   <input
                     type="text"
-                    value={customLocation}
-                    onChange={(e) => setCustomLocation(e.target.value)}
-                    placeholder="Location or video link"
-                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                  />
-                  <textarea
                     value={scheduleNotes}
                     onChange={(e) => setScheduleNotes(e.target.value)}
                     placeholder="Notes or preparation requests"
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
                   />
 
-                  {(() => {
-                    const preview = buildScheduledMeeting()
-                    if (!preview) return null
-                    return (
-                      <div className="rounded-lg border border-lavender/10 bg-void-900/40 p-3">
-                        <p className="text-xs text-cream flex items-center gap-2">
-                          <CalendarDays className="w-3.5 h-3.5 text-lavender/40" /> Proposed preview
+                  {previewMeeting && (
+                    <div className="rounded-lg border border-lavender/10 bg-void-900/40 p-3">
+                      <p className="text-xs text-cream flex items-center gap-2">
+                        <CalendarDays className="w-3.5 h-3.5 text-lavender/40" /> Proposed preview
+                      </p>
+                      <p className="text-xs text-lavender/60 mt-1">{formatMeetingTime(previewMeeting)}</p>
+                      {previewMeeting.location && previewMeeting.location !== 'TBD' && (
+                        <p className="text-xs text-lavender/60 mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {previewMeeting.location}
                         </p>
-                        <p className="text-xs text-lavender/60 mt-1">{formatMeetingTime(preview)}</p>
-                        {preview.location && preview.location !== 'TBD' && (
-                          <p className="text-xs text-lavender/60 mt-1 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {preview.location}
-                          </p>
-                        )}
-                        <div className="flex gap-2 mt-2">
-                          <a
-                            href={googleCalendarEventUrl(preview)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[10px] px-2 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all"
-                          >
-                            Google 📅
-                          </a>
-                          <button
-                            type="button"
-                            onClick={() => downloadICS(preview)}
-                            className="text-[10px] px-2 py-1 rounded-full bg-lavender/10 border border-lavender/30 text-lavender/70 hover:bg-lavender/20 transition-all"
-                          >
-                            .ics 📥
-                          </button>
-                        </div>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        <a
+                          href={googleCalendarEventUrl(previewMeeting)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] px-2 py-1 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all"
+                        >
+                          Google 📅
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => downloadICS(previewMeeting)}
+                          className="text-[10px] px-2 py-1 rounded-full bg-lavender/10 border border-lavender/30 text-lavender/70 hover:bg-lavender/20 transition-all"
+                        >
+                          .ics 📥
+                        </button>
                       </div>
-                    )
-                  })()}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -512,6 +647,79 @@ export function ExchangeRequestModal({
               </p>
             </div>
           )}
+
+          {/* Hybrid Payment Composer */}
+          <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 space-y-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hybridEnabled}
+                onChange={(e) => setHybridEnabled(e.target.checked)}
+                className="w-4 h-4 mt-0.5 rounded border-lavender/20 bg-void-800 accent-gold-400"
+              />
+              <span className="text-sm text-lavender/70">
+                <span className="flex items-center gap-1.5 text-cream">
+                  <Sparkles className="w-3.5 h-3.5 text-gold-400" /> Compose a hybrid exchange
+                </span>
+                <span className="block text-xs text-lavender/40 mt-0.5">
+                  Mix monetary mutual aid with a service exchange from your own offerings.
+                </span>
+              </span>
+            </label>
+
+            {hybridEnabled && (
+              <div className="space-y-4 pl-7">
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Monetary amount (USD)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lavender/30">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={monetaryAmount}
+                      onChange={(e) => setMonetaryAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-4 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <p className="text-[10px] text-lavender/30 mt-1">
+                    99% of monetary profits auto-dedicate to the Heartlight Collective.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Service exchange offering</label>
+                  <select
+                    value={serviceOfferingId}
+                    onChange={(e) => setServiceOfferingId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/40 focus:outline-none appearance-none"
+                  >
+                    <option value="">Select one of your offerings (optional)</option>
+                    {requesterOfferings.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.title} · {o.vendorName}
+                      </option>
+                    ))}
+                  </select>
+                  {requesterOfferings.length === 0 && (
+                    <p className="text-[10px] text-lavender/30 mt-1">You have no published offerings yet. Use the free-text field below.</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-lavender/50 mb-1">Or describe a service exchange</label>
+                  <textarea
+                    value={serviceFallback}
+                    onChange={(e) => setServiceFallback(e.target.value)}
+                    placeholder="e.g., I will design a landing page for your community program"
+                    rows={2}
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <div>
             <label className="flex items-center gap-2 text-sm text-lavender/70 mb-1.5">

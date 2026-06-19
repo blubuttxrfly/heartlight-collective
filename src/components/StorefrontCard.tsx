@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Store, MapPin, Users } from 'lucide-react';
 import { ExchangePolicyBadges } from './ExchangePolicyBadges';
+import { OfferingTypeBadge } from './OfferingTypeBadge';
 import type { VendorRecord } from '../types/ces';
 
 interface StorefrontCardProps {
@@ -68,6 +69,9 @@ export function StorefrontCard({ vendor, showOfferings = true }: StorefrontCardP
                   ? `$${(firstOffering.priceCents / 100).toFixed(2)}`
                   : 'Negotiable'}
               </span>
+            </div>
+            <div className="mt-2">
+              <OfferingTypeBadge offering={firstOffering} showLocation={false} />
             </div>
           </div>
         )}

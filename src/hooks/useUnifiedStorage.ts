@@ -169,6 +169,44 @@ export function useUnifiedStorage() {
         return localProfile
       }
 
+      // Final fallback: authorized stewards (dev / founding steward mode)
+      const steward = local.getStewards().find((s) => s.ces === ces && s.passphrase === passphrase)
+      console.log('[UnifiedStorage] steward fallback lookup:', { found: !!steward });
+      if (steward) {
+        console.log('[UnifiedStorage] Steward sign-in SUCCESS');
+        setLoading(false)
+        // Return a synthetic CreatorRecord so the rest of the app receives a consistent shape
+        const synthetic: CreatorRecord = {
+          id: `profile_${steward.ces}`,
+          name: steward.name,
+          pronouns: 'they/them',
+          title: steward.role || 'Steward',
+          location: 'Earth, Milky Way',
+          emoji: '🌟',
+          photo: null,
+          bio: `Sovereign steward profile for ${steward.name}.`,
+          tags: ['steward'],
+          numerology: [],
+          accessibility: [],
+          consent: 'I consent to co-create in alignment with our Greatest & Highest Good.',
+          portfolioLink: '',
+          portfolioItems: [],
+          contactMethods: { email: '', phone: '', instagram: '', youtube: '', threads: '', spotify: '', discord: '', telegram: '', signal: '' },
+          contactVisibility: { email: false, phone: false, instagram: false, youtube: false, threads: false, spotify: false, discord: false, telegram: false, signal: false },
+          publicContactVisibility: false,
+          contactMethod: 'other',
+          cesNumber: steward.ces,
+          passphrase: steward.passphrase,
+          wishAvailability: 'accepting',
+          directoryWishStatus: 'accepting',
+          stewardship: 'active',
+          stewardshipNote: '',
+          guideGuardianStatus: 'not_opted_in',
+          locationData: { raw: 'Earth, Milky Way', city: 'Earth', region: 'Milky Way', country: 'Gaia', continent: 'Gaia', lat: 0, lon: 0 },
+        }
+        return synthetic
+      }
+
       console.log('[UnifiedStorage] Sign-in FAILED - no matching profile found');
       setLoading(false)
       return null

@@ -18,6 +18,7 @@ import {
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
 import { ExchangePolicyBadges } from '../../components/ExchangePolicyBadges';
+import { OfferingTypeBadge } from '../../components/OfferingTypeBadge';
 import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal';
 import { ExchangeAgreementEditor } from '../../components/exchange/ExchangeAgreementEditor';
 import type { OfferingItem, VendorRecord, ExchangeAgreement } from '../../types/ces';
@@ -325,6 +326,9 @@ function OfferingRow({
           </div>
 
           <div className="mt-3">
+            <OfferingTypeBadge offering={offering} />
+          </div>
+          <div className="mt-2">
             <ExchangePolicyBadges policy={offering.exchangePolicy?.length ? offering.exchangePolicy : vendor.exchangePolicy} />
           </div>
 

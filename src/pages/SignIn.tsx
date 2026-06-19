@@ -13,6 +13,7 @@ export default function SignIn() {
   const [passphrase, setPassphrase] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const isDev = import.meta.env.DEV || localStorage.getItem('hlc_dev_atlas') === 'true';
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,6 +163,20 @@ export default function SignIn() {
               {loading ? 'Opening Portal...' : 'Enter Co-Creation Space'}
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
+
+            {/* Dev Atlas quick-fill */}
+            {isDev && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCes('111111111');
+                  setPassphrase('sovereign42');
+                }}
+                className="w-full py-2 rounded-xl border border-lavender/10 text-lavender/50 hover:text-lavender/70 hover:border-lavender/20 transition-all text-xs"
+              >
+                Dev: Fill Atlas (111111111 / sovereign42)
+              </button>
+            )}
 
             {/* Create Profile CTA */}
             <p className="text-center text-sm text-lavender/40 pt-4">
