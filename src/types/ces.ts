@@ -399,8 +399,16 @@ export interface OfferingItem {
   workStudyExchange?: WorkStudyExchangeConfig;
   location?: ExchangeLocation;
   requiresScheduling?: boolean;
+  // Fulfillment team for this offering
+  fulfillers?: OfferingFulfiller[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OfferingFulfiller {
+  ces: string;
+  name: string;
+  role: string; // e.g. "Guide", "Facilitator", "Coordinator", "Logistics", "Instructor"
 }
 
 export interface VendorRecord {

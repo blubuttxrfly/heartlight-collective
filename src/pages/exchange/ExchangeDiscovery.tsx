@@ -7,9 +7,10 @@ import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
 import { haversineDistance, formatDistance } from '../../lib/geo'
 import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../../lib/constants'
-import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord } from '../../types/ces'
+import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord, LocationData } from '../../types/ces'
 import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal'
 import { ExchangeAgreementEditor } from '../../components/exchange/ExchangeAgreementEditor'
+import LocationSelect from '../../components/LocationSelect'
 
 /* ─── Codes Data (for display) ─── */
 const CODES_DATA = [
@@ -215,11 +216,20 @@ function buildVendorOfferings(vendors: VendorRecord[]) {
         // Normalize fields the grid expects
         skills: [],
         resources: [],
-        roles: [],
+        roles: o.fulfillers?.map((f: any) => f.role).filter(Boolean) || [],
         urgency: 'low',
-        scope: 'universal',
-        location: 'Remote / Anywhere',
-        locationData: { continent: 'Anywhere', city: 'Remote', country: 'Anywhere' },
+        scope: (o.offeringType === 'virtual_session' || o.location?.type === 'virtual') ? 'universal' : 'local',
+        location: o.location?.label || o.location?.address || 'Remote / Anywhere',
+        locationData: o.location?.locationData || o.location?.latitude != null ? {
+          lat: o.location!.latitude,
+          lon: o.location!.longitude,
+          city: o.location!.city || null,
+          region: o.location!.region || null,
+          country: o.location!.country || null,
+          continent: null,
+          raw: o.location!.label || o.location!.address || null,
+        } : { continent: 'Anywhere', city: 'Remote', country: 'Anywhere' },
+        fulfillers: o.fulfillers,
         fundsRequired: o.priceCents || 0,
         fundsAvailable: 0,
         timeCommitment: '',
@@ -288,14 +298,36 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
   // Load user profile location for distance filtering
   const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
+  const [recentLocations, setRecentLocations] = useState<LocationData[]>(() => {
+    try {
+      const raw = localStorage.getItem('hlc_recent_locations')
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  })
+  const [searchLocation, setSearchLocation] = useState<LocationData | null>(null)
+
   useEffect(() => {
     if (user?.ces) {
       const profile = findProfileByCES(user.ces)
       if (profile?.locationData?.lat && profile?.locationData?.lon) {
         setUserLocation({ lat: profile.locationData.lat, lon: profile.locationData.lon })
+        setSearchLocation(profile.locationData)
       }
     }
   }, [user?.ces, findProfileByCES])
+
+  function rememberLocation(loc: LocationData | null) {
+    if (!loc) return
+    const next = [loc, ...recentLocations.filter((l) => l.raw !== loc.raw)].slice(0, 5)
+    setRecentLocations(next)
+    try {
+      localStorage.setItem('hlc_recent_locations', JSON.stringify(next))
+    } catch {
+      // ignore
+    }
+  }
 
   const categories = useMemo(() => {
     const cats = new Set(wishes.map(w => w.category))
@@ -326,20 +358,30 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     }
 
     // Scope filtering: Local / Global / Universal
+    const activeLocation = searchLocation || (userLocation ? {
+      raw: 'My profile location',
+      lat: userLocation.lat,
+      lon: userLocation.lon,
+      city: null,
+      region: null,
+      country: null,
+      continent: null,
+    } : null)
+
     if (viewScope === 'local') {
       // Show wishes scoped to 'local' or 'universal' that are within radius
       list = list.filter(w => {
         if (w.scope === 'universal' || w.scope === 'local') {
           // Need precise coordinates to check distance
-          if (w.locationData?.lat && w.locationData?.lon && userLocation) {
+          if (w.locationData?.lat && w.locationData?.lon && activeLocation) {
             const dist = haversineDistance(
               { lat: w.locationData.lat, lon: w.locationData.lon },
-              userLocation
+              { lat: activeLocation.lat, lon: activeLocation.lon }
             )
             return dist !== null && dist <= localRadius
           }
           // Wishes without precise coords but same continent — include if no user location
-          if (!userLocation && w.locationData?.continent && selectedContinent) {
+          if (!activeLocation && w.locationData?.continent && selectedContinent) {
             return w.locationData.continent === selectedContinent
           }
           return w.scope === 'universal' // Always show universal
@@ -367,12 +409,11 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     })
 
     return list
-  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation, typeFilter])
+  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
 
   const wishCount = wishes.filter(w => w.type === 'wish').length
   const offerCount = wishes.filter(w => w.type === 'offer').length
   const offeringCount = wishes.filter(w => w.type === 'offering').length
-
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
@@ -383,6 +424,41 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
         <span><Store className="w-3 h-3 inline mr-1 text-blue-400" />{offeringCount} offerings</span>
         <span><Tag className="w-3 h-3 inline mr-1 text-lavender/50" />{categories.length} categories</span>
       </div>
+
+      {/* Location bar */}
+      <div className="mb-6 max-w-md mx-auto">
+        <LocationSelect
+          label="My exchange location"
+          value={searchLocation}
+          onChange={(loc) => {
+            setSearchLocation(loc)
+            if (loc) {
+              setUserLocation({ lat: loc.lat, lon: loc.lon })
+              rememberLocation(loc)
+            }
+          }}
+          placeholder="Search city, town, or place…"
+          allowRemote
+        />
+        {recentLocations.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-xs text-lavender/40">Recent:</span>
+            {recentLocations.map((loc) => (
+              <button
+                key={loc.raw}
+                onClick={() => {
+                  setSearchLocation(loc)
+                  setUserLocation({ lat: loc.lat, lon: loc.lon })
+                }}
+                className="text-xs text-green-300 hover:text-green-200 transition-colors"
+              >
+                {loc.city || loc.raw}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* View Scope Toggle: Local | Regional | Universal */}
       <div className="mb-6">
         <div className="flex flex-wrap gap-2 justify-center">
@@ -416,21 +492,55 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
         {/* Radius presets (only in Local view) */}
         {viewScope === 'local' && (
-          <div className="flex items-center justify-center gap-3 mt-3">
-            <span className="text-xs text-lavender/40">Radius:</span>
-            {LOCAL_RADIUS_PRESETS.map(r => (
-              <button
-                key={r}
-                onClick={() => setLocalRadius(r)}
-                className={`px-3 py-1 rounded-full border text-xs transition-all ${
-                  localRadius === r
-                    ? 'bg-green-400/10 border-green-400/30 text-green-300'
-                    : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-                }`}
-              >
-                {r} km
-              </button>
-            ))}
+          <div className="space-y-3 mt-3">
+            <div className="max-w-md mx-auto">
+              <LocationSelect
+                label="My local location"
+                value={searchLocation}
+                onChange={(loc) => {
+                  setSearchLocation(loc)
+                  if (loc) {
+                    setUserLocation({ lat: loc.lat, lon: loc.lon })
+                    rememberLocation(loc)
+                  }
+                }}
+                placeholder="Search city, town, or place…"
+                allowRemote
+              />
+              {recentLocations.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs text-lavender/40">Recent:</span>
+                  {recentLocations.map((loc) => (
+                    <button
+                      key={loc.raw}
+                      onClick={() => {
+                        setSearchLocation(loc)
+                        setUserLocation({ lat: loc.lat, lon: loc.lon })
+                      }}
+                      className="text-xs text-green-300 hover:text-green-200 transition-colors"
+                    >
+                      {loc.city || loc.raw}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-xs text-lavender/40">Radius:</span>
+              {LOCAL_RADIUS_PRESETS.map(r => (
+                <button
+                  key={r}
+                  onClick={() => setLocalRadius(r)}
+                  className={`px-3 py-1 rounded-full border text-xs transition-all ${
+                    localRadius === r
+                      ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                      : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                  }`}
+                >
+                  {r} km
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -587,12 +697,14 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {wish.location}
                   </span>
-                  {viewScope === 'local' && wish.locationData?.lat && wish.locationData?.lon && userLocation && (
+                  {viewScope === 'local' && wish.locationData?.lat && wish.locationData?.lon && (searchLocation || userLocation) && (
                     <span className="text-green-400">
                       {(() => {
+                        const origin = searchLocation ? { lat: searchLocation.lat, lon: searchLocation.lon } : userLocation
+                        if (!origin) return null
                         const dist = haversineDistance(
                           { lat: wish.locationData.lat, lon: wish.locationData.lon },
-                          userLocation
+                          origin
                         )
                         return dist !== null ? `~${formatDistance(dist)}` : null
                       })()}
@@ -663,6 +775,13 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
                   consentRequired: selectedWish.consentRequired ?? true,
                   maxParticipants: selectedWish.maxParticipants,
                   stripePriceId: selectedWish.stripePriceId,
+                  // Wave 8.2
+                  offeringType: selectedWish.offeringType,
+                  virtualSession: selectedWish.virtualSession,
+                  workStudyExchange: selectedWish.workStudyExchange,
+                  location: selectedWish.location,
+                  requiresScheduling: selectedWish.requiresScheduling,
+                  fulfillers: selectedWish.fulfillers,
                   createdAt: selectedWish.createdAt,
                   updatedAt: selectedWish.updatedAt,
                 }
@@ -890,6 +1009,8 @@ function WishDetailModal({ wish, onClose, onClaim }) {
           )}
 
           {/* 12 Ray Frequencies — present in every exchange */}
+          {/* NOTE: Hidden per request — frequencies are carried implicitly in every exchange. */}
+          {false && (
           <div className="rounded-xl border border-gold-400/10 bg-gold-400/5 p-4">
             <label className="block text-xs text-gold-400/60 mb-2 uppercase tracking-wider">12 Ray Frequencies of ALL — Present in Every Exchange</label>
             <div className="flex flex-wrap gap-1.5">
@@ -905,6 +1026,7 @@ function WishDetailModal({ wish, onClose, onClaim }) {
               ))}
             </div>
           </div>
+          )}
 
           {/* Funds / Price for offerings */}
           {(isOffering || wish.fundsRequired > 0 || wish.fundsAvailable > 0) && (

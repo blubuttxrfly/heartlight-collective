@@ -205,6 +205,7 @@ export function offeringToRow(o: OfferingItem): Record<string, unknown> {
     work_study_exchange: o.workStudyExchange || null,
     location: o.location || null,
     requires_scheduling: o.requiresScheduling ?? false,
+    fulfillers: o.fulfillers || null,
     created_at: o.createdAt,
     updated_at: o.updatedAt,
   };
@@ -233,6 +234,7 @@ export function rowToOffering(row: any): OfferingItem {
     workStudyExchange: row.work_study_exchange || undefined,
     location: row.location || undefined,
     requiresScheduling: Boolean(row.requires_scheduling),
+    fulfillers: row.fulfillers || undefined,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };

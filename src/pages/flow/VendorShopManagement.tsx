@@ -4,8 +4,9 @@ import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, 
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
-import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig } from '../../types/ces';
+import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
+import LocationSelect from '../../components/LocationSelect';
 
 /* ─── Helper: slugify for URLs ─── */
 function slugify(name: string): string {
@@ -550,7 +551,13 @@ function AddOfferingModal({
     }
     return { type: 'physical_address' };
   });
-  const [locationQuery, setLocationQuery] = useState(location.label || '');
+  const [selectedLocationData, setSelectedLocationData] = useState<LocationData | null>(location.locationData || null);
+
+  // Fulfillment team for this offering
+  const [fulfillers, setFulfillers] = useState<OfferingFulfiller[]>(() => {
+    if (offering?.fulfillers) return offering.fulfillers;
+    return [];
+  });
 
   const categories = OFFERING_CATEGORIES;
   const priceTypes = [
@@ -604,7 +611,17 @@ function AddOfferingModal({
       ...workStudy,
       location,
     } : undefined;
-    const finalLocation = (offeringType === 'work_study_exchange' || location.address || location.label) ? location : undefined;
+    const finalLocation = (offeringType === 'work_study_exchange' || location.address || location.label || selectedLocationData) ? {
+      ...location,
+      locationData: selectedLocationData || undefined,
+      label: selectedLocationData?.raw || location.label,
+      address: location.address || selectedLocationData?.raw,
+      city: selectedLocationData?.city || location.city,
+      region: selectedLocationData?.region || location.region,
+      country: selectedLocationData?.country || location.country,
+      latitude: selectedLocationData?.lat ?? location.latitude,
+      longitude: selectedLocationData?.lon ?? location.longitude,
+    } : undefined;
     const finalRequiresScheduling = requiresScheduling || offeringType === 'virtual_session' || offeringType === 'work_study_exchange';
 
     const newOffering: OfferingItem = {
@@ -630,6 +647,7 @@ function AddOfferingModal({
       workStudyExchange: finalWorkStudy,
       location: finalLocation,
       requiresScheduling: finalRequiresScheduling,
+      fulfillers,
       updatedAt: new Date().toISOString(),
     };
 
@@ -1049,24 +1067,48 @@ function AddOfferingModal({
                     {offeringType === 'work_study_exchange' ? 'Program Location' : 'Location'}
                   </span>
                 </div>
-                <div>
-                  <label className="block text-xs text-lavender/50 mb-1">Label / venue name</label>
-                  <input
-                    value={location.label || ''}
-                    onChange={(e) => setLocation({ ...location, label: e.target.value })}
-                    placeholder="e.g., Heartlight Commons, Online, or Remote / Anywhere"
-                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-lavender/50 mb-1">Address</label>
-                  <textarea
-                    value={location.address || ''}
-                    onChange={(e) => setLocation({ ...location, address: e.target.value })}
-                    placeholder="Street address, city, country"
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
-                  />
+                <LocationSelect
+                  label="Search location"
+                  value={selectedLocationData}
+                  onChange={(loc) => {
+                    setSelectedLocationData(loc);
+                    if (loc) {
+                      setLocation((prev) => ({
+                        ...prev,
+                        locationData: loc,
+                        label: loc.raw,
+                        address: loc.raw,
+                        city: loc.city || prev.city,
+                        region: loc.region || prev.region,
+                        country: loc.country || prev.country,
+                        latitude: loc.lat,
+                        longitude: loc.lon,
+                      }));
+                    }
+                  }}
+                  placeholder="Search city, town, or place…"
+                  allowRemote
+                />
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-lavender/5">
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Venue / label</label>
+                    <input
+                      value={location.label || ''}
+                      onChange={(e) => setLocation({ ...location, label: e.target.value })}
+                      placeholder="e.g., Heartlight Commons"
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-1">Address</label>
+                    <textarea
+                      value={location.address || ''}
+                      onChange={(e) => setLocation({ ...location, address: e.target.value })}
+                      placeholder="Street address, city, country"
+                      rows={2}
+                      className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -1155,6 +1197,62 @@ function AddOfferingModal({
                 </div>
               </div>
             )}
+
+            {/* Fulfillment team */}
+            <div className="p-4 rounded-xl border border-lavender/10 bg-white/[0.02] space-y-4">
+              <div className="flex items-center gap-2 text-gold-400">
+                <Users className="w-4 h-4" />
+                <span className="text-sm font-medium">Fulfillment Team</span>
+              </div>
+              <p className="text-xs text-lavender/50">
+                Select beings from this Vendor Shop who are responsible for fulfilling this offering, and the role they play.
+              </p>
+              <div className="space-y-2">
+                {fulfillers.map((f, i) => (
+                  <div key={f.ces} className="flex items-center gap-2">
+                    <span className="text-sm text-cream flex-1">{f.name}</span>
+                    <input
+                      type="text"
+                      value={f.role}
+                      onChange={(e) => {
+                        const next = [...fulfillers];
+                        next[i] = { ...f, role: e.target.value };
+                        setFulfillers(next);
+                      }}
+                      placeholder="Role, e.g. Guide"
+                      className="w-36 px-3 py-1.5 rounded-lg bg-void-800/50 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFulfillers(fulfillers.filter((_, idx) => idx !== i))}
+                      className="p-1.5 rounded-md text-lavender/30 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <select
+                value=""
+                onChange={(e) => {
+                  const ces = e.target.value;
+                  if (!ces) return;
+                  if (fulfillers.some((f) => f.ces === ces)) return;
+                  const member = [vendor.ownerCes, ...vendor.members.filter((m) => m.status === 'active').map((m) => m.ces)].find((c) => c === ces);
+                  if (!member) return;
+                  const name = ces === vendor.ownerCes ? vendor.ownerName : vendor.members.find((m) => m.ces === ces)?.name || 'Being';
+                  setFulfillers([...fulfillers, { ces, name, role: '' }]);
+                  e.target.value = '';
+                }}
+                className="w-full px-3 py-2 rounded-lg bg-void-800/50 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none appearance-none"
+              >
+                <option value="">+ Add being…</option>
+                <option value={vendor.ownerCes}>{vendor.ownerName} (owner)</option>
+                {vendor.members.filter((m) => m.status === 'active').map((m) => (
+                  <option key={m.ces} value={m.ces}>{m.name}</option>
+                ))}
+              </select>
+            </div>
 
             {/* Scheduling toggle */}
             <div className="flex items-center gap-3 p-3 rounded-xl border border-lavender/10 bg-white/[0.02]">

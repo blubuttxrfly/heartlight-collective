@@ -703,8 +703,15 @@ Run: `npm run build` → clean.
 | 8.2D | Task 4: Hybrid Payment Composer | ✓ Complete | Monetary + service exchange offering select + free-text fallback; 99% dedication default |
 | 8.2E | Task 5: Auto-Dedication Logic | ✓ Complete | Default 99% dedication applied on request/agreement creation |
 | 8.2F | Task 6: Supabase Migration + Sync | ✓ Complete | `database.types.ts` + `exchangeSync.ts` columns wired |
-| 8.2G | Task 7: UI Badges + Integration | ✓ Complete | `OfferingTypeBadge` on offering rows + `StorefrontCard`, hybrid/dedication summary in agreement editor |
-| 8.2H | Task 8: Dev Preview + Final Gates | ✓ Complete | `npx tsc --noEmit` clean, `npm run build` clean |
+| 8.2G | Task 7: UI Badges / Integration | ✓ Complete | Offering type badges on Vendor Shop + Directory cards; hybrid/dedication summary in agreement editor |
+| 8.2H | Task 8: Dev Preview + Final Gates | ✓ Complete | `npx tsc --noEmit` and `npm run build` pass; plan reconciliation |
+
+## Follow-up: unified location services + fulfillment roles
+| Task | Description | Status | Notes |
+|------|-------------|--------|-------|
+| 8.2I | Unified location input | ✓ Complete | `LocationSelect` reused in offering form; offering location synced to `ExchangeDiscovery` location filtering; persistent recent-location input added to Exchange page |
+| 8.2J | Remove Ray Frequencies block | ✓ Complete | Hidden from all Exchange detail cards |
+| 8.2K | Offering fulfillment roles | ✓ Complete | `OfferingFulfiller[]` added to `OfferingItem`; role selector in Add Offering form; roles displayed on Exchange cards; wired through mappers + migration |
 
 ---
 

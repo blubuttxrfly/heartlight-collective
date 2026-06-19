@@ -60,6 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_offerings_offering_type ON public.offerings(offer
 CREATE INDEX IF NOT EXISTS idx_offerings_requires_scheduling ON public.offerings(requires_scheduling);
 CREATE INDEX IF NOT EXISTS idx_offerings_location_gin ON public.offerings USING GIN (location jsonb_path_ops);
 
+-- Fulfillment team for each offering
+ALTER TABLE offerings ADD COLUMN IF NOT EXISTS fulfillers JSONB DEFAULT NULL;
+
 -- ═══════════════════════════════════════════════════════════════
 --  2. Vendors — ensure public discovery + owner management
 -- ═══════════════════════════════════════════════════════════════

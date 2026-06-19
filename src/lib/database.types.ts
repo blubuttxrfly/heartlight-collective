@@ -185,6 +185,7 @@ export interface Database {
           work_study_exchange: Json | null  // WorkStudyExchangeConfig
           location: Json | null             // ExchangeLocation
           requires_scheduling: boolean
+          fulfillers: Json | null           // OfferingFulfiller[]
           created_at: string
           updated_at: string
         }
@@ -202,36 +203,38 @@ export interface Database {
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
-          exchange_policy?: Json
+          exchange_policy?: string[]
           tags?: string[]
-          // Wave 8.2
           offering_type?: string | null
           virtual_session?: Json | null
           work_study_exchange?: Json | null
           location?: Json | null
           requires_scheduling?: boolean
+          fulfillers?: Json | null
           created_at?: string
           updated_at?: string
         }
         Update: {
+          vendor_id?: string
           title?: string
           description?: string
           category?: string
           price_type?: string
           price_cents?: number | null
+          currency?: string
           image_url?: string | null
           availability?: string
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
-          exchange_policy?: Json
+          exchange_policy?: string[]
           tags?: string[]
-          // Wave 8.2
           offering_type?: string | null
           virtual_session?: Json | null
           work_study_exchange?: Json | null
           location?: Json | null
           requires_scheduling?: boolean
+          fulfillers?: Json | null
           updated_at?: string
         }
       }
