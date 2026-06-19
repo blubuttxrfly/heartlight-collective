@@ -32,7 +32,7 @@ import {
   Hourglass,
   Circle,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useStorage } from '../lib/storage.tsx'
 import { useSession } from '../lib/session.ts'
 import { ExchangeAgreementEditor } from '../components/exchange/ExchangeAgreementEditor.tsx'
@@ -1141,7 +1141,8 @@ export default function Flow() {
   )
 
   const [selectedJourneyId, setSelectedJourneyId] = useState<string>(journeys[0]?.id ?? '')
-  const [view, setView] = useState<FlowView>('dashboard')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [view, setView] = useState<FlowView>(() => (searchParams.get('vendorInbox') ? 'vendor-inbox' : 'dashboard'))
   const [activePhase, setActivePhase] = useState<JourneyPhase>('during')
   const [newLogContent, setNewLogContent] = useState('')
   const [selectedCodeNum, setSelectedCodeNum] = useState(1)
@@ -1325,14 +1326,17 @@ export default function Flow() {
     return journeys.reduce((acc, j) => acc + [j.mainQuest, ...j.sideQuests].filter((q) => q.status === 'completed').length, 0)
   }, [journeys])
 
+  // Clear the vendorInbox query param once consumed
+  useEffect(() => {
+    if (searchParams.has('vendorInbox')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('vendorInbox')
+      setSearchParams(next, { replace: true })
+    }
+  }, [])
+
   return (
     <div className="px-4 pb-12 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <Link to="/" className="inline-flex items-center gap-2 text-lavender/60 hover:text-gold-400 transition-colors text-sm">
-          <ArrowLeft className="w-4 h-4" /> Back to Collective
-        </Link>
-      </div>
-
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-6 mb-4">
         <Heart className="w-8 h-8 text-gold-400 mx-auto mb-3" />

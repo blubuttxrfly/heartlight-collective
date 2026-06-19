@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity, Users, User } from 'lucide-react';
+import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity, Users, User, Inbox } from 'lucide-react';
 import { useSession } from '../lib/session';
 import SignInOverlay from './SignInOverlay';
 
@@ -116,6 +116,13 @@ export default function Header() {
                   onClick={() => setShowDropdown(false)}
                 >
                   Vendor Shops
+                </Link>
+                <Link
+                  to="/flow?vendorInbox=1"
+                  className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  <Inbox className="w-3 h-3 inline mr-1" /> Vendor Inbox
                 </Link>
                 {isSteward && (
                   <Link

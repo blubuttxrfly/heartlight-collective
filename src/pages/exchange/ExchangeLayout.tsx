@@ -1,17 +1,15 @@
-import { useState } from 'react'
 import { Outlet, NavLink, useLocation, Link } from 'react-router-dom'
-import { ArrowLeft, Heart, Sparkles, Store } from 'lucide-react'
+import { Heart, Sparkles, Store, Search } from 'lucide-react'
 import { PiShootingStar } from 'react-icons/pi'
 import { FaHandHoldingHeart } from 'react-icons/fa'
 import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
-import { VendorInbox } from '../../components/VendorInbox'
 import { StorefrontCard } from '../../components/StorefrontCard'
 
 const tabs = [
-  { path: '/exchange', label: 'Discover', icon: null },
+  { path: '/exchange', label: 'Discover', icon: Search },
   { path: '/exchange/wishes', label: 'Wishes', icon: Heart },
-  { path: '/exchange/gifts', label: 'Gifts', icon: Sparkles },
+  { path: '/exchange/gifts', label: 'Gifts', icon: FaHandHoldingHeart },
   { path: '/exchange/vendors', label: 'Vendors', icon: Store },
 ]
 
@@ -20,18 +18,12 @@ export default function ExchangeLayout() {
   const { user } = useSession()
   const { getVendors } = useStorage()
 
-  const [showVendorInbox, setShowVendorInbox] = useState(false)
-
   const isVendors = pathname === '/exchange/vendors'
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-lavender/60 hover:text-gold-400 transition-colors text-sm mb-6">
-          <ArrowLeft className="w-4 h-4" /> Back to Collective
-        </Link>
-
         <div className="text-center">
           <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
             <Heart className="w-8 h-8 text-gold-400" aria-label="Heartlight" />
@@ -40,7 +32,7 @@ export default function ExchangeLayout() {
             Wish & Gift Exchange
           </h1>
           <p className="text-lavender/50 max-w-lg mx-auto">
-            Cast a Wish, Cast a Gift, and Exchange with Fulfillment!
+            Cast a Wish, Share a Gift, and Exchange with Fulfillment!
           </p>
         </div>
       </div>
@@ -61,20 +53,6 @@ export default function ExchangeLayout() {
         </Link>
       </div>
 
-      {/* Vendor Inbox toggle */}
-      <button
-        onClick={() => setShowVendorInbox((v) => !v)}
-        className="mx-auto mb-6 flex items-center gap-2 px-4 py-2 rounded-full border border-gold-400/20 text-gold-300 hover:bg-gold-400/10 transition-all text-sm"
-      >
-        {showVendorInbox ? 'Close Vendor Inbox' : 'Open Vendor Inbox'}
-      </button>
-
-      {showVendorInbox && (
-        <div className="mb-8">
-          <VendorInbox embedded onClose={() => setShowVendorInbox(false)} />
-        </div>
-      )}
-
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 justify-center mb-6">
         {tabs.map((t) => {
@@ -92,8 +70,8 @@ export default function ExchangeLayout() {
                 }`
               }
             >
-              {Icon && <Icon className="w-3.5 h-3.5" />}
               {t.label}
+              {Icon && <Icon className="w-3.5 h-3.5" />}
             </NavLink>
           )
         })}

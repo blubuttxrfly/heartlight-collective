@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation } from 'lucide-react'
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown } from 'lucide-react';
 import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
@@ -291,6 +291,9 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedRole, setSelectedRole] = useState('')
+  const [selectedEntityType, setSelectedEntityType] = useState<'any' | 'wish' | 'gift' | 'offering' | 'vendor'>('any')
+  const [showFilters, setShowFilters] = useState(false)
   const [selectedWish, setSelectedWish] = useState(null)
   const [viewScope, setViewScope] = useState<WishScope>('universal')
   const [selectedContinent, setSelectedContinent] = useState<string>('')
@@ -337,12 +340,38 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     return Array.from(cats)
   }, [wishes])
 
+  const allRoles = useMemo(() => {
+    const set = new Set<string>()
+    wishes.forEach(w => {
+      if (w.roles?.length) w.roles.forEach((r: string) => set.add(r))
+      if (w.fulfillers?.length) w.fulfillers.forEach((f: any) => f.role && set.add(f.role))
+    })
+    return Array.from(set).sort()
+  }, [wishes])
+
   const filtered = useMemo(() => {
     let list = [...wishes]
 
     // Type filter: all | wish | offer | offering
     if (typeFilter !== 'all') {
       list = list.filter(w => w.type === typeFilter)
+    }
+
+    // Entity type filter from expanded tags panel
+    if (selectedEntityType !== 'any') {
+      if (selectedEntityType === 'vendor') {
+        list = list.filter(w => w.type === 'offering' && w.vendorId)
+      } else {
+        list = list.filter(w => w.type === selectedEntityType)
+      }
+    }
+
+    // Role filter
+    if (selectedRole) {
+      list = list.filter(w =>
+        (w.roles?.includes(selectedRole)) ||
+        (w.fulfillers?.some((f: any) => f.role === selectedRole))
+      )
     }
 
     if (search.trim()) {
@@ -412,7 +441,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     })
 
     return list
-  }, [wishes, search, selectedCategory, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
+  }, [wishes, search, selectedCategory, selectedRole, selectedEntityType, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
 
   const wishCount = wishes.filter(w => w.type === 'wish').length
   const offerCount = wishes.filter(w => w.type === 'offer').length
@@ -420,14 +449,6 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
   return (
     <div className="px-4 pb-16 max-w-6xl mx-auto">
-      {/* Stats Bar */}
-      <div className="flex items-center justify-center gap-6 mb-8 text-xs text-lavender/40 flex-wrap">
-        <span><Heart className="w-3 h-3 inline mr-1 text-magenta-400" />{wishCount} wishes</span>
-        <span><Sparkles className="w-3 h-3 inline mr-1 text-gold-400" />{offerCount} gifts</span>
-        <span><Store className="w-3 h-3 inline mr-1 text-blue-400" />{offeringCount} offerings</span>
-        <span><Tag className="w-3 h-3 inline mr-1 text-lavender/50" />{categories.length} categories</span>
-      </div>
-
       {/* Location bar */}
       <div className="mb-6 max-w-md mx-auto">
         <LocationSelect
@@ -464,7 +485,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
       {/* View Scope Toggle: Local | Regional | Universal */}
       <div className="mb-6">
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex gap-2 justify-center">
           {(['local', 'global', 'universal'] as WishScope[]).map(s => {
             const isActive = viewScope === s
             const activeClass =
@@ -579,31 +600,118 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           </div>
         </div>
 
-        {/* Category filters */}
-        <div className="flex flex-wrap gap-2">
+        {/* Expandable Tags / Filters panel */}
+        <div className="rounded-2xl border border-lavender/10 bg-void-800/30 overflow-hidden">
           <button
-            onClick={() => setSelectedCategory('')}
-            className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
-              !selectedCategory
-                ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
-                : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-            }`}
+            onClick={() => setShowFilters((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm text-lavender/70 hover:text-cream transition-colors"
           >
-            All
+            <span className="flex items-center gap-2">
+              <Filter className="w-4 h-4" /> Tags & Filters
+            </span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
           </button>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
-              className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
-                selectedCategory === cat
-                  ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
-                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-              }`}
-            >
-              {CATEGORY_EMOJIS[cat] || '✨'} {cat}
-            </button>
-          ))}
+
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="border-t border-lavender/5"
+              >
+                <div className="p-4 space-y-4">
+                  {/* Entity type */}
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">Looking for</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { value: 'any', label: 'All' },
+                        { value: 'wish', label: 'Wish' },
+                        { value: 'gift', label: 'Gift' },
+                        { value: 'offering', label: 'Offering' },
+                        { value: 'vendor', label: 'Vendor' },
+                      ].map((et) => (
+                        <button
+                          key={et.value}
+                          onClick={() => setSelectedEntityType(et.value as any)}
+                          className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                            selectedEntityType === et.value
+                              ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                              : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                          }`}
+                        >
+                          {et.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Categories */}
+                  <div>
+                    <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">Category</label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setSelectedCategory('')}
+                        className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                          !selectedCategory
+                            ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                            : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                        }`}
+                      >
+                        All
+                      </button>
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
+                          className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                            selectedCategory === cat
+                              ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                              : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                          }`}
+                        >
+                          {CATEGORY_EMOJIS[cat] || '✨'} {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Roles */}
+                  {allRoles.length > 0 && (
+                    <div>
+                      <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">Role</label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setSelectedRole('')}
+                          className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                            !selectedRole
+                              ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                              : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                          }`}
+                        >
+                          All
+                        </button>
+                        {allRoles.map((role) => (
+                          <button
+                            key={role}
+                            onClick={() => setSelectedRole(role === selectedRole ? '' : role)}
+                            className={`px-3 py-1.5 rounded-full border text-xs transition-all ${
+                              selectedRole === role
+                                ? 'bg-magenta-400/10 border-magenta-400/30 text-magenta-300'
+                                : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                            }`}
+                          >
+                            {role}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <p className="text-xs text-lavender/40">
@@ -881,10 +989,20 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           />
         )}
       </AnimatePresence>
+
+      {/* Stats Bar */}
+      <div className="flex items-center justify-center gap-6 mt-12 text-xs text-lavender/40 flex-wrap">
+        <span><Heart className="w-3 h-3 inline mr-1 text-magenta-400" />{wishCount} wishes</span>
+        <span><Sparkles className="w-3 h-3 inline mr-1 text-gold-400" />{offerCount} gifts</span>
+        <span><Store className="w-3 h-3 inline mr-1 text-blue-400" />{offeringCount} offerings</span>
+        <span><Tag className="w-3 h-3 inline mr-1 text-lavender/50" />{categories.length} categories</span>
+      </div>
     </div>
   )
 }
 
+
+/* ─── Code Frequency Ring (offering detail only) ─── */
 function WishDetailModal({ wish, onClose, onClaim }) {
   const u = URGENCY_CONFIG[wish.urgency]
   const isOffering = wish.type === 'offering'
