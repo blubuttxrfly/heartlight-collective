@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion'
 import { Heart, Globe, Infinity, TrendingUp, ArrowRight, Sparkles, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useStorage } from '../lib/storage'
 
 /* ─── Mock Data ─── */
 const treasuryStats = {
@@ -198,135 +197,6 @@ function PillarCard({ pillar, index }: { pillar: typeof pillars[0]; index: numbe
   )
 }
 
-/* ─── Profile Status Banner ─── */
-function ProfileStatusBanner() {
-  const { getPending, getApproved, getReturned } = useStorage();
-
-  const queues = [
-    { list: getPending(), label: 'pending' as const },
-    { list: getApproved(), label: 'approved' as const },
-    { list: getReturned(), label: 'returned' as const },
-  ];
-
-  const myQueue = queues.find((q) => q.list.length > 0);
-  if (!myQueue) return null;
-
-  const profile = myQueue.list[0];
-  const queue = myQueue.label;
-
-  const config = {
-    pending: {
-      border: 'border-gold-400/20',
-      bg: 'bg-gold-400/5',
-      text: 'text-gold-300',
-      subtext: 'text-lavender/50',
-      title: 'Profile Awaiting Review',
-      message: `Your profile (C.E.S. ${profile.cesNumber}) is in the pending queue. A Steward will review it for alignment with the 12 Codes of ALL.`,
-      icon: '🌱',
-    },
-    approved: {
-      border: 'border-green-400/20',
-      bg: 'bg-green-400/5',
-      text: 'text-green-300',
-      subtext: 'text-lavender/50',
-      title: 'Profile Live',
-      message: `Your profile is now visible in the Exchange! C.E.S. ${profile.cesNumber}`,
-      icon: '✦',
-    },
-    returned: {
-      border: 'border-orange-400/20',
-      bg: 'bg-orange-400/5',
-      text: 'text-orange-300',
-      subtext: 'text-lavender/50',
-      title: 'Profile Returned',
-      message: `Your profile was returned for revision. Sign in to update and resubmit. C.E.S. ${profile.cesNumber}`,
-      icon: '🍂',
-    },
-  };
-
-  const c = config[queue];
-
-  return (
-    <section className="mb-8">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`rounded-xl border ${c.border} ${c.bg} p-4`}
-      >
-        <div className="flex items-start gap-3">
-          <span className="text-xl">{c.icon}</span>
-          <div>
-            <p className={`text-sm font-medium ${c.text}`}>{c.title}</p>
-            <p className={`text-xs ${c.subtext} mt-1`}>{c.message}</p>
-          </div>
-        </div>
-      </motion.div>
-    </section>
-  );
-}
-
-/* ─── Live Directory Preview ─── */
-function LiveDirectorySection() {
-  const { getApproved } = useStorage();
-  const approved = getApproved();
-
-  if (approved.length === 0) return null;
-
-  return (
-    <section className="mb-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-serif text-2xl text-cream">Resonant Beings in the Field</h3>
-            <p className="text-sm text-lavender/50">{approved.length} {approved.length === 1 ? 'being' : 'beings'} ready for exchange</p>
-          </div>
-          <Link
-            to="/exchange"
-            className="px-4 py-2 rounded-full border border-gold-400/20 text-gold-300 text-sm hover:bg-gold-400/10 transition-all"
-          >
-            Enter Exchange <ArrowRight className="w-4 h-4 inline" />
-          </Link>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {approved.slice(0, 6).map((profile) => (
-            <Link
-              key={profile.id}
-              to="/exchange"
-              className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 hover:border-lavender/20 transition-all"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-void-900 border border-lavender/10 flex items-center justify-center text-lg">
-                  {profile.emoji || '✦'}
-                </div>
-                <div>
-                  <div className="text-cream text-sm font-medium">{profile.name}</div>
-                  {profile.title && <div className="text-xs text-lavender/50">{profile.title}</div>}
-                </div>
-              </div>
-              <p className="text-xs text-lavender/60 line-clamp-2">{profile.bio || 'A sovereign being of the Heartlight Collective.'}</p>
-              <div className="flex items-center gap-1 mt-2 text-xs text-lavender/40">
-                <span>{profile.location || 'Earth'}</span>
-                {profile.wishAvailability === 'accepting' && <span className="text-green-400"> • Open to wishes</span>}
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {approved.length > 6 && (
-          <p className="text-center mt-4 text-sm text-lavender/40">
-            +{approved.length - 6} more in the Exchange →
-          </p>
-        )}
-      </motion.div>
-    </section>
-  );
-}
-
 /* ─── Main Page ─── */
 export default function Home() {
   return (
@@ -349,8 +219,6 @@ export default function Home() {
           </p>
         </motion.div>
       </section>
-
-      <ProfileStatusBanner />
 
       {/* Sacred Pillars — the four main navigation buttons */}
       <section className="mb-12">
@@ -421,8 +289,6 @@ export default function Home() {
       <section className="mb-12">
         <TreasuryCard />
       </section>
-
-      <LiveDirectorySection />
 
       {/* Charter Teaser */}
       <section className="text-center py-8">
