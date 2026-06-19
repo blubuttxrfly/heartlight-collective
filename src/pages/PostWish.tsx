@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Sparkles, Heart, Clock, Repeat, Upload, X, MapPin, Globe } from 'lucide-react'
-import { PiShootingStar } from 'react-icons/pi'
+import { ArrowLeft, Sparkles, HandHeart, Clock, Repeat, Upload, X, MapPin, Globe } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import LocationSelect from '../components/LocationSelect'
 import { SolarGoldButton, SolarGoldLink } from '../components/SolarGoldButton'
@@ -39,12 +38,12 @@ const URGENCY_LEVELS = [
    Exchange Avenues — aligned with the Heartlight Exchange forms
    ═══════════════════════════════════════════════════════════════ */
 const AVENUES: { value: ExchangeForm; label: string; desc: string }[] = [
-  { value: 'gift', label: 'Wish & Gift Mutual Aid', desc: 'Freely given as an aligned exchange, no expectation of return' },
-  { value: 'barter', label: 'Barter / Mutual Exchange', desc: 'Swap skills, resources, or time directly' },
-  { value: 'collective_funded', label: 'Collective-Funded', desc: 'Community resources stewarded for our Greatest & Highest Good' },
-  { value: 'fixed', label: 'Fixed Heartlight Price', desc: 'A clear, agreed price in sovereign exchange' },
-  { value: 'negotiable', label: 'Negotiable / Open', desc: 'Terms discovered together between beings' },
-  { value: 'peer_payment', label: 'Peer Payment Methods', desc: 'Venmo, Cash App, Zelle, Chime, Stripe — direct between beings' }
+  { value: 'gift', label: 'Wish & Gift Mutual Aid', desc: 'Freely given as aligned exchange. No expectation of return.' },
+  { value: 'barter', label: 'Barter / Trade / Skill Swap', desc: 'One offering exchanged directly for another, agreed in scope by both beings.' },
+  { value: 'fixed', label: 'Fixed Heartlight Price', desc: 'A clear, agreed price in sovereign exchange. 99% of currency profit is dedicated to the Heartlight Collective.' },
+  { value: 'negotiable', label: 'Negotiable / Open Offer', desc: 'Terms discovered together between beings, including hybrid payment + service exchange.' },
+  { value: 'collective_funded', label: 'Collective-Funded / Open Collective', desc: 'Community resources stewarded through the Heartlight Collective for our Greatest & Highest Good.' },
+  { value: 'peer_payment', label: 'Peer Payment Methods', desc: 'Direct mutual aid between beings (Venmo, Cash App, Zelle, Chime, Stripe). 99% currency profit dedicated to the Heartlight Collective.' }
 ]
 
 const RESOURCES = [
@@ -188,7 +187,7 @@ export default function PostWish() {
 
       <div className="text-center mb-10">
         <div className="w-16 h-16 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-4">
-          <PiShootingStar className="w-8 h-8 text-gold-400" />
+          {wishType === 'wish' ? <Sparkles className="w-8 h-8 text-gold-400" /> : <HandHeart className="w-8 h-8 text-gold-400" />}
         </div>
         <h1 className="font-serif text-3xl text-cream mb-2">
           {wishType === 'wish' ? 'Cast a Wish' : 'Share a Gift'}
@@ -209,7 +208,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          Cast a Wish <Heart className="w-4 h-4" />
+          Cast a Wish <Sparkles className="w-4 h-4" />
         </button>
         <button
           onClick={() => setWishType('offer')}
@@ -219,7 +218,7 @@ export default function PostWish() {
               : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
           }`}
         >
-          Share a Gift <Sparkles className="w-4 h-4" />
+          Share a Gift <HandHeart className="w-4 h-4" />
         </button>
       </div>
 
@@ -508,7 +507,7 @@ export default function PostWish() {
         <SolarGoldButton
           type="submit"
           disabled={isSubmitting}
-          icon={<PiShootingStar className="w-5 h-5" />}
+          icon={wishType === 'wish' ? <Sparkles className="w-5 h-5" /> : <HandHeart className="w-5 h-5" />}
           iconPosition="after"
           className="w-full py-4 rounded-xl"
         >
