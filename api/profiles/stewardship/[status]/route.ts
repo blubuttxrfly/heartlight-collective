@@ -70,7 +70,7 @@ export async function GET(
         // Rebuild the index set for next time
         if (profiles.length > 0) {
           const matchingCes = profiles.map((p) => p.ces_number as string)
-          await redis.sadd(Keys.profilesByStewardship(status), ...matchingCes)
+          await redis.sadd(Keys.profilesByStewardship(status), matchingCes)
         }
       }
     }

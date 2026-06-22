@@ -30,7 +30,7 @@ export async function GET(request: Request) {
             if (w.author_ces === authorCes) wishIds.push(allIds[i])
           } catch { /* skip */ }
         }
-        if (wishIds.length > 0) await redis.sadd(Keys.wishesByAuthor(authorCes), ...wishIds)
+        if (wishIds.length > 0) await redis.sadd(Keys.wishesByAuthor(authorCes), wishIds)
       }
     } else {
       wishIds = await redis.smembers(Keys.wishesAll)

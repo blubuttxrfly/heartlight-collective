@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         }
         // Rebuild index
         if (vendorIds.length > 0) {
-          await redis.sadd(Keys.vendorsByOwner(ownerCes), ...vendorIds)
+          await redis.sadd(Keys.vendorsByOwner(ownerCes), vendorIds)
         }
       }
     } else {

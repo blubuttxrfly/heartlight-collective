@@ -30,7 +30,7 @@ export async function GET(request: Request) {
             if (j.requester_ces === ces || j.provider_ces === ces) ids.push(allIds[i])
           } catch { /* skip */ }
         }
-        if (ids.length > 0) await redis.sadd(Keys.exchangeJourneysByCes(ces), ...ids)
+        if (ids.length > 0) await redis.sadd(Keys.exchangeJourneysByCes(ces), ids)
       }
     } else {
       ids = await redis.smembers(Keys.exchangeJourneysAll)
