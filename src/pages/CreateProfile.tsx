@@ -206,6 +206,7 @@ export default function CreateProfile() {
       return;
     }
 
+    const now = new Date().toISOString();
     const initials = getInitials(name.trim());
     const record: CreatorRecord = {
       id: `profile_${Date.now()}`,
@@ -239,6 +240,8 @@ export default function CreateProfile() {
       guideGuardianStatus: guideGuardianOptIn ? 'opted_in' : 'not_opted_in',
       guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
       isPrivate,
+      createdAt: now,
+      updatedAt: now,
     };
 
     console.log('[CreateProfile] Calling unified.createProfile with queue="approved"');

@@ -166,6 +166,10 @@ export interface CreatorRecord {
 
   // NEW — Hide this profile from the public Directory and individual Exchange listings (Wave 8.3)
   isPrivate?: boolean;
+
+  // NEW — Timestamps for merge-conflict healing (Wave 8.3 follow-up)
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MutualAidSummary {

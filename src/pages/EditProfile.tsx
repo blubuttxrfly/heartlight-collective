@@ -235,9 +235,16 @@ export default function EditProfile() {
         isPrivate,
       };
 
-      // Update in unified storage (Supabase + localStorage)
-      await unified.updateProfile(updated);
-      
+      const result = await unified.updateProfile(updated);
+
+      if (!result.success) {
+        // Supabase failed but localStorage succeeded. Warn the user gently.
+        console.warn('[EditProfile] Save warning:', result.error);
+        setError(`Saved locally, but cloud sync needs attention: ${result.error}`);
+        setLoading(false);
+        return;
+      }
+
       // Update session
       await signIn(updated);
       

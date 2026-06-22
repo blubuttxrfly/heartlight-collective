@@ -47,6 +47,8 @@ function recordToRow(profile: CreatorRecord): Record<string, unknown> {
     peer_payment_methods: profile.peerPaymentMethods || [],
     location_data: profile.locationData || null,
     is_private: profile.isPrivate ?? false,
+    created_at: profile.createdAt || null,
+    updated_at: profile.updatedAt || new Date().toISOString(),
   };
   return row;
 }
@@ -90,6 +92,8 @@ function rowToRecord(row: any): CreatorRecord {
     peerPaymentMethods: Array.isArray(row.peer_payment_methods) ? row.peer_payment_methods : [],
     locationData: row.location_data || undefined,
     isPrivate: Boolean(row.is_private),
+    createdAt: row.created_at || undefined,
+    updatedAt: row.updated_at || undefined,
     // Legacy optional fields
     ray: undefined,
     rays: undefined,
@@ -229,12 +233,19 @@ export function useUnifiedStorage() {
       stewardship: profile.stewardship,
     });
     
+    const now = new Date().toISOString();
+    const profileWithTimestamps = {
+      ...profile,
+      createdAt: profile.createdAt || now,
+      updatedAt: now,
+    };
+
     // Always save to localStorage
-    local.addProfile(profile, queue);
+    local.addProfile(profileWithTimestamps, queue);
     console.log('[UnifiedStorage] Profile saved to localStorage');
     
     // Verify it was saved
-    const saved = local.findProfileByCES(profile.cesNumber || '');
+    const saved = local.findProfileByCES(profileWithTimestamps.cesNumber || '');
     console.log('[UnifiedStorage] Verification - profile found:', !!saved, saved?.cesNumber);
 
     // Try Supabase if configured — with fallback retry for missing columns
@@ -242,14 +253,14 @@ export function useUnifiedStorage() {
       try {
         const { error: supaError } = await supabase
           .from('profiles')
-          .insert(recordToRow(profile) as any)
+          .insert(recordToRow(profileWithTimestamps) as any)
 
         if (supaError) {
           // If a column is missing (e.g., tags), retry with only known-safe fields
           const msg = supaError.message?.toLowerCase() || '';
           if (msg.includes('column') && msg.includes('does not exist')) {
             console.warn('[UnifiedStorage] Supabase missing column — retrying without tags:', supaError.message);
-            const safeRow = recordToRow(profile);
+            const safeRow = recordToRow(profileWithTimestamps);
             delete safeRow.tags;
             const { error: retryErr } = await supabase.from('profiles').insert(safeRow as any);
             if (retryErr) {
@@ -304,8 +315,21 @@ export function useUnifiedStorage() {
           .single()
 
         if (!qErr && data) {
+          const remote = rowToRecord(data);
+          const localProfile = local.findProfileByCES(ces);
+
+          // Wave 8.3 follow-up: prefer the newest version, whether it lives in Supabase or localStorage
+          if (localProfile && localProfile.updatedAt) {
+            const remoteTime = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
+            const localTime = new Date(localProfile.updatedAt).getTime();
+            if (localTime > remoteTime) {
+              setLoading(false)
+              return localProfile;
+            }
+          }
+
           setLoading(false)
-          return rowToRecord(data)
+          return remote;
         }
       }
     } catch (err) {
@@ -317,20 +341,19 @@ export function useUnifiedStorage() {
   }, [local, setLoading])
 
   /* ── Update Profile ── */
-  const updateProfile = useCallback(async (profile: CreatorRecord) => {
+  const updateProfile = useCallback(async (profile: CreatorRecord): Promise<{ success: boolean; error?: string }> => {
     console.log('[UnifiedStorage] updateProfile called for CES:', profile.cesNumber, 'Name:', profile.name);
-    console.log('[UnifiedStorage] Profile data:', { 
-      cesNumber: profile.cesNumber, 
-      name: profile.name,
-      photo: profile.photo ? 'has photo' : 'no photo',
-      contactMethods: profile.contactMethods ? 'has contacts' : 'no contacts',
-      portfolioItems: profile.portfolioItems?.length || 0,
-    });
-    
+
+    const now = new Date().toISOString();
+    const updatedProfile = {
+      ...profile,
+      updatedAt: now,
+    };
+
     // Always save to localStorage
-    local.updateProfile(profile);
+    local.updateProfile(updatedProfile);
     console.log('[UnifiedStorage] Profile saved to localStorage');
-    
+
     // Verify localStorage save
     const localSaved = local.findProfileByCES(profile.cesNumber || '');
     console.log('[UnifiedStorage] localStorage verification:', localSaved ? 'FOUND' : 'NOT FOUND', localSaved?.name);
@@ -339,14 +362,8 @@ export function useUnifiedStorage() {
     if (isSupabaseConfigured()) {
       try {
         console.log('[UnifiedStorage] Attempting Supabase update...');
-        const row = recordToRow(profile);
-        console.log('[UnifiedStorage] Supabase row data:', { 
-          ces_number: row.ces_number, 
-          name: row.name,
-          peer_payment_methods: Array.isArray(row.peer_payment_methods) ? `${row.peer_payment_methods.length} methods` : 'none',
-          location_data: row.location_data ? 'set' : 'none',
-        });
-        
+        const row = recordToRow(updatedProfile);
+
         const { error: supaError } = await supabase
           .from('profiles')
           .update(row as any)
@@ -359,7 +376,7 @@ export function useUnifiedStorage() {
           if (missingColumnMatch) {
             const missingCol = missingColumnMatch[1];
             console.warn(`[UnifiedStorage] Supabase missing column "${missingCol}" — retrying without it:`, supaError.message);
-            const safeRow = recordToRow(profile);
+            const safeRow = recordToRow(updatedProfile);
             delete safeRow[missingCol];
             const { error: retryErr } = await supabase
               .from('profiles')
@@ -367,21 +384,25 @@ export function useUnifiedStorage() {
               .eq('ces_number', profile.cesNumber ?? '');
             if (retryErr) {
               console.error('[UnifiedStorage] Supabase retry update FAILED:', retryErr);
-            } else {
-              console.log('[UnifiedStorage] Supabase update succeeded after retry (column "' + missingCol + '" omitted)');
+              return { success: false, error: `Supabase update failed: ${retryErr.message}` };
             }
-          } else {
-            console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
-            throw new Error(`Supabase update failed: ${supaError.message}`);
+            console.log('[UnifiedStorage] Supabase update succeeded after retry (column "' + missingCol + '" omitted)');
+            return { success: true };
           }
-        } else {
-          console.log('[UnifiedStorage] Supabase update SUCCESS (peer_payment_methods + location_data persisted)');
+
+          console.error('[UnifiedStorage] Supabase update FAILED:', supaError);
+          return { success: false, error: `Supabase update failed: ${supaError.message}` };
         }
+
+        console.log('[UnifiedStorage] Supabase update SUCCESS');
+        return { success: true };
       } catch (err: any) {
         console.error('[UnifiedStorage] Supabase update error:', err.message);
-        // Don't throw - localStorage save succeeded
+        return { success: false, error: `Supabase update error: ${err.message}` };
       }
     }
+
+    return { success: true };
   }, [local]);
 
   /* ── Get Profiles by Stewardship Status ── */
