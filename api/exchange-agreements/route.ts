@@ -8,7 +8,9 @@
 import { redis, Keys } from '../_lib/redis.js'
 import { json, error } from '../_lib/response.js'
 
-export async function GET(request: Request) {
+
+async function GET(request: Request) {
+
   try {
     const url = new URL(request.url)
     const ces = url.searchParams.get('ces')
@@ -51,9 +53,11 @@ export async function GET(request: Request) {
   } catch (err: unknown) {
     return error(`Failed: ${err instanceof Error ? err.message : String(err)}`, 500)
   }
+
 }
 
-export async function POST(request: Request) {
+async function POST(request: Request) {
+
   try {
     const body = await request.json()
     const { id, requester_ces, provider_ces, ...rest } = body as {
@@ -85,5 +89,21 @@ export async function POST(request: Request) {
     return json(row, 201)
   } catch (err: unknown) {
     return error(`Failed: ${err instanceof Error ? err.message : String(err)}`, 500)
+  }
+
+}
+
+// ── Vercel Functions entry point ──
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const method = request.method.toUpperCase();
+    try {
+      if (method === "GET") return await GET(request);
+      if (method === "POST") return await POST(request);
+      return new Response("Method Not Allowed", { status: 405 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
   }
 }

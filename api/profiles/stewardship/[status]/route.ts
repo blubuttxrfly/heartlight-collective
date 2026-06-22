@@ -9,10 +9,10 @@
 import { redis, Keys } from '../../../_lib/redis.js'
 import { json, error } from '../../../_lib/response.js'
 
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ status: string }> }
-) {
+
+async function GET(_request: Request,
+  context: { params: Promise<{ status: string }> }) {
+
   try {
     const { status } = await context.params
 
@@ -79,5 +79,23 @@ export async function GET(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     return error(`Failed to fetch profiles by stewardship: ${message}`, 500)
+  }
+
+}
+
+// ── Vercel Functions entry point ──
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split("/").filter(Boolean);
+    const context = { params: Promise.resolve({ status: pathSegments[pathSegments.length - 1] }) };
+    const method = request.method.toUpperCase();
+    try {
+      if (method === "GET") return await GET(request, context);
+      return new Response("Method Not Allowed", { status: 405 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
   }
 }

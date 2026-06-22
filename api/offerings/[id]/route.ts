@@ -21,10 +21,10 @@ async function readOffering(id: string): Promise<Record<string, unknown> | null>
 }
 
 // ── GET: Fetch one offering ──
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+
+async function GET(_request: Request,
+  context: { params: Promise<{ id: string }> }) {
+
   try {
     const { id } = await context.params
     const offering = await readOffering(id)
@@ -38,13 +38,12 @@ export async function GET(
     const message = err instanceof Error ? err.message : String(err)
     return error(`Failed to fetch offering: ${message}`, 500)
   }
+
 }
 
-// ── PUT: Update an offering ──
-export async function PUT(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+async function PUT(request: Request,
+  context: { params: Promise<{ id: string }> }) {
+
   try {
     const { id } = await context.params
     const existing = await readOffering(id)
@@ -73,13 +72,12 @@ export async function PUT(
     const message = err instanceof Error ? err.message : String(err)
     return error(`Failed to update offering: ${message}`, 500)
   }
+
 }
 
-// ── DELETE: Remove an offering ──
-export async function DELETE(
-  _request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+async function DELETE(_request: Request,
+  context: { params: Promise<{ id: string }> }) {
+
   try {
     const { id } = await context.params
     const offering = await readOffering(id)
@@ -101,5 +99,25 @@ export async function DELETE(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     return error(`Failed to delete offering: ${message}`, 500)
+  }
+
+}
+
+// ── Vercel Functions entry point ──
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split("/").filter(Boolean);
+    const context = { params: Promise.resolve({ id: pathSegments[pathSegments.length - 1] }) };
+    const method = request.method.toUpperCase();
+    try {
+      if (method === "GET") return await GET(request, context);
+      if (method === "PUT") return await PUT(request, context);
+      if (method === "DELETE") return await DELETE(request, context);
+      return new Response("Method Not Allowed", { status: 405 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
   }
 }
