@@ -674,7 +674,8 @@ export async function syncVendor(v: VendorRecord): Promise<SyncResult<null>> {
 }
 
 export async function syncOfferingsForVendor(v: VendorRecord) {
-  const results = await Promise.all((v.offerings || []).map((o) => upsert('offerings', offeringToRow(o))));
+  // Wave 9 — route all offering writes through Upstash Redis.
+  const results = await Promise.all((v.offerings || []).map((o) => syncOffering(o)));
   const failed = results.filter((r) => !r.success);
   if (failed.length > 0) {
     log('syncOfferings', `${failed.length} offering sync(s) failed for vendor ${v.id}`);
