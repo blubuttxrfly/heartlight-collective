@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { useStorage } from '../lib/storage';
+import { fetchRemoteVendors } from '../lib/redisVendors';
 import { CREATOR_TAGS } from '../lib/constants';
 import { StorefrontCard } from '../components/StorefrontCard';
 import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges';
@@ -19,14 +20,29 @@ export default function Directory() {
   const [resultType, setResultType] = useState<'all' | 'beings' | 'vendors' | 'offerings'>('all');
   const [selectedExchangeForm, setSelectedExchangeForm] = useState<ExchangeForm | ''>('');
 
+  // Remote vendors from Upstash Redis
+  const [remoteVendors, setRemoteVendors] = useState<VendorRecord[]>([]);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+
   // Pagination: 9 items per page across all result types
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
-  const allVendors = useMemo(() => vendors.filter((v) => v.status === 'active'), [vendors]);
+  // Merge localStorage vendors with remote Redis vendors (remote wins by id)
+  const allVendors = useMemo(() => {
+    const mergedMap = new Map<string, VendorRecord>();
+    for (const v of vendors) {
+      if (v.status === 'active') mergedMap.set(v.id, v);
+    }
+    for (const v of remoteVendors) {
+      if (v.status === 'active') mergedMap.set(v.id, v);
+    }
+    return Array.from(mergedMap.values());
+  }, [vendors, remoteVendors]);
 
   useEffect(() => {
     loadProfiles();
+    loadRemoteVendors();
   }, []);
 
   const loadProfiles = async () => {
@@ -39,6 +55,12 @@ export default function Directory() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadRemoteVendors = async () => {
+    const { vendors: remote, error } = await fetchRemoteVendors();
+    setRemoteVendors(remote);
+    if (error) setRemoteError(error);
   };
 
   const toggleTag = (tag: string) => {

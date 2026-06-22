@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
+import { fetchRemoteVendors } from '../../lib/redisVendors'
 import { supabase } from '../../lib/supabase'
 import { haversineDistance, formatDistance } from '../../lib/geo'
 import { rowToWish } from '../../lib/exchangeSync'
@@ -282,11 +283,35 @@ interface ExchangeDiscoveryProps {
 
 export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps) {
   const { user } = useSession()
-  const { findProfileByCES, findVendorById, vendors, getProfiles } = useStorage()
+  const { findProfileByCES, findVendorById: findLocalVendorById, vendors: localVendors, getProfiles } = useStorage()
   const navigate = useNavigate()
 
   const [wishes, setWishes] = useState<any[]>([])
   const [isLoadingWishes, setIsLoadingWishes] = useState(true)
+
+  // Remote vendors from Upstash Redis — fresh browsers / other devices see synced shops
+  const [remoteVendors, setRemoteVendors] = useState<VendorRecord[]>([])
+
+  // Merge localStorage vendors with remote Redis vendors (remote wins by id)
+  const vendors = useMemo(() => {
+    const mergedMap = new Map<string, VendorRecord>()
+    for (const v of localVendors) mergedMap.set(v.id, v)
+    for (const v of remoteVendors) mergedMap.set(v.id, v)
+    return Array.from(mergedMap.values())
+  }, [localVendors, remoteVendors])
+
+  const findVendorById = useCallback((id: string) => {
+    return vendors.find((v) => v.id === id) || findLocalVendorById(id)
+  }, [vendors, findLocalVendorById])
+
+  // Wave 8.3 — fetch remote Vendor Shops from Upstash Redis once on mount
+  useEffect(() => {
+    let cancelled = false
+    fetchRemoteVendors().then(({ vendors: remote }) => {
+      if (!cancelled) setRemoteVendors(remote)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   // Wave 8.3 — load live wishes from Supabase, merge with local wishes and vendor offerings
   useEffect(() => {
@@ -295,15 +320,15 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     async function load() {
       setIsLoadingWishes(true)
       try {
-        // 1) Fetch from Supabase
+        // 1) Fetch wishes from Supabase
         const { data: remoteRows, error: remoteError } = await supabase.from('wishes').select('*');
         if (remoteError) throw remoteError;
-        const remote = (remoteRows || []).map(rowToWish);
+        const remoteWishes = (remoteRows || []).map(rowToWish);
         const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
         const mergedById: Record<string, any> = {}
 
         for (const w of INITIAL_WISHES) mergedById[w.id] = w
-        for (const w of remote) mergedById[w.id] = w
+        for (const w of remoteWishes) mergedById[w.id] = w
         for (const w of local) mergedById[w.id] = w
 
         // Wave 8.3 — hide wishes from private individual profiles (not vendor offerings)
@@ -322,6 +347,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
         })
 
         if (!cancelled) {
+          // Use merged vendors (local + remote) when building vendor offerings
           setWishes([...visible, ...buildVendorOfferings(vendors)])
           setIsLoadingWishes(false)
         }
