@@ -640,8 +640,37 @@ export async function syncExchangeCalendar(cal: ExchangeCalendar) {
   return upsert('exchange_calendars', exchangeCalendarToRow(cal), 'ces');
 }
 
-export async function syncVendor(v: VendorRecord) {
-  return upsert('vendors', vendorToRow(v));
+export async function syncVendor(v: VendorRecord): Promise<SyncResult<null>> {
+  // Wave 9 — vendor writes now flow through Upstash Redis instead of Supabase,
+  // because the public storefront adds columns (average_rating, reviews, etc.)
+  // that are not in the Supabase vendors schema yet.
+  try {
+    const vendorRow = vendorToRow(v)
+    const vendorRes = await fetch('/api/vendors', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vendorRow),
+    })
+
+    if (vendorRes.ok) return { success: true }
+
+    if (vendorRes.status === 409) {
+      const updateRes = await fetch(`/api/vendors/${v.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vendorRow),
+      })
+      if (updateRes.ok) return { success: true }
+      const body = await updateRes.json().catch(() => ({}))
+      return { success: false, error: `Vendor update failed: ${body.error || updateRes.statusText}` }
+    }
+
+    const body = await vendorRes.json().catch(() => ({}))
+    return { success: false, error: `Vendor sync failed: ${body.error || vendorRes.statusText}` }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: `Sync error: ${message}` }
+  }
 }
 
 export async function syncOfferingsForVendor(v: VendorRecord) {
@@ -653,16 +682,65 @@ export async function syncOfferingsForVendor(v: VendorRecord) {
   return results;
 }
 
-export async function syncOffering(o: OfferingItem) {
-  return upsert('offerings', offeringToRow(o));
+export async function syncOffering(o: OfferingItem): Promise<SyncResult<null>> {
+  // Wave 9 — offering writes now flow through Upstash Redis.
+  try {
+    const offRow = offeringToRow(o)
+    const res = await fetch('/api/offerings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(offRow),
+    })
+
+    if (res.ok) return { success: true }
+
+    if (res.status === 409) {
+      const updateRes = await fetch(`/api/offerings/${o.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offRow),
+      })
+      if (updateRes.ok) return { success: true }
+      const body = await updateRes.json().catch(() => ({}))
+      return { success: false, error: `Offering update failed: ${body.error || updateRes.statusText}` }
+    }
+
+    const body = await res.json().catch(() => ({}))
+    return { success: false, error: `Offering sync failed: ${body.error || res.statusText}` }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: `Sync error: ${message}` }
+  }
 }
 
-export async function deleteOffering(id: string) {
-  return removeById('offerings', id);
+export async function deleteOffering(id: string): Promise<SyncResult<null>> {
+  // Wave 9 — delete from Upstash Redis instead of Supabase.
+  try {
+    const res = await fetch(`/api/offerings/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { success: false, error: body.error || res.statusText }
+    }
+    return { success: true }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: message }
+  }
 }
 
-export async function deleteVendor(id: string) {
-  return removeById('vendors', id);
+export async function deleteVendor(id: string): Promise<SyncResult<null>> {
+  // Wave 9 — delete from Upstash Redis instead of Supabase.
+  try {
+    const res = await fetch(`/api/vendors/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      return { success: false, error: body.error || res.statusText }
+    }
+    return { success: true }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { success: false, error: message }
+  }
 }
 
 export async function syncExchangeAlert(a: ExchangeAlert) {
