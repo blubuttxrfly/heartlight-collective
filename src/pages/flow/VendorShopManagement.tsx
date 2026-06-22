@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {  ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon, RefreshCw, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
 import { deleteOffering } from '../../lib/exchangeSync';
 import { syncVendorToRedis } from '../../lib/redisSync';
+import { fetchRemoteVendors } from '../../lib/redisVendors';
 import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData, PortfolioItem, VendorLink } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 import LocationSelect from '../../components/LocationSelect';
@@ -1851,14 +1852,37 @@ export default function VendorShopManagement() {
   const [showCreate, setShowCreate] = useState(false);
 
   const myCes = user?.ces || null;
+  const [remoteVendors, setRemoteVendors] = useState<VendorRecord[]>([]);
+  const [remoteLoading, setRemoteLoading] = useState(false);
+
+  useEffect(() => {
+    if (!myCes) return;
+    setRemoteLoading(true);
+    fetchRemoteVendors()
+      .then(({ vendors: remote }) => {
+        if (remote.length) setRemoteVendors(remote);
+      })
+      .finally(() => setRemoteLoading(false));
+  }, [myCes]);
+
   const myVendors = useMemo(() => {
     if (!myCes) return [];
-    return vendors.filter(
+
+    // Merge remote vendors into local list, preferring local for matching ids
+    const byId = new Map<string, VendorRecord>();
+    for (const v of remoteVendors) {
+      byId.set(v.id, v);
+    }
+    for (const v of vendors) {
+      byId.set(v.id, v);
+    }
+
+    return Array.from(byId.values()).filter(
       (v) =>
         v.ownerCes === myCes ||
         v.members.some((m) => m.ces === myCes && m.status === 'active')
     );
-  }, [myCes, vendors]);
+  }, [myCes, vendors, remoteVendors]);
 
   async function handleCreate(vendor: VendorRecord) {
     const result = await addVendor(vendor);
