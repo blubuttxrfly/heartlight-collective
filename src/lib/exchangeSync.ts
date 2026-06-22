@@ -154,6 +154,12 @@ export function vendorToRow(v: VendorRecord): Record<string, unknown> {
     links: v.links || null,
     status: v.status,
     collective_funded: v.collectiveFunded,
+    // Wave 9 — public storefront data
+    reviews: v.reviews || null,
+    interconnected_profiles: v.interconnectedProfiles || null,
+    portfolio_items: v.portfolioItems || null,
+    average_rating: v.averageRating ?? null,
+    total_reviews: v.totalReviews ?? null,
     created_at: v.createdAt,
     updated_at: v.updatedAt,
   };
@@ -195,6 +201,8 @@ export function offeringToRow(o: OfferingItem): Record<string, unknown> {
     price_cents: o.priceCents ?? null,
     currency: o.currency,
     image_url: o.imageUrl || null,
+    images: Array.isArray(o.images) ? o.images : null,
+    video_url: o.videoUrl || null,
     availability: o.availability,
     consent_required: o.consentRequired,
     max_participants: o.maxParticipants ?? null,

@@ -167,6 +167,9 @@ export interface CreatorRecord {
   // NEW — Hide this profile from the public Directory and individual Exchange listings (Wave 8.3)
   isPrivate?: boolean;
 
+  // NEW — Secure symmetric interconnections with other C.E.S. accounts (Wave 9)
+  interconnectedWith?: CesInterconnection[];
+
   // NEW — Timestamps for merge-conflict healing (Wave 8.3 follow-up)
   createdAt?: string;
   updatedAt?: string;
@@ -394,8 +397,10 @@ export interface OfferingItem {
   priceCents?: number;          // For Stripe fixed-price (in cents)
   currency: CurrencyCode;
   imageUrl?: string;
+  images?: string[];        // Base64 or uploaded image URLs (PostWish-style)
   gallery?: PortfolioItem[];      // Multi-image gallery for the offering
-  availability: 'available' | 'limited' | 'waitlist' | 'unavailable';
+    videoUrl?: string;          // External video URL (YouTube/Vimeo/embed)
+availability: 'available' | 'limited' | 'waitlist' | 'unavailable';
   consentRequired: boolean;      // Must read provider's boundaries before booking
   maxParticipants?: number;      // For group sessions / events
   stripePriceId?: string;        // Stripe Price object ID
@@ -444,8 +449,40 @@ export interface VendorRecord {
   status: VendorStatus;
   collectiveFunded: boolean;     // Accepts collective-funded requests
   joinRequests: VendorJoinRequest[]; // Incoming membership requests
+  // Wave 9 — public storefront reviews, interconnection, and photos
+  portfolioItems?: PortfolioItem[];
+  reviews?: VendorReview[];
+  interconnectedProfiles?: CesInterconnection[];
+  averageRating?: number;
+  totalReviews?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface VendorReview {
+  id: string;
+  vendorId: string;
+  reviewerCes: string;
+  reviewerName: string;
+  agreementId?: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  body: string;
+  rays: RayKey[];
+  healingIntent: boolean;      // Checkbox: "I share this with honest intent of healing"
+  heartlightBadge: boolean;    // Recipient confirmed "felt, received, and continuing"
+  badgeFeltAt?: string;        // ISO timestamp when vendor/recipient marked it felt
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CesInterconnection {
+  ces: string;
+  name: string;
+  initiatedByCes: string;
+  initiatedAt: string;
+  confirmedAt?: string;
+  status: 'pending' | 'confirmed' | 'declined';
+  note?: string;
 }
 
 export interface HybridPaymentConfig {

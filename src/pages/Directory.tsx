@@ -408,7 +408,7 @@ function OfferingDirectoryCard({ vendor, offering }: { vendor: VendorRecord; off
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl border border-lavender/10 bg-void-900/40 p-5 hover:border-gold-400/30 transition-all"
     >
-      <Link to={`/storefront/${vendor.slug}`} className="block">
+      <Link to={`/flow/vendor-shop/${vendor.slug}`} className="block">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-full bg-blue-400/10 border border-blue-400/20 flex items-center justify-center">
             <Store className="w-5 h-5 text-blue-300" />

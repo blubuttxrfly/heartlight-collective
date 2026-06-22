@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon, RefreshCw } from 'lucide-react';
+import {  ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon, RefreshCw, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
@@ -634,6 +634,13 @@ function AddOfferingModal({
     return [];
   });
 
+  // Wave 9 — image file uploads + video URL (mirrors PostWish.tsx)
+  const [offeringImages, setOfferingImages] = useState<string[]>(() => {
+    if (offering?.images) return offering.images;
+    return [];
+  });
+  const [videoUrl, setVideoUrl] = useState(offering?.videoUrl || '');
+
   const categories = OFFERING_CATEGORIES;
   const priceTypes = [
     { value: 'fixed', label: 'Fixed Price', desc: 'A clear exchange amount' },
@@ -724,6 +731,8 @@ function AddOfferingModal({
       requiresScheduling: finalRequiresScheduling,
       fulfillers,
       gallery,
+      images: offeringImages,
+      videoUrl: videoUrl.trim() || undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -933,6 +942,65 @@ function AddOfferingModal({
                 placeholder="Leave blank for one-on-one"
                 className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
               />
+            </div>
+
+            {/* Images + Video */}
+            <div>
+              <label className="block text-sm text-lavender/70 mb-2">Images <span className="text-lavender/40">(optional)</span></label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                id="offering-images"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  files.forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const result = ev.target?.result as string;
+                      if (result) setOfferingImages((prev) => [...prev, result]);
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                  (e.target as HTMLInputElement).value = '';
+                }}
+              />
+              <label
+                htmlFor="offering-images"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-lavender/10 bg-void-800/40 text-lavender/60 hover:text-cream hover:border-gold-400/30 cursor-pointer transition-all text-sm"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Images
+              </label>
+              {offeringImages.length > 0 && (
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {offeringImages.map((img, i) => (
+                    <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border border-lavender/10 group">
+                      <img src={img} alt={`Upload ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setOfferingImages((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove image"
+                      >
+                        <X className="w-5 h-5 text-cream" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm text-lavender/70 mb-1.5">Video URL <span className="text-lavender/40">(optional)</span></label>
+              <input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+              />
+              <p className="text-xs text-lavender/30 mt-1">Link to a video about this offering.</p>
             </div>
 
             {/* Tags */}

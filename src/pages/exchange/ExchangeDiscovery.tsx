@@ -1011,6 +1011,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
         {selectedWish && (
           <WishDetailModal
             wish={selectedWish}
+            findVendorById={findVendorById}
             onClose={() => setSelectedWish(null)}
             onClaim={() => {
               if (selectedWish.type === 'offering') {
@@ -1132,7 +1133,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
 
 /* ─── Code Frequency Ring (offering detail only) ─── */
-function WishDetailModal({ wish, onClose, onClaim }) {
+function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any; findVendorById: (id: string) => VendorRecord | undefined; onClose: () => void; onClaim: () => void }) {
   const u = URGENCY_CONFIG[wish.urgency]
   const isOffering = wish.type === 'offering'
 
@@ -1213,7 +1214,10 @@ function WishDetailModal({ wish, onClose, onClaim }) {
         <div className="space-y-5">
           {/* Vendor icon + name */}
           {isOffering && (wish.vendorLogoUrl || wish.vendorLinks?.length > 0) && (
-            <div className="flex items-center gap-3 rounded-xl border border-lavender/10 bg-void-800/40 p-3">
+            <Link
+              to={`/flow/vendor-shop/${wish.vendorId ? (findVendorById(wish.vendorId)?.slug || wish.vendorId) : ''}`}
+              className="flex items-center gap-3 rounded-xl border border-lavender/10 bg-void-800/40 p-3 hover:border-gold-400/30 transition-all"
+            >
               {wish.vendorLogoUrl && (
                 <img src={wish.vendorLogoUrl} alt="" className="w-10 h-10 rounded-full object-cover border border-lavender/10" />
               )}
@@ -1229,12 +1233,13 @@ function WishDetailModal({ wish, onClose, onClaim }) {
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs px-2 py-1 rounded-full bg-lavender/5 border border-lavender/10 text-lavender/60 hover:text-cream hover:border-lavender/30 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     {l.label || 'Link'}
                   </a>
                 ))}
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Gallery */}

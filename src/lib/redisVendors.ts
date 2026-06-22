@@ -24,6 +24,11 @@ interface ApiVendor {
   links?: unknown[]
   status?: string
   collective_funded?: boolean
+  portfolio_items?: unknown[]
+  reviews?: unknown[]
+  interconnected_profiles?: unknown[]
+  average_rating?: number
+  total_reviews?: number
   created_at?: string
   updated_at?: string
   offerings?: ApiOffering[]
@@ -40,6 +45,8 @@ interface ApiOffering {
   currency?: string
   image_url?: string | null
   gallery?: unknown[]
+  images?: string[]
+  video_url?: string | null
   availability?: string
   consent_required?: boolean
   max_participants?: number | null
@@ -75,6 +82,11 @@ function apiVendorToRecord(v: ApiVendor): VendorRecord {
     links: Array.isArray(v.links) ? (v.links as VendorRecord['links']) : undefined,
     status: (v.status as VendorRecord['status']) || 'active',
     collectiveFunded: Boolean(v.collective_funded),
+    portfolioItems: Array.isArray(v.portfolio_items) ? (v.portfolio_items as VendorRecord['portfolioItems']) : undefined,
+    reviews: Array.isArray(v.reviews) ? (v.reviews as VendorRecord['reviews']) : undefined,
+    interconnectedProfiles: Array.isArray(v.interconnected_profiles) ? (v.interconnected_profiles as VendorRecord['interconnectedProfiles']) : undefined,
+    averageRating: typeof v.average_rating === 'number' ? v.average_rating : undefined,
+    totalReviews: typeof v.total_reviews === 'number' ? v.total_reviews : undefined,
     joinRequests: [],
     createdAt: String(v.created_at || new Date().toISOString()),
     updatedAt: String(v.updated_at || new Date().toISOString()),
@@ -92,6 +104,8 @@ function apiOfferingToRecord(o: ApiOffering): OfferingItem {
     priceCents: o.price_cents ?? undefined,
     currency: (o.currency || 'USD') as OfferingItem['currency'],
     imageUrl: o.image_url || undefined,
+    images: Array.isArray(o.images) ? (o.images as OfferingItem['images']) : undefined,
+    videoUrl: o.video_url || undefined,
     gallery: Array.isArray(o.gallery) ? (o.gallery as OfferingItem['gallery']) : undefined,
     availability: (o.availability || 'available') as OfferingItem['availability'],
     consentRequired: Boolean(o.consent_required),
