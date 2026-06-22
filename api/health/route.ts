@@ -4,8 +4,8 @@
 //  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { redis, isRedisConfigured } from '../_lib/redis'
-import { json, error } from '../_lib/response'
+import { redis, isRedisConfigured } from '../_lib/redis.js'
+import { json, error } from '../_lib/response.js'
 
 export async function GET() {
   if (!isRedisConfigured()) {

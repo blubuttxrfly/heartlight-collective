@@ -6,8 +6,8 @@
 //  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { redis, Keys } from '../../../_lib/redis'
-import { json, error } from '../../../_lib/response'
+import { redis, Keys } from '../../../_lib/redis.js'
+import { json, error } from '../../../_lib/response.js'
 
 export async function GET(
   _request: Request,

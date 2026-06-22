@@ -5,7 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import bcrypt from 'bcryptjs'
-import { redis, Keys } from './redis'
+import { redis, Keys } from './redis.js'
 
 export interface AuthResult {
   success: boolean

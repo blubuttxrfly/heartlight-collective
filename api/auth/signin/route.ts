@@ -4,8 +4,8 @@
 //  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { verifyPassphrase } from '../../_lib/auth'
-import { json, error } from '../../_lib/response'
+import { verifyPassphrase } from '../../_lib/auth.js'
+import { json, error } from '../../_lib/response.js'
 
 export async function POST(request: Request) {
   try {

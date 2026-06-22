@@ -5,9 +5,9 @@
 //  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { redis, Keys } from '../_lib/redis'
-import { hashPassphrase } from '../_lib/auth'
-import { json, error } from '../_lib/response'
+import { redis, Keys } from '../_lib/redis.js'
+import { hashPassphrase } from '../_lib/auth.js'
+import { json, error } from '../_lib/response.js'
 
 // ── GET: List all profiles ──
 export async function GET() {
