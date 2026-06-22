@@ -38,6 +38,7 @@ export interface Database {
           stewardship_note: string
           peer_payment_methods: Json          // PaymentMethodConfig[]
           location_data: Json | null           // LocationData
+          is_private: boolean                   // Hide from Directory + individual Exchange (Wave 8.3)
           created_at: string
           updated_at: string
         }
@@ -68,6 +69,7 @@ export interface Database {
           stewardship_note?: string
           peer_payment_methods?: Json
           location_data?: Json | null
+          is_private?: boolean                  // Wave 8.3
           created_at?: string
           updated_at?: string
         }
@@ -98,6 +100,7 @@ export interface Database {
           stewardship_note?: string
           peer_payment_methods?: Json
           location_data?: Json | null
+          is_private?: boolean                  // Wave 8.3
           updated_at?: string
         }
       }
@@ -820,7 +823,10 @@ export interface Database {
           scope: string
           category: string | null
           tags: string[]
+          resources: string[]                  // Wave 8.3
+          roles: string[]                      // Wave 8.3
           location: string | null
+          location_data: Json | null           // Wave 8.3
           lat: number | null
           lng: number | null
           price_cents: number | null
@@ -829,6 +835,9 @@ export interface Database {
           exchange_policy: Json | null          // ExchangeForm[]
           images: string[]
           status: string
+          urgency: string                       // Wave 8.3
+          time_commitment: string | null        // Wave 8.3
+          is_continual_offering: boolean        // Wave 8.3
           claimed_by_ces: string | null
           claimed_by_name: string | null
           collective_funding_requested: boolean
@@ -845,7 +854,10 @@ export interface Database {
           scope?: string
           category?: string | null
           tags?: string[]
+          resources?: string[]                  // Wave 8.3
+          roles?: string[]                      // Wave 8.3
           location?: string | null
+          location_data?: Json | null           // Wave 8.3
           lat?: number | null
           lng?: number | null
           price_cents?: number | null
@@ -854,6 +866,9 @@ export interface Database {
           exchange_policy?: Json | null
           images?: string[]
           status?: string
+          urgency?: string                      // Wave 8.3
+          time_commitment?: string | null        // Wave 8.3
+          is_continual_offering?: boolean        // Wave 8.3
           claimed_by_ces?: string | null
           claimed_by_name?: string | null
           collective_funding_requested?: boolean
@@ -869,7 +884,10 @@ export interface Database {
           scope?: string
           category?: string | null
           tags?: string[]
+          resources?: string[]                  // Wave 8.3
+          roles?: string[]                      // Wave 8.3
           location?: string | null
+          location_data?: Json | null           // Wave 8.3
           lat?: number | null
           lng?: number | null
           price_cents?: number | null
@@ -878,6 +896,9 @@ export interface Database {
           exchange_policy?: Json | null
           images?: string[]
           status?: string
+          urgency?: string                      // Wave 8.3
+          time_commitment?: string | null        // Wave 8.3
+          is_continual_offering?: boolean        // Wave 8.3
           claimed_by_ces?: string | null
           claimed_by_name?: string | null
           collective_funding_requested?: boolean

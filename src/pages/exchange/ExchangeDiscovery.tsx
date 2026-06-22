@@ -5,7 +5,9 @@ import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
+import { supabase } from '../../lib/supabase'
 import { haversineDistance, formatDistance } from '../../lib/geo'
+import { rowToWish } from '../../lib/exchangeSync'
 import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../../lib/constants'
 import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord, LocationData } from '../../types/ces'
 import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal'
@@ -280,14 +282,63 @@ interface ExchangeDiscoveryProps {
 
 export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps) {
   const { user } = useSession()
-  const { findProfileByCES, findVendorById, vendors } = useStorage()
+  const { findProfileByCES, findVendorById, vendors, getProfiles } = useStorage()
   const navigate = useNavigate()
 
-  const [wishes, setWishes] = useState(loadWishes)
-  // Merge vendor offerings from storage context (includes Supabase-hydrated vendors)
+  const [wishes, setWishes] = useState<any[]>([])
+  const [isLoadingWishes, setIsLoadingWishes] = useState(true)
+
+  // Wave 8.3 — load live wishes from Supabase, merge with local wishes and vendor offerings
   useEffect(() => {
-    setWishes([...loadWishes(), ...buildVendorOfferings(vendors)])
-  }, [vendors])
+    let cancelled = false
+
+    async function load() {
+      setIsLoadingWishes(true)
+      try {
+        // 1) Fetch from Supabase
+        const { data: remoteRows, error: remoteError } = await supabase.from('wishes').select('*');
+        if (remoteError) throw remoteError;
+        const remote = (remoteRows || []).map(rowToWish);
+        const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
+        const mergedById: Record<string, any> = {}
+
+        for (const w of INITIAL_WISHES) mergedById[w.id] = w
+        for (const w of remote) mergedById[w.id] = w
+        for (const w of local) mergedById[w.id] = w
+
+        // Wave 8.3 — hide wishes from private individual profiles (not vendor offerings)
+        const privateCes = new Set(
+          getProfiles()
+            .filter((p) => p.isPrivate)
+            .map((p) => p.cesNumber)
+        )
+
+        const visible = Object.values(mergedById).filter((w) => {
+          // Vendor offerings are always visible even if a member is private
+          if (w.type === 'offering' || w.vendorId) return true
+          // Individual wish/gift: hide if the author profile is private
+          if (w.postedByCes && privateCes.has(w.postedByCes)) return false
+          return true
+        })
+
+        if (!cancelled) {
+          setWishes([...visible, ...buildVendorOfferings(vendors)])
+          setIsLoadingWishes(false)
+        }
+      } catch (err) {
+        console.error('[ExchangeDiscovery] Failed to load wishes:', err)
+        if (!cancelled) {
+          // Fallback to local + vendor only
+          const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
+          setWishes([...INITIAL_WISHES, ...local, ...buildVendorOfferings(vendors)])
+          setIsLoadingWishes(false)
+        }
+      }
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [vendors, getProfiles])
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -733,7 +784,17 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           {filtered.length} {filtered.length === 1 ? 'being' : 'beings'} in the exchange field
         </p>
       </div>
-      {filtered.length === 0 ? (
+      {isLoadingWishes ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-16"
+        >
+          <Sparkles className="w-12 h-12 text-lavender/30 mx-auto mb-4 animate-pulse" />
+          <h2 className="font-serif text-2xl text-cream mb-3">Tuning into the Exchange Field</h2>
+          <p className="text-lavender/60">Gathering wishes, gifts, and offerings from across the Collective…</p>
+        </motion.div>
+      ) : filtered.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

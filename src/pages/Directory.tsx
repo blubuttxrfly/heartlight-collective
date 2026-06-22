@@ -53,6 +53,7 @@ export default function Directory() {
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
       if (p.cesNumber === '111111111') return false;
+      if (p.isPrivate) return false; // Wave 8.3 — hide private profiles from public Directory
       if (selectedTags.size > 0 && !(p.tags || []).some((t) => selectedTags.has(t))) return false;
       if (search.trim()) {
         const q = search.toLowerCase();

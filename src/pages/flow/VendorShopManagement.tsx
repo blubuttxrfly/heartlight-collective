@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, 
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
+import { deleteOffering } from '../../lib/exchangeSync';
 import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData, PortfolioItem, VendorLink } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 import LocationSelect from '../../components/LocationSelect';
@@ -414,7 +415,17 @@ function StorefrontOfferings({ vendor, onUpdate }: { vendor: VendorRecord; onUpd
     onUpdate(updated);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // Wave 8.3 — remove from Supabase first, then from local vendor state
+    try {
+      const result = await deleteOffering(id);
+      if (!result.success) {
+        console.warn('[VendorShopManagement] deleteOffering failed for', id, result.error);
+      }
+    } catch (err) {
+      console.warn('[VendorShopManagement] deleteOffering threw for', id, err);
+    }
+
     const updated = {
       ...vendor,
       offerings: vendor.offerings.filter((o) => o.id !== id),

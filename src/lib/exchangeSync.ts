@@ -487,7 +487,10 @@ export function wishToRow(w: Wish): Record<string, unknown> {
     scope: anyWish.scope || 'universal',
     category: w.category || null,
     tags: anyWish.skills?.length ? anyWish.skills : [],
+    resources: anyWish.resources || [],
+    roles: anyWish.roles || [],
     location: anyWish.location || null,
+    location_data: anyWish.locationData || null,
     lat: anyWish.locationData?.lat ?? null,
     lng: anyWish.locationData?.lon ?? null,
     price_cents: anyWish.fundsRequired || null,
@@ -495,9 +498,19 @@ export function wishToRow(w: Wish): Record<string, unknown> {
     payment_method: anyWish.paymentMethod || null,
     images: anyWish.images || [],
     status: w.status || 'open',
+    urgency: anyWish.urgency || 'low',
+    time_commitment: anyWish.timeCommitment || null,
+    is_continual_offering: anyWish.isContinualOffering || false,
     claimed_by_ces: w.claimedByCes || null,
     claimed_by_name: w.claimedByName || null,
-    collective_funding_requested: anyWish.exchangeAvenue === 'collective' || anyWish.collectiveFundingRequested || false,
+    collective_funding_requested: Array.isArray(anyWish.exchangePolicy)
+      ? anyWish.exchangePolicy.includes('collective_funded')
+      : anyWish.exchangeAvenue === 'collective' || anyWish.collectiveFundingRequested || false,
+    exchange_policy: Array.isArray(anyWish.exchangePolicy)
+      ? anyWish.exchangePolicy
+      : anyWish.exchangeAvenue
+        ? [anyWish.exchangeAvenue]
+        : [],
     created_at: w.createdAt,
     updated_at: w.updatedAt,
   };
@@ -528,9 +541,19 @@ export function rowToWish(row: any): Wish {
     roles: row.roles || [],
     images: row.images || [],
     location: row.location || '',
-    locationData: row.lat && row.lng ? { raw: row.location || '', lat: row.lat, lon: row.lng, city: null, region: null, country: null, continent: null } : (row.location_data || null),
-    exchangeAvenue: row.collective_funding_requested ? 'collective' : 'direct',
+    locationData: row.location_data
+      ? row.location_data
+      : row.lat && row.lng
+        ? { raw: row.location || '', lat: row.lat, lon: row.lng, city: null, region: null, country: null, continent: null }
+        : null,
+    exchangeAvenue: Array.isArray(row.exchange_policy) ? row.exchange_policy[0] : 'gift',
+    exchangePolicy: Array.isArray(row.exchange_policy)
+      ? row.exchange_policy
+      : row.collective_funding_requested
+        ? ['collective_funded']
+        : [],
     fundsRequired: row.price_cents || undefined,
+    fundsAvailable: row.funds_available || undefined,
     timeCommitment: row.time_commitment || '',
     isContinualOffering: row.type === 'offer' && row.is_continual_offering,
   } as unknown as Wish;

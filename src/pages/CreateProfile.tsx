@@ -95,6 +95,7 @@ export default function CreateProfile() {
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [guideGuardianOptIn, setGuideGuardianOptIn] = useState(false);
 
@@ -237,6 +238,7 @@ export default function CreateProfile() {
       stewardshipNote: '',
       guideGuardianStatus: guideGuardianOptIn ? 'opted_in' : 'not_opted_in',
       guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
+      isPrivate,
     };
 
     console.log('[CreateProfile] Calling unified.createProfile with queue="approved"');
@@ -247,7 +249,7 @@ export default function CreateProfile() {
     } catch (err: any) {
       console.error('[CreateProfile] Profile creation failed:', err);
     }
-  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile]);
+  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile, isPrivate]);
 
   // ── Steps ──
   const steps = [
@@ -683,6 +685,29 @@ export default function CreateProfile() {
               <br />
               <span className="text-lavender/50 text-xs">
                 You may opt in or out at any time with no explanation needed. ✦
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* Hide Profile From Directory */}
+        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div
+              onClick={() => setIsPrivate(!isPrivate)}
+              className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                isPrivate
+                  ? 'border-gold-400 bg-gold-400/20'
+                  : 'border-lavender/30 hover:border-lavender/50'
+              }`}
+            >
+              {isPrivate && <Check className="w-3.5 h-3.5 text-gold-400" />}
+            </div>
+            <div className="text-sm text-cream/80 leading-relaxed">
+              <span className="text-cream font-medium">Hide Profile From Directory</span>
+              <br />
+              <span className="text-lavender/50 text-xs">
+                When enabled, your profile will not appear in the public Directory or individual Exchange listings, but you may still appear through Vendor Shop offerings you are part of.
               </span>
             </div>
           </label>

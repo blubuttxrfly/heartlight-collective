@@ -70,6 +70,7 @@ export default function EditProfile() {
   
   // Guide & Guardian
   const [guideGuardianOptIn, setGuideGuardianOptIn] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   // Peer-to-Peer Payment Methods
   const [peerPaymentMethods, setPeerPaymentMethods] = useState<PaymentMethodConfig[]>([]);
@@ -106,6 +107,7 @@ export default function EditProfile() {
         setAccessibility(p.accessibility || []);
         setGuideGuardianOptIn(p.guideGuardianStatus === 'opted_in');
         setPeerPaymentMethods(p.peerPaymentMethods || []);
+        setIsPrivate(p.isPrivate || false);
       }
     };
     
@@ -230,6 +232,7 @@ export default function EditProfile() {
           ? new Date().toISOString() 
           : profile.guideGuardianOptedInAt,
         peerPaymentMethods,
+        isPrivate,
       };
 
       // Update in unified storage (Supabase + localStorage)
@@ -656,6 +659,19 @@ export default function EditProfile() {
               <div>
                 <p className="text-sm text-cream font-medium">Opt in as Heartlight Guide & Guardian 🛡️</p>
                 <p className="text-xs text-lavender/50">Support other beings in their journey and hold space for the Collective</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-lavender/10 bg-void-800/40 hover:border-gold-400/20 transition-all">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="w-5 h-5 rounded border-lavender/20 bg-void-800 accent-gold-400"
+              />
+              <div>
+                <p className="text-sm text-cream font-medium">Hide Profile From Directory 🌑</p>
+                <p className="text-xs text-lavender/50">Hide from the public Directory and individual Exchange listings. You may still appear through Vendor Shop offerings.</p>
               </div>
             </label>
           </div>

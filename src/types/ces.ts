@@ -163,6 +163,9 @@ export interface CreatorRecord {
 
   // NEW — Peer-to-peer payment methods this being accepts (Wave 7)
   peerPaymentMethods?: PaymentMethodConfig[];
+
+  // NEW — Hide this profile from the public Directory and individual Exchange listings (Wave 8.3)
+  isPrivate?: boolean;
 }
 
 export interface MutualAidSummary {

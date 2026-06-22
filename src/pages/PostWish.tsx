@@ -65,7 +65,7 @@ export default function PostWish() {
   const [urgency, setUrgency] = useState('low')
   const [locationData, setLocationData] = useState<LocationData | null>(null)
   const [scope, setScope] = useState<WishScope>('universal')
-  const [avenue, setAvenue] = useState<ExchangeForm>('gift')
+  const [selectedAvenues, setSelectedAvenues] = useState<ExchangeForm[]>(['gift'])
   const [fundsRequired, setFundsRequired] = useState('')
   const [fundsAvailable, setFundsAvailable] = useState('')
   const [timeCommitment, setTimeCommitment] = useState('')
@@ -95,7 +95,15 @@ export default function PostWish() {
     )
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAvenueToggle = (value: ExchangeForm) => {
+    setSelectedAvenues(prev =>
+      prev.includes(value)
+        ? prev.length > 1 ? prev.filter(v => v !== value) : prev
+        : [...prev, value]
+    )
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -112,15 +120,15 @@ export default function PostWish() {
       location: locationData?.raw || '',
       locationData: locationData || null,
       scope,
-      exchangeAvenue: avenue,
+      exchangePolicy: selectedAvenues,
       fundsRequired: fundsRequired ? Math.round(parseFloat(fundsRequired) * 100) : undefined,
       fundsAvailable: fundsAvailable ? Math.round(parseFloat(fundsAvailable) * 100) : undefined,
       timeCommitment,
       images,
       isContinualOffering: wishType === 'offer' ? isContinualOffering : false,
       status: 'open',
-      postedByCes: 'local_user',
-      postedByName: 'Atlas Island Being',
+      postedByCes: user?.ces || 'local_user',
+      postedByName: user?.name || 'Atlas Island Being',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -128,12 +136,18 @@ export default function PostWish() {
     const existing = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
     existing.push(wish)
     localStorage.setItem('hlw_wishes', JSON.stringify(existing))
-    syncWish(wish)
 
-    setTimeout(() => {
-      setIsSubmitting(false)
-      setSubmitted(true)
-    }, 800)
+    try {
+      const result = await syncWish(wish)
+      if (!result.success) {
+        console.warn('[PostWish] Supabase save failed; wish kept locally:', result.error)
+      }
+    } catch (err) {
+      console.warn('[PostWish] syncWish threw; wish kept locally:', err)
+    }
+
+    setIsSubmitting(false)
+    setSubmitted(true)
   }
 
   const labelText = wishType === 'wish' ? 'Wish' : 'Gift'
@@ -485,20 +499,23 @@ export default function PostWish() {
         </div>
 
         <div>
-          <label className="block text-sm text-lavender/60 mb-2">Exchange Avenue</label>
+          <label className="block text-sm text-lavender/60 mb-2">Exchange Avenues <span className="text-lavender/40">(select all that apply)</span></label>
           <div className="grid md:grid-cols-2 gap-2">
             {AVENUES.map(a => (
               <button
                 key={a.value}
                 type="button"
-                onClick={() => setAvenue(a.value)}
+                onClick={() => handleAvenueToggle(a.value)}
                 className={`px-4 py-3 rounded-xl border text-left transition-all ${
-                  avenue === a.value
+                  selectedAvenues.includes(a.value)
                     ? 'bg-gold-400/10 border-gold-400/30 text-cream'
                     : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
                 }`}
               >
-                <div className="font-medium">{a.label}</div>
+                <div className="font-medium inline-flex items-center gap-2">
+                  {selectedAvenues.includes(a.value) && <span className="text-gold-400">✓</span>}
+                  {a.label}
+                </div>
                 <div className="text-xs text-lavender/40 mt-0.5">{a.desc}</div>
               </button>
             ))}
