@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -16,7 +16,9 @@ import {
   Sparkles,
   Star,
   ImageIcon,
-  Link2, Play } from 'lucide-react';
+  Link2,
+  Play,
+  RefreshCw } from 'lucide-react';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
 import { ExchangePolicyBadges } from '../../components/ExchangePolicyBadges';
@@ -24,6 +26,7 @@ import { OfferingTypeBadge } from '../../components/OfferingTypeBadge';
 import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal';
 import { ExchangeAgreementEditor } from '../../components/exchange/ExchangeAgreementEditor';
 import { VendorGallery } from '../../components/vendor/VendorGallery';
+import { fetchRemoteVendorBySlug } from '../../lib/redisVendors';
 import { VendorReviews } from '../../components/vendor/VendorReviews';
 import { VendorInterconnectionPanel } from '../../components/vendor/VendorInterconnectionPanel';
 import type { OfferingItem, VendorRecord, ExchangeAgreement, VendorReview, CesInterconnection } from '../../types/ces';
@@ -49,9 +52,41 @@ export default function VendorShopBeingView() {
   } = useStorage();
   const { user } = useSession();
 
-  const vendor = useMemo(() => {
+  const localVendor = useMemo(() => {
     return vendors.find((v) => v.slug === slug);
   }, [vendors, slug]);
+
+  const [vendor, setVendor] = useState<VendorRecord | undefined>(localVendor);
+  const [loadingRemote, setLoadingRemote] = useState(!localVendor);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (localVendor) {
+      setVendor(localVendor);
+      setLoadingRemote(false);
+      setRemoteError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingRemote(true);
+    setRemoteError(null);
+    fetchRemoteVendorBySlug(slug || '').then((remote) => {
+      if (cancelled) return;
+      if (remote) {
+        setVendor(remote);
+      } else {
+        setRemoteError('This Vendor Shop has not appeared in the collective memory yet.');
+      }
+      setLoadingRemote(false);
+    }).catch((err: unknown) => {
+      if (cancelled) return;
+      setRemoteError(err instanceof Error ? err.message : 'Could not reach the collective memory.');
+      setLoadingRemote(false);
+    });
+
+    return () => { cancelled = true; };
+  }, [localVendor, slug]);
 
   const [selectedOffering, setSelectedOffering] = useState<OfferingItem | null>(null);
   const [editingAgreement, setEditingAgreement] = useState<ExchangeAgreement | null>(null);
@@ -59,12 +94,21 @@ export default function VendorShopBeingView() {
 
   const agreements = useMemo(() => getExchangeAgreements(), [getExchangeAgreements]);
 
+  if (loadingRemote) {
+    return (
+      <div className="px-4 py-16 max-w-4xl mx-auto text-center">
+        <RefreshCw className="w-10 h-10 text-lavender/30 mx-auto mb-4 animate-spin" />
+        <h1 className="font-serif text-xl text-cream mb-2">Searching the collective memory...</h1>
+      </div>
+    );
+  }
+
   if (!vendor) {
     return (
       <div className="px-4 py-16 max-w-4xl mx-auto text-center">
         <Store className="w-12 h-12 text-lavender/20 mx-auto mb-4" />
         <h1 className="font-serif text-2xl text-cream mb-2">Vendor Shop not found</h1>
-        <p className="text-lavender/50 mb-6">This Vendor Shop has not appeared in the collective memory yet.</p>
+        <p className="text-lavender/50 mb-6">{remoteError || "This Vendor Shop has not appeared in the collective memory yet."}</p>
         <Link
           to="/directory"
           className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-lavender/20 text-lavender-300 hover:border-gold-400/40 transition-all"

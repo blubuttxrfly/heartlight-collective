@@ -175,3 +175,16 @@ export async function fetchRemoteVendors(): Promise<RemoteVendorsResult> {
     return { vendors: [], error: message }
   }
 }
+
+
+/**
+ * Fetch a single Vendor Shop from Redis by its slug, with offerings hydrated.
+ * Returns null if not found. Used as a fallback when localStorage does not
+ * yet contain the shop the being is trying to view.
+ */
+export async function fetchRemoteVendorBySlug(slug: string): Promise<VendorRecord | null> {
+  const { vendors, error } = await fetchRemoteVendors()
+  if (error || !vendors.length) return null
+  return vendors.find((v) => v.slug === slug) || null
+}
+
