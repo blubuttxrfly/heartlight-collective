@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Store, Users, Package, Settings, Pause, Play, Trash2, X, CheckCircle, AlertCircle, Mail, UserPlus, Crown, Shield, PenTool, Globe, Sprout, Video, Clock, Calendar, MapPin, Home, Utensils, BookOpen, GraduationCap, Link2, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStorage } from '../../lib/storage';
 import { useSession } from '../../lib/session';
 import { deleteOffering } from '../../lib/exchangeSync';
+import { syncVendorToRedis } from '../../lib/redisSync';
 import type { VendorRecord, PaymentMethodConfig, VendorJoinRequest, OfferingItem, OfferingCategory, OfferingType, MeetingPlatform, ExchangeLocation, WorkStudyExchangeConfig, VirtualSessionConfig, OfferingFulfiller, LocationData, PortfolioItem, VendorLink } from '../../types/ces';
 import { PAYMENT_METHOD_LABELS, OFFERING_CATEGORIES } from '../../lib/constants';
 import LocationSelect from '../../components/LocationSelect';
@@ -1423,6 +1424,8 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
   const [showOffering, setShowOffering] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [showJoinRequests, setShowJoinRequests] = useState(false);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncMessage, setSyncMessage] = useState('');
 
   const { addVendorJoinRequest, updateVendorJoinRequest, removeVendor } = useStorage();
 
@@ -1430,6 +1433,29 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
   const memberCount = vendor.members.length;
   const activePayments = vendor.paymentMethods.filter((m) => m.enabled).length;
   const pendingRequests = vendor.joinRequests?.filter((r) => r.status === 'pending') || [];
+
+  async function handleSync() {
+    setSyncState('syncing');
+    setSyncMessage('');
+    try {
+      const result = await syncVendorToRedis(vendor);
+      if (result.success) {
+        setSyncState('success');
+        setSyncMessage(
+          `Synced to Collective Directory ✨ ${result.synced.vendor ? 'Vendor Shop + ' : ''}${result.synced.offerings} offering${result.synced.offerings !== 1 ? 's' : ''}`
+        );
+      } else {
+        setSyncState('error');
+        setSyncMessage(result.error || 'Sync incomplete');
+      }
+      // Reset after 5 seconds
+      setTimeout(() => { setSyncState('idle'); setSyncMessage(''); }, 5000);
+    } catch (err: unknown) {
+      setSyncState('error');
+      setSyncMessage(err instanceof Error ? err.message : 'Sync failed');
+      setTimeout(() => { setSyncState('idle'); setSyncMessage(''); }, 5000);
+    }
+  }
 
   function toggleStatus() {
     const nextStatus = vendor.status === 'active' ? 'paused' : 'active';
@@ -1564,6 +1590,23 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
             <Plus className="w-3.5 h-3.5" /> Add Offering
           </button>
           <button
+            onClick={handleSync}
+            disabled={syncState === 'syncing'}
+            className={`py-2 px-3 rounded-lg transition-all text-xs font-medium flex items-center justify-center gap-1.5 ${
+              syncState === 'syncing'
+                ? 'bg-blue-400/10 text-blue-300 cursor-wait'
+                : syncState === 'success'
+                  ? 'bg-green-500/10 text-green-400'
+                  : syncState === 'error'
+                    ? 'bg-red-500/10 text-red-400'
+                    : 'bg-gold-400/10 text-gold-400 hover:bg-gold-400/20'
+            }`}
+            title="Sync Vendor Shop and offerings to Collective Directory"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncState === 'syncing' ? 'animate-spin' : ''}`} />
+            Sync
+          </button>
+          <button
             onClick={() => setShowInvite(true)}
             className="flex-1 py-2 rounded-lg bg-lavender/5 text-lavender/60 hover:text-cream hover:bg-lavender/10 transition-all text-xs font-medium flex items-center justify-center gap-1.5"
           >
@@ -1588,6 +1631,22 @@ function StorefrontCard({ vendor, onUpdate }: { vendor: VendorRecord; onUpdate: 
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Sync Status */}
+        {syncMessage && (
+          <div className={`mt-2 px-3 py-2 rounded-lg text-xs flex items-center gap-2 ${
+            syncState === 'success'
+              ? 'bg-green-500/10 text-green-400'
+              : syncState === 'error'
+                ? 'bg-red-500/10 text-red-400'
+                : 'bg-blue-400/10 text-blue-300'
+          }`}>
+            {syncState === 'success' && <CheckCircle className="w-3.5 h-3.5 shrink-0" />}
+            {syncState === 'error' && <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+            {syncState === 'syncing' && <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />}
+            {syncMessage}
+          </div>
+        )}
 
         {/* Members Section */}
         {vendor.members.length > 0 && (
