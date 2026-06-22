@@ -83,8 +83,8 @@ interface StorageContextValue {
   // ── Vendor / Marketplace (Wave B+) ──
   vendors: VendorRecord[];            // reactive state — prefer this for reads
   getVendors: () => VendorRecord[];
-  addVendor: (vendor: VendorRecord) => void;
-  updateVendor: (vendor: VendorRecord) => void;
+  addVendor: (vendor: VendorRecord) => Promise<{ success: boolean; error?: string }>;
+  updateVendor: (vendor: VendorRecord) => Promise<{ success: boolean; error?: string }>;
   removeVendor: (id: string) => void;
   findVendorById: (id: string) => VendorRecord | undefined;
   findVendorByOwner: (ces: string) => VendorRecord[];
@@ -374,22 +374,43 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
 
   const getVendors = useCallback(() => stateRef.current.vendors, []);
 
-  const addVendor = useCallback((vendor: VendorRecord) => {
+  const addVendor = useCallback(async (vendor: VendorRecord): Promise<{ success: boolean; error?: string }> => {
     setState((prev) => ({
       ...prev,
       vendors: [...prev.vendors, vendor],
     }));
-    syncVendor(vendor);
-    syncOfferingsForVendor(vendor);
+    const result = await syncVendor(vendor);
+    if (!result.success) {
+      return result;
+    }
+    // Sync offerings only after vendor succeeds
+    if (vendor.offerings?.length > 0) {
+      const offeringResults = await syncOfferingsForVendor(vendor);
+      const failed = offeringResults.filter((r) => !r.success);
+      if (failed.length > 0) {
+        return { success: false, error: `${failed.length} offering sync(s) failed` };
+      }
+    }
+    return { success: true };
   }, []);
 
-  const updateVendor = useCallback((vendor: VendorRecord) => {
+  const updateVendor = useCallback(async (vendor: VendorRecord): Promise<{ success: boolean; error?: string }> => {
     setState((prev) => ({
       ...prev,
       vendors: prev.vendors.map((v) => (v.id === vendor.id ? vendor : v)),
     }));
-    syncVendor(vendor);
-    syncOfferingsForVendor(vendor);
+    const result = await syncVendor(vendor);
+    if (!result.success) {
+      return result;
+    }
+    if (vendor.offerings?.length > 0) {
+      const offeringResults = await syncOfferingsForVendor(vendor);
+      const failed = offeringResults.filter((r) => !r.success);
+      if (failed.length > 0) {
+        return { success: false, error: `${failed.length} offering sync(s) failed` };
+      }
+    }
+    return { success: true };
   }, []);
 
   const removeVendor = useCallback((id: string) => {

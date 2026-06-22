@@ -1733,12 +1733,20 @@ export default function VendorShopManagement() {
     );
   }, [myCes, vendors]);
 
-  function handleCreate(vendor: VendorRecord) {
-    addVendor(vendor);
+  async function handleCreate(vendor: VendorRecord) {
+    const result = await addVendor(vendor);
+    if (!result.success) {
+      console.error('[VendorShopManagement] Create vendor failed:', result.error);
+      alert(`Vendor Shop created locally, but cloud sync needs attention: ${result.error}`);
+    }
   }
 
-  function handleUpdate(vendor: VendorRecord) {
-    updateVendor(vendor);
+  async function handleUpdate(vendor: VendorRecord) {
+    const result = await updateVendor(vendor);
+    if (!result.success) {
+      console.error('[VendorShopManagement] Update vendor failed:', result.error);
+      alert(`Vendor Shop updated locally, but cloud sync needs attention: ${result.error}`);
+    }
   }
 
   const isSignedIn = !!myCes;
