@@ -1,17 +1,18 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronRight, ChevronLeft, Sparkles, Eye, EyeOff, Upload, Check, X, Camera, Mail, Megaphone } from 'lucide-react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import {
   FaEnvelope, FaPhone, FaInstagram, FaYoutube,
   FaSpotify, FaDiscord, FaTelegram,
 } from 'react-icons/fa6';
 import { FaThreads } from 'react-icons/fa6';
 import { SiSignal } from 'react-icons/si';
-import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
-import { useStorage } from '../lib/storage';
-import { generateCESNumberValue } from '../lib/ces';
-import CreatorTagSelector from '../components/CreatorTagSelector';
+import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
+import { useStorage } from '../lib/storage'
+import { generateCESNumberValue } from '../lib/ces'
+import { fetchAtlasMe, bindCesToAtlasUser, requestMagicLink } from '../lib/atlasAuth'
+import CreatorTagSelector from '../components/CreatorTagSelector'
 import LocationSelect from '../components/LocationSelect';
 import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData } from '../types/ces';
 import {
@@ -61,23 +62,34 @@ const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string 
 
 /* ─── Main wizard ─── */
 export default function CreateProfile() {
-  const { addProfile, getProfiles } = useStorage();
-  const unified = useUnifiedStorage();
-  const [step, setStep] = useState(1);
-  const [submitted, setSubmitted] = useState(false);
-  const [cesDigits, setCesDigits] = useState<string[]>(Array(9).fill(''));
-  const [cesSuggestions, setCesSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { addProfile, getProfiles } = useStorage()
+  const unified = useUnifiedStorage()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const [step, setStep] = useState(1)
+  const [submitted, setSubmitted] = useState(false)
+  const [bindStatus, setBindStatus] = useState<'idle' | 'bound' | 'prompt' | 'sent' | 'error'>('idle')
+  const [bindError, setBindError] = useState('')
+  const [cesDigits, setCesDigits] = useState<string[]>(Array(9).fill(''))
+  const [cesSuggestions, setCesSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // ── Form state ──
-  const [name, setName] = useState('');
-  const [pronouns, setPronouns] = useState('');
-  const [title, setTitle] = useState('');
-  const [locationData, setLocationData] = useState<LocationData | null>(null);
-  const [sun, setSun] = useState('');
-  const [moon, setMoon] = useState('');
-  const [photo, setPhoto] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Step 1
+  const [name, setName] = useState('')
+  const [pronouns, setPronouns] = useState('')
+  const [title, setTitle] = useState('')
+  const [locationData, setLocationData] = useState<LocationData | null>(null)
+  const [sun, setSun] = useState('')
+  const [moon, setMoon] = useState('')
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [broadcastOptIn, setBroadcastOptIn] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const prefilled = searchParams.get('email')
+    if (prefilled) setEmail(prefilled)
+  }, [searchParams])
 
   // Step 2
   const [bio, setBio] = useState('');
@@ -206,6 +218,12 @@ export default function CreateProfile() {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase()
+    const finalContactMethods = {
+      ...contactMethods,
+      email: normalizedEmail,
+    }
+
     const now = new Date().toISOString();
     const initials = getInitials(name.trim());
     const record: CreatorRecord = {
@@ -226,7 +244,7 @@ export default function CreateProfile() {
       consent: consent.trim(),
       portfolioLink: portfolioLink.trim(),
       portfolioItems,
-      contactMethods,
+      contactMethods: finalContactMethods,
       contactVisibility,
       publicContactVisibility: false,
       contactMethod: '',
@@ -240,6 +258,7 @@ export default function CreateProfile() {
       guideGuardianStatus: guideGuardianOptIn ? 'opted_in' : 'not_opted_in',
       guideGuardianOptedInAt: guideGuardianOptIn ? new Date().toISOString() : undefined,
       isPrivate,
+      broadcastOptIn,
       createdAt: now,
       updatedAt: now,
     };
@@ -249,10 +268,31 @@ export default function CreateProfile() {
       await unified.createProfile(record, 'approved');
       console.log('[CreateProfile] Profile creation completed');
       setSubmitted(true);
+
+      // Try to bind this C.E.S. to the Atlas identity
+      if (normalizedEmail) {
+        try {
+          const me = await fetchAtlasMe()
+          if (me.success && me.user?.email) {
+            const bind = await bindCesToAtlasUser(ces)
+            if (bind.success) {
+              setBindStatus('bound')
+            } else {
+              setBindStatus('error')
+              setBindError(bind.error || 'Could not bind C.E.S. to Atlas identity.')
+            }
+          } else {
+            setBindStatus('prompt')
+          }
+        } catch (err: any) {
+          console.warn('[CreateProfile] Atlas bind attempt failed:', err)
+          setBindStatus('prompt')
+        }
+      }
     } catch (err: any) {
       console.error('[CreateProfile] Profile creation failed:', err);
     }
-  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile, isPrivate]);
+  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile, isPrivate, email, broadcastOptIn]);
 
   // ── Steps ──
   const steps = [
@@ -324,6 +364,50 @@ export default function CreateProfile() {
           placeholder="Search city, town, or place…"
           allowRemote
         />
+
+        {/* Email + Broadcast opt-in */}
+        <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <Mail className="w-4 h-4 text-lavender/50 mt-0.5" />
+            <div className="flex-1">
+              <label className="block text-sm text-lavender/70 mb-1">
+                Email for Secure Sign-In
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none transition-colors"
+              />
+              <p className="text-xs text-lavender/40 mt-1">
+                Optional but highly encouraged. Used for cross-device, cross-subdomain sign-in through Atlas Island.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <div className={`
+              w-5 h-5 rounded border flex items-center justify-center shrink-0 mt-0.5 transition-colors
+              ${broadcastOptIn ? 'bg-gold-400/20 border-gold-400/50' : 'border-lavender/20 bg-void-800/60'}
+            `}>
+              {broadcastOptIn && <Check className="w-3.5 h-3.5 text-gold-400" />}
+            </div>
+            <input
+              type="checkbox"
+              className="hidden"
+              checked={broadcastOptIn}
+              onChange={(e) => setBroadcastOptIn(e.target.checked)}
+            />
+            <div className="flex items-start gap-2">
+              <Megaphone className="w-3.5 h-3.5 text-lavender/40 mt-0.5" />
+              <span className="text-sm text-lavender/70">
+                Receive Heartlight Collective & Atlas Island broadcasts and updates
+              </span>
+            </div>
+          </label>
+        </div>
       </div>
     </motion.div>,
 
@@ -761,6 +845,64 @@ export default function CreateProfile() {
           <p className="text-lavender/50 text-sm mb-6">
             Your profile is now live in the Directory. Heartlight Guides & Guardians may review profiles for alignment with the 12 Codes of ALL.
           </p>
+
+          {bindStatus === 'bound' && (
+            <div className="mb-6 p-4 rounded-xl border border-green-400/20 bg-green-400/5 text-sm text-green-300">
+              <Check className="w-4 h-4 inline mr-1" />
+              Your C.E.S. is securely linked to your Atlas Island email for cross-device sign-in.
+            </div>
+          )}
+
+          {bindStatus === 'prompt' && (
+            <div className="mb-6 p-4 rounded-xl border border-gold-400/20 bg-gold-400/5 text-left">
+              <p className="text-sm text-cream mb-3">
+                Add your email to secure this C.E.S. profile and sign in across devices:
+              </p>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-4 py-2.5 rounded-xl bg-void-800/60 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none transition-colors mb-3"
+              />
+              <button
+                onClick={async () => {
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return
+                  setBindStatus('idle')
+                  try {
+                    const result = await requestMagicLink(email.trim().toLowerCase(), `${window.location.origin}/auth/callback?returnTo=/account`)
+                    if (result.success) {
+                      setBindStatus('sent')
+                    } else {
+                      setBindStatus('error')
+                      setBindError(result.error || 'Could not send magic link.')
+                    }
+                  } catch (err: any) {
+                    setBindStatus('error')
+                    setBindError(err.message || 'Could not send magic link.')
+                  }
+                }}
+                disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())}
+                className="w-full py-2.5 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all disabled:opacity-40 text-sm"
+              >
+                Send Magic Link
+              </button>
+            </div>
+          )}
+
+          {bindStatus === 'sent' && (
+            <div className="mb-6 p-4 rounded-xl border border-green-400/20 bg-green-400/5 text-sm text-green-300">
+              <Check className="w-4 h-4 inline mr-1" />
+              Check your email for the Atlas Island magic link to complete the binding.
+            </div>
+          )}
+
+          {bindStatus === 'error' && (
+            <div className="mb-6 p-4 rounded-xl border border-magenta-400/20 bg-magenta-400/5 text-sm text-magenta-400">
+              {bindError}
+            </div>
+          )}
+
           <Link
             to="/"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
@@ -769,7 +911,7 @@ export default function CreateProfile() {
           </Link>
         </motion.div>
       </div>
-    );
+    )
   }
 
   return (

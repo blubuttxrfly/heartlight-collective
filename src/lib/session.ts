@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { CreatorRecord } from '../types/ces'
+import { fetchAtlasMe, signOutAtlas } from './atlasAuth'
 
 const SESSION_KEY = 'hlc_session_v2' // bumped for new unified format
 
@@ -18,6 +19,8 @@ export interface HLCUser {
   photo?: string                 // Profile photo URL
   isSteward: boolean
   fromSupabase?: boolean          // true if validated against cloud
+  atlasEmail?: string             // bound Atlas Island email identity
+  atlasSessionActive?: boolean    // true if shared session cookie is valid
 }
 
 /* ═══ Helpers ── read/write localStorage ═══ */
@@ -84,10 +87,46 @@ export function useSession() {
   }, [])
 
   /* ── Sign out ── */
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
     console.log('[useSession] signOut called')
+    try {
+      await signOutAtlas()
+    } catch (err) {
+      console.warn('[useSession] Atlas sign-out failed:', err)
+    }
     writeSession(null)
     setUser(null)
+  }, [])
+
+  /* ── Refresh Atlas session status in the background ── */
+  useEffect(() => {
+    let mounted = true
+    fetchAtlasMe()
+      .then((me) => {
+        if (!mounted) return
+        if (me.success && me.user?.email) {
+          setUser((prev) => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              atlasEmail: me.user!.email,
+              atlasSessionActive: true,
+            }
+          })
+        } else {
+          setUser((prev) => {
+            if (!prev) return prev
+            return {
+              ...prev,
+              atlasSessionActive: false,
+            }
+          })
+        }
+      })
+      .catch((err) => {
+        console.warn('[useSession] Atlas session check failed:', err)
+      })
+    return () => { mounted = false }
   }, [])
 
   /* ── Refresh (for external changes) ── */

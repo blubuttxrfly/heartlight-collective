@@ -18,6 +18,8 @@ import SignIn from './pages/SignIn'
 import EditProfile from './pages/EditProfile'
 import Profile from './pages/Profile'
 import ResourceFlow from './pages/ResourceFlow'
+import AuthCallback from './pages/AuthCallback'
+import Account from './pages/Account'
 
 function StorefrontRedirect() {
   const { slug } = useParams<{ slug: string }>()
@@ -60,6 +62,8 @@ function App() {
           <Route path="/steward" element={<StewardGate />} />
           <Route path="/my-storefronts" element={<Navigate to="/flow/vendor-shop" replace />} />
           <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/profile/:ces" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
 

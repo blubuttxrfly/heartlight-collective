@@ -167,6 +167,9 @@ export interface CreatorRecord {
   // NEW — Hide this profile from the public Directory and individual Exchange listings (Wave 8.3)
   isPrivate?: boolean;
 
+  // NEW — Consent to receive Heartlight Collective + Atlas Island broadcasts and updates
+  broadcastOptIn?: boolean;
+
   // NEW — Secure symmetric interconnections with other C.E.S. accounts (Wave 9)
   interconnectedWith?: CesInterconnection[];
 
