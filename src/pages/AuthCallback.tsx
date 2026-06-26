@@ -14,7 +14,7 @@ import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 export default function AuthCallback() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { signIn } = useSession()
+  const { atlasSignIn } = useSession()
   const unified = useUnifiedStorage()
   const [status, setStatus] = useState('Opening the sacred doorway...')
   const [error, setError] = useState('')
@@ -39,7 +39,7 @@ export default function AuthCallback() {
           setStatus(`Welcoming back ${cesProfileId}...`)
           const profile = await unified.findProfileByCES(cesProfileId)
           if (profile) {
-            await signIn(profile)
+            atlasSignIn(me.user, profile)
             navigate(returnTo)
             return
           }
@@ -57,7 +57,7 @@ export default function AuthCallback() {
           if (!bind.success) {
             console.warn('[AuthCallback] bind-ces failed:', bind.error)
           }
-          await signIn(matchedByEmail)
+          atlasSignIn(me.user, matchedByEmail)
           navigate(returnTo)
           return
         }
@@ -72,7 +72,7 @@ export default function AuthCallback() {
     }
 
     completeSignIn()
-  }, [navigate, params, signIn, unified])
+  }, [navigate, params, atlasSignIn, unified])
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">

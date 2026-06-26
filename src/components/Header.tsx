@@ -94,7 +94,13 @@ export default function Header() {
               >
                 <div className="px-4 py-3 border-b border-lavender/5">
                   <p className="text-xs text-lavender/50">C.E.S.</p>
-                  <p className="text-sm text-gold-300 font-mono">{user?.ces}</p>
+                  <p className="text-sm text-gold-300 font-mono mb-1">{user?.ces || '—'}</p>
+                  {user?.atlasEmail && (
+                    <>
+                      <p className="text-xs text-lavender/50">Atlas Email</p>
+                      <p className="text-xs text-cream/80 truncate">{user.atlasEmail}</p>
+                    </>
+                  )}
                 </div>
                 <Link
                   to={`/profile/${user?.ces}`}
