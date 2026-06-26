@@ -97,7 +97,7 @@ export default function Header() {
                   <p className="text-sm text-gold-300 font-mono mb-1">{user?.ces || '—'}</p>
                   {user?.atlasEmail && (
                     <>
-                      <p className="text-xs text-lavender/50">Atlas Email</p>
+                      <p className="text-xs text-lavender/50">Email</p>
                       <p className="text-xs text-cream/80 truncate">{user.atlasEmail}</p>
                     </>
                   )}

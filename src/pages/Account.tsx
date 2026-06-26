@@ -102,8 +102,8 @@ export default function Account() {
       >
         <div className="text-center">
           <Shield className="w-10 h-10 text-gold-400 mx-auto mb-3" />
-          <h1 className="font-serif text-3xl text-cream mb-2">Atlas Island Account</h1>
-          <p className="text-sm text-lavender/50">
+          <h1 className="font-serif text-3xl text-cream mb-2">C.E.S. Account</h1>
+          <p className="text-sm text-lavender/60 mb-6">
             Manage the email identity that secures your C.E.S. across all Atlas Island subdomains.
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function Account() {
           <h2 className="font-serif text-lg text-cream mb-4">Current Connection</h2>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center">
-              <span className="text-lavender/60">Atlas Email:</span>
+              <span className="text-lavender/60">Email:</span>
               <span className="text-cream">{atlasEmail || 'Not connected'}</span>
             </div>
             <div className="flex justify-between items-center">
