@@ -31,178 +31,7 @@ const CODES_DATA = [
   { number: 12, name: 'Co-Creation', ray: 'ALL', color: '#e8d4ff' },
 ]
 
-/* ─── Mock Wishes (initial data) ─── */
-const INITIAL_WISHES = [
-  {
-    id: 'wish_001',
-    type: 'wish',
-    title: 'Help building a React + Supabase dashboard for climate action',
-    description: 'I need frontend support for building a real-time climate action dashboard that tracks community carbon offset contributions. Using React, Tailwind, and Supabase real-time subscriptions.',
-    category: 'Tech & Development',
-    skills: ['react', 'supabase', 'tailwind', 'typescript'],
-    resources: ['Time', 'Skills'],
-    roles: ['co-creator', 'learner'],
-    urgency: 'medium',
-    location: 'Remote / Anywhere',
-    exchangeAvenue: 'direct',
-    fundsRequired: 0,
-    timeCommitment: '5-10 hours over 2 weeks',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_01',
-    postedByName: 'Gaia Weaver',
-    createdAt: '2026-06-12T10:00:00Z',
-  },
-  {
-    id: 'wish_002',
-    type: 'offer',
-    title: 'I offer free astrology readings for Heartlight Collective members',
-    description: 'I practice evolutionary astrology focused on soul purpose and current transits. Happy to offer readings for beings in the Collective who are navigating transitions or seeking clarity.',
-    category: 'Astrology & Guidance',
-    skills: ['astrology', 'counseling', 'evolutionary astrology'],
-    resources: ['Time', 'Skills'],
-    roles: ['teacher', 'guide'],
-    urgency: 'low',
-    location: 'Remote / Zoom',
-    exchangeAvenue: 'direct',
-    fundsAvailable: 0,
-    timeCommitment: '90-minute sessions',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_02',
-    postedByName: 'Cosmic Bloom',
-    createdAt: '2026-06-12T12:00:00Z',
-  },
-  {
-    id: 'wish_003',
-    type: 'wish',
-    title: 'Seeking $500 for solar panel installation on community center',
-    description: 'We are installing solar panels on the Atlas Island community center to reduce our carbon footprint and model renewable energy for the Collective. Need $500 for final hardware costs.',
-    category: 'Climate Action',
-    skills: [],
-    resources: ['Funds'],
-    roles: ['co-creator'],
-    urgency: 'high',
-    location: 'Burlington, VT',
-    exchangeAvenue: 'collective',
-    fundsRequired: 50000,
-    timeCommitment: 'One-time support',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_03',
-    postedByName: 'Sol Guardian',
-    createdAt: '2026-06-12T14:00:00Z',
-  },
-  {
-    id: 'wish_004',
-    type: 'offer',
-    title: 'Graphic design support for climate activist campaigns',
-    description: 'Professional graphic designer with 8 years experience. I offer pro-bono design for climate action campaigns: posters, social media, presentations. Passionate about visual storytelling for the movement.',
-    category: 'Creative & Design',
-    skills: ['graphic design', 'branding', 'social media', 'illustration'],
-    resources: ['Time', 'Skills', 'Equipment'],
-    roles: ['co-creator', 'teacher'],
-    urgency: 'low',
-    location: 'Remote / Anywhere',
-    exchangeAvenue: 'direct',
-    fundsAvailable: 0,
-    timeCommitment: '2-5 hours per project',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_04',
-    postedByName: 'Vision Seed',
-    createdAt: '2026-06-12T16:00:00Z',
-  },
-  {
-    id: 'wish_005',
-    type: 'offer',
-    title: 'Free breathwork sessions for community wellness circles',
-    description: 'I hold space for somatic breathwork journeys. This is a continual offering — feel called whenever you need to return to your breath. I offer sessions weekly and welcome new beings at any time.',
-    category: 'Healing & Wellness',
-    skills: ['breathwork', 'somatic practice', 'facilitation'],
-    resources: ['Time', 'Skills'],
-    roles: ['teacher', 'guide'],
-    urgency: 'low',
-    location: 'Remote / Anywhere',
-    exchangeAvenue: 'direct',
-    fundsAvailable: 0,
-    timeCommitment: '60-minute sessions, weekly availability',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_05',
-    postedByName: 'Breath of Gaia',
-    createdAt: '2026-06-12T18:00:00Z',
-    isContinualOffering: true,
-    claims: [],
-  },
-  // ═══ Demo Vendor Offerings ═══
-  {
-    id: 'offering_001',
-    type: 'offering',
-    title: 'Evolutionary Astrology Reading — 90 min',
-    description: 'A deep dive into your soul purpose, current transits, and heartlight alignment. Sessions held via Zoom with recording available.',
-    category: 'Astrology & Guidance',
-    skills: ['astrology', 'evolutionary astrology', 'transit interpretation'],
-    resources: ['Time', 'Skills'],
-    roles: ['teacher', 'guide'],
-    urgency: 'low',
-    location: 'Remote / Zoom',
-    exchangeAvenue: 'direct',
-    fundsAvailable: 0,
-    timeCommitment: '90-minute session',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_02',
-    postedByName: 'Cosmic Bloom',
-    createdAt: '2026-06-12T19:00:00Z',
-    vendorId: 'vendor_lunas_star',
-    vendorName: "Luna's Star Readings",
-    priceType: 'fixed',
-    priceCents: 7500,
-    availability: 'available',
-    paymentMethods: [
-      { type: 'stripe', enabled: true },
-      { type: 'venmo', enabled: true, venmoUsername: '@cosmicbloom' },
-      { type: 'collective', enabled: true, collectivePriority: false },
-    ],
-  },
-  {
-    id: 'offering_002',
-    type: 'offering',
-    title: 'Climate Action Campaign Design — Pro Bono',
-    description: 'Professional graphic design for climate justice campaigns. Posters, social assets, presentations, and brand identity. Vision Seed contributes via the Green Canvas Collective.',
-    category: 'Creative & Design',
-    skills: ['graphic design', 'branding', 'social media', 'illustration'],
-    resources: ['Time', 'Skills', 'Equipment'],
-    roles: ['co-creator', 'teacher'],
-    urgency: 'low',
-    location: 'Remote / Anywhere',
-    exchangeAvenue: 'direct',
-    fundsAvailable: 0,
-    timeCommitment: '2-5 hours per project',
-    selectedCodes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    status: 'open',
-    postedByCes: 'local_being_04',
-    postedByName: 'Vision Seed',
-    createdAt: '2026-06-12T20:00:00Z',
-    vendorId: 'vendor_green_canvas',
-    vendorName: 'Green Canvas Collective',
-    priceType: 'gift',
-    availability: 'limited',
-    paymentMethods: [
-      { type: 'venmo', enabled: true, venmoUsername: '@visionseed' },
-      { type: 'collective', enabled: true, collectivePriority: true },
-    ],
-  },
-]
-
-/* ─── Helper: load wishes from localStorage ─── */
-function loadWishes() {
-  const stored = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
-  return [...INITIAL_WISHES, ...stored]
-}
-
-/* ─── Helper: load vendor offerings from storage context ─── */
+/* ─── Helper: build vendor offerings from storage context ─── */
 function buildVendorOfferings(vendors: VendorRecord[]) {
   const offerings: any[] = []
   for (const v of vendors) {
@@ -216,7 +45,6 @@ function buildVendorOfferings(vendors: VendorRecord[]) {
         status: 'open',
         vendorName: v.name,
         vendorId: v.id,
-        // Normalize fields the grid expects
         skills: [],
         resources: [],
         roles: o.fulfillers?.map((f: any) => f.role).filter(Boolean) || [],
@@ -246,10 +74,6 @@ function buildVendorOfferings(vendors: VendorRecord[]) {
     }
   }
   return offerings
-}
-
-function loadAllItems(vendors: VendorRecord[]) {
-  return [...loadWishes(), ...buildVendorOfferings(vendors)]
 }
 
 const CATEGORY_EMOJIS = {
@@ -313,7 +137,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     return () => { cancelled = true }
   }, [])
 
-  // Wave 8.3 — load live wishes from Supabase, merge with local wishes and vendor offerings
+  // Wave 8.3 — load live wishes, merge with local wishes and vendor offerings
   useEffect(() => {
     let cancelled = false
 
@@ -327,7 +151,6 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
         const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
         const mergedById: Record<string, any> = {}
 
-        for (const w of INITIAL_WISHES) mergedById[w.id] = w
         for (const w of remoteWishes) mergedById[w.id] = w
         for (const w of local) mergedById[w.id] = w
 
@@ -356,7 +179,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
         if (!cancelled) {
           // Fallback to local + vendor only
           const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
-          setWishes([...INITIAL_WISHES, ...local, ...buildVendorOfferings(vendors)])
+          setWishes([...local, ...buildVendorOfferings(vendors)])
           setIsLoadingWishes(false)
         }
       }
@@ -827,9 +650,12 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           className="text-center py-16"
         >
           <Sparkles className="w-12 h-12 text-lavender/30 mx-auto mb-4" />
-          <h2 className="font-serif text-2xl text-cream mb-3">The Field Awaits</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">The Field is Still Dreaming</h2>
+          <p className="text-lavender/60 mb-2">
+            The Heartlight Collective is young, and the exchange field is just beginning to bloom.
+          </p>
           <p className="text-lavender/60 mb-6">
-            No beings match your search yet. You can be the first to plant your heartlight here.
+            Be the first to plant a wish, offer a gift, or open a Vendor Shop.
           </p>
           <Link
             to="/exchange/wish/cast-wish?type=wish"
@@ -1074,7 +900,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
                   target.claimedAt = new Date().toISOString()
                 }
                 localStorage.setItem('hlw_wishes', JSON.stringify(stored))
-                setWishes(loadWishes())
+                setWishes(JSON.parse(localStorage.getItem('hlw_wishes') || '[]'))
               }
               setSelectedWish(null)
             }}
@@ -1110,7 +936,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
             agreement={editingAgreement}
             onClose={() => {
               setEditingAgreement(null)
-              setWishes(loadWishes())
+              setWishes(JSON.parse(localStorage.getItem('hlw_wishes') || '[]'))
             }}
             onSigned={() => {
               setEditingAgreement(null)

@@ -6,7 +6,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { CreatorRecord, AuthorizedStewardEntry, SecurityLogEntry, AgreementRecord, VendorRecord, VendorInvite, ExchangeRequest, CollectivePetition, VendorJoinRequest, ExchangeAgreement, ExchangeCalendar, AvailabilityBlock, ScheduledMeeting, AgreementParty, AgreementPartyWithdrawal, SafetyReport, ExchangeAlert, ExchangeJourney } from '../types/ces';
-import { seedDevData } from './seedData';
 import {
   syncVendor,
   deleteVendor,
@@ -224,9 +223,7 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       initial.approved = [atlasProfile, ...initial.approved];
     }
 
-    // Dev-only: seed interconnected mock exchange data when storage is empty
-    const seeded = seedDevData(initial);
-    return seeded;
+    return initial;
   });
 
   // Hydrate from Supabase on mount (open collective transparency)
