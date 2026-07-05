@@ -6,9 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
 import { fetchRemoteVendors } from '../../lib/redisVendors'
-import { supabase } from '../../lib/supabase'
 import { haversineDistance, formatDistance } from '../../lib/geo'
-import { rowToWish } from '../../lib/exchangeSync'
 import { CONTINENTS, CONTINENT_EMOJIS, DEFAULT_LOCAL_RADIUS_KM, LOCAL_RADIUS_PRESETS } from '../../lib/constants'
 import type { WishScope, ExchangeAgreement, OfferingItem, VendorRecord, LocationData } from '../../types/ces'
 import { ExchangeRequestModal } from '../../components/exchange/ExchangeRequestModal'
@@ -144,15 +142,11 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     async function load() {
       setIsLoadingWishes(true)
       try {
-        // 1) Fetch wishes from Supabase
-        const { data: remoteRows, error: remoteError } = await supabase.from('wishes').select('*');
-        if (remoteError) throw remoteError;
-        const remoteWishes = (remoteRows || []).map(rowToWish);
+        // Wave 10 — pure localStorage, no Supabase dependency
         const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
-        const mergedById: Record<string, any> = {}
 
-        for (const w of remoteWishes) mergedById[w.id] = w
-        for (const w of local) mergedById[w.id] = w
+        // Safety: ensure all items are valid objects with an id
+        const validWishes = Array.isArray(local) ? local.filter((w: any) => w && typeof w === 'object' && w.id) : []
 
         // Wave 8.3 — hide wishes from private individual profiles (not vendor offerings)
         const privateCes = new Set(
@@ -161,7 +155,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
             .map((p) => p.cesNumber)
         )
 
-        const visible = Object.values(mergedById).filter((w) => {
+        const visible = validWishes.filter((w: any) => {
           // Vendor offerings are always visible even if a member is private
           if (w.type === 'offering' || w.vendorId) return true
           // Individual wish/gift: hide if the author profile is private
@@ -177,9 +171,8 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
       } catch (err) {
         console.error('[ExchangeDiscovery] Failed to load wishes:', err)
         if (!cancelled) {
-          // Fallback to local + vendor only
-          const local = JSON.parse(localStorage.getItem('hlw_wishes') || '[]')
-          setWishes([...local, ...buildVendorOfferings(vendors)])
+          // Fallback to vendor offerings only
+          setWishes(buildVendorOfferings(vendors))
           setIsLoadingWishes(false)
         }
       }

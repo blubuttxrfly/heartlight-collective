@@ -4,7 +4,7 @@
 //  Co-created with Atlas Morphoenix
 // ─────────────────────────────────────────────────────────────
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Sparkles, ChevronLeft } from 'lucide-react'
 import { PiShootingStar } from 'react-icons/pi'
@@ -13,7 +13,6 @@ import { useSession } from '../../lib/session'
 import { useStorage } from '../../lib/storage'
 import { findResonantMatches, ALIGNMENT_MESSAGES } from '../../lib/matchingEngine'
 import type { Wish, ExchangeForm, LocationData, MatchResult } from '../../types/ces'
-import { useSearchParams } from 'react-router-dom'
 
 /* ─── Wizard Steps ─── */
 type WizardStep =
@@ -71,8 +70,6 @@ function StepIndicator({ currentStep, totalSteps }: { currentStep: number; total
 export default function WishWizard() {
   const { user } = useSession()
   const storage = useStorage()
-  const [searchParams] = useSearchParams()
-  const urlType = searchParams.get('type') === 'gift' ? 'offer' : 'wish'
   const [step, setStep] = useState<WizardStep>('welcome')
   const [stepIndex, setStepIndex] = useState(0)
 
@@ -90,9 +87,10 @@ export default function WishWizard() {
   const [unregBio, setUnregBio] = useState('')
 
   // ── Step 3: Wish details ──
-  const [wishType, setWishType] = useState<'wish' | 'offer'>('wish')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [giftDescription, setGiftDescription] = useState('')
+  const [wishPhotos, setWishPhotos] = useState<string[]>([])
   const [category, setCategory] = useState('')
   const [skillsNeeded, setSkillsNeeded] = useState<string[]>([])
   const [resourcesNeeded, setResourcesNeeded] = useState<string[]>([])
@@ -509,24 +507,6 @@ export default function WishWizard() {
               exit={{ opacity: 0, y: -20 }}
             >
               <h2 className="font-serif text-2xl text-cream mb-2">What Do You Wish For?</h2>
-              <p className="text-lavender/50 mb-6">Speak your intention clearly. The field listens.</p>
-
-              {/* Wish type toggle */}
-              <div className="flex gap-2 mb-6">
-                {(['wish', 'offer'] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setWishType(t)}
-                    className={`flex-1 py-3 rounded-full border transition-all ${
-                      wishType === t
-                        ? 'bg-gold-500/20 border-gold-400 text-gold-400'
-                        : 'border-lavender/20 text-lavender/60 hover:border-lavender/40'
-                    }`}
-                  >
-                    {t === 'wish' ? '✨ Cast a Wish' : '🎁 Share a Gift'}
-                  </button>
-                ))}
-              </div>
 
               <div className="space-y-5">
                 <div>
@@ -535,7 +515,7 @@ export default function WishWizard() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder={wishType === 'wish' ? "What is your heart calling for?" : "What gift are you offering?"}
+                    placeholder="What is your heart calling for?"
                     className="w-full px-4 py-3 bg-void-900 border border-lavender/20 rounded-xl text-cream placeholder:text-lavender/30 focus:border-gold-400 focus:outline-none"
                   />
                 </div>
@@ -547,6 +527,26 @@ export default function WishWizard() {
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Describe your wish in detail. What does fulfillment look like?"
                     rows={4}
+                    className="w-full px-4 py-3 bg-void-900 border border-lavender/20 rounded-xl text-cream placeholder:text-lavender/30 focus:border-gold-400 focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* Photo Upload */}
+                <div>
+                  <label className="block text-lavender/60 text-sm mb-2">Images (optional)</label>
+                  <PhotoUploader photos={wishPhotos} onChange={setWishPhotos} />
+                </div>
+
+                <div className="bg-void-900/50 border border-gold-400/20 rounded-xl p-5">
+                  <h3 className="text-cream font-medium mb-2">🎁 What Can You Offer?</h3>
+                  <p className="text-lavender/50 text-sm mb-4">
+                    Sharing a gift is optional yet deeply significant. What can you give to the field?
+                  </p>
+                  <textarea
+                    value={giftDescription}
+                    onChange={(e) => setGiftDescription(e.target.value)}
+                    placeholder="Describe what you are offering in return... a skill, resource, time, or simply your presence."
+                    rows={3}
                     className="w-full px-4 py-3 bg-void-900 border border-lavender/20 rounded-xl text-cream placeholder:text-lavender/30 focus:border-gold-400 focus:outline-none resize-none"
                   />
                 </div>
@@ -827,7 +827,7 @@ export default function WishWizard() {
               <div className="w-20 h-20 rounded-full bg-gold-400/10 border border-gold-400/20 flex items-center justify-center mx-auto mb-8 animate-spin">
                 <Sparkles className="w-10 h-10 text-gold-400" />
               </div>
-              <h2 className="font-serif text-2xl text-cream mb-4">The Field Is Listening...</h2>
+              <h2 className="font-serif text-2xl text-cream mb-4">Aligning your wish with resonant beings...</h2>
               <AnimatePresence mode="wait">
                 <motion.p
                   key={alignmentMessage}
@@ -1010,6 +1010,8 @@ export default function WishWizard() {
                     setMatches([])
                     setSelectedMatch(null)
                     setRequestMessage('')
+                    setGiftDescription('')
+                    setWishPhotos([])
                   }}
                   className="px-6 py-3 rounded-full border border-lavender/20 text-lavender/60 hover:border-lavender/40 transition-all"
                 >
@@ -1025,7 +1027,7 @@ export default function WishWizard() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TagInput — Reusable tag component with suggestions
+   TagInput — Reusable tag component with suggestions + click-outside
    ═══════════════════════════════════════════════════════════════ */
 
 function TagInput({
@@ -1041,6 +1043,7 @@ function TagInput({
 }) {
   const [input, setInput] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const addTag = (tag: string) => {
     const trimmed = tag.trim()
@@ -1057,8 +1060,21 @@ function TagInput({
       !tags.includes(s)
   )
 
+  // Click outside to dismiss dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSuggestions])
+
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <div className="bg-void-900 border border-lavender/20 rounded-xl p-3">
         <div className="flex flex-wrap gap-2 mb-2">
           {tags.map((tag) => (
@@ -1121,6 +1137,92 @@ function TagInput({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PhotoUploader — Simple image upload (base64 for localStorage)
+   ═══════════════════════════════════════════════════════════════ */
+
+function PhotoUploader({ photos, onChange }: { photos: string[]; onChange: (photos: string[]) => void }) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    const newPhotos: string[] = []
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue
+      if (photos.length + newPhotos.length >= 5) break
+
+      const reader = new FileReader()
+      const promise = new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string)
+      })
+      reader.readAsDataURL(file)
+      const base64 = await promise
+      newPhotos.push(base64)
+    }
+
+    if (newPhotos.length > 0) {
+      onChange([...photos, ...newPhotos])
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removePhoto = (index: number) => {
+    onChange(photos.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div>
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-3">
+          {photos.map((photo, i) => (
+            <div key={i} className="relative group">
+              <img
+                src={photo}
+                alt={`Wish image ${i + 1}`}
+                className="w-20 h-20 object-cover rounded-lg border border-lavender/20"
+              />
+              <button
+                onClick={() => removePhoto(i)}
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Remove photo"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {photos.length < 5 && (
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-2 px-4 py-3 border border-dashed border-lavender/30 rounded-xl text-lavender/60 hover:border-gold-400 hover:text-gold-400 transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Add Photo
+          <span className="text-xs text-lavender/40">({photos.length}/5)</span>
+        </button>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
     </div>
   )
 }

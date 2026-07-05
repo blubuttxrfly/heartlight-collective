@@ -48,10 +48,20 @@ export default function Directory() {
   const loadProfiles = async () => {
     setLoading(true);
     try {
-      const all = await unified.getApproved();
+      // Show ALL profiles (pending, approved, returned) — the Heartlight Collective
+      // is young and every being should be visible in the Directory
+      const all = await unified.getProfiles();
       setProfiles(all);
     } catch (err: any) {
       console.error('[Directory] Failed to load profiles:', err.message);
+      // Fallback: read directly from localStorage
+      try {
+        const raw = localStorage.getItem('hlc_approved') || localStorage.getItem('hlc_pending') || '[]';
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setProfiles(parsed);
+      } catch {
+        setProfiles([]);
+      }
     } finally {
       setLoading(false);
     }
