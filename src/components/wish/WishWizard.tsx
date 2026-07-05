@@ -565,14 +565,80 @@ export default function WishWizard() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-lavender/60 text-sm mb-2">Skills Needed</label>
-                    <TagInput tags={skillsNeeded} onChange={setSkillsNeeded} placeholder="Add skills..." />
+                    <label className="block text-lavender/60 text-sm mb-2">Aligned Skills</label>
+                    <TagInput
+                      tags={skillsNeeded}
+                      onChange={setSkillsNeeded}
+                      placeholder="Add skills..."
+                      suggestions={[
+                        'Web Development',
+                        'Mobile Development',
+                        'UI/UX Design',
+                        'Graphic Design',
+                        'Illustration',
+                        'Writing / Editing',
+                        'Music Production',
+                        'Sound Healing',
+                        'Astrology',
+                        'Tarot / Oracle',
+                        'Energy Healing',
+                        'Herbalism',
+                        'Permaculture',
+                        'Event Facilitation',
+                        'Community Organizing',
+                        'Accounting / Finance',
+                        'Legal',
+                        'Translation',
+                        'Video Production',
+                        'Photography',
+                        'Social Media',
+                        'Project Management',
+                        'Teaching / Mentoring',
+                        'Counseling',
+                        'Carpentry / Building',
+                        'Sewing / Textile',
+                        'Cooking / Nutrition',
+                        'Childcare',
+                        'Animal Care',
+                        'Driving / Transport',
+                        'Other',
+                      ]}
+                    />
                   </div>
                   <div>
-                    <label className="block text-lavender/60 text-sm mb-2">Resources Needed</label>
-                    <TagInput tags={resourcesNeeded} onChange={setResourcesNeeded} placeholder="Add resources..." />
+                    <label className="block text-lavender/60 text-sm mb-2">Aligned Resources</label>
+                    <TagInput
+                      tags={resourcesNeeded}
+                      onChange={setResourcesNeeded}
+                      placeholder="Add resources..."
+                      suggestions={[
+                        'Funds / Currency',
+                        'Space / Venue',
+                        'Tools / Equipment',
+                        'Transport / Vehicle',
+                        'Materials / Supplies',
+                        'Food / Water',
+                        'Shelter / Housing',
+                        'Technology / Devices',
+                        'Internet Access',
+                        'Solar / Renewable Energy',
+                        'Seeds / Plants',
+                        'Books / Knowledge',
+                        'Art Supplies',
+                        'Musical Instruments',
+                        'Clothing / Textiles',
+                        'Furniture',
+                        'Land / Garden Space',
+                        'Network / Connections',
+                        'Time / Labor',
+                        'Emotional Support',
+                        'Childcare',
+                        'Elder Care',
+                        'Other',
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -959,54 +1025,102 @@ export default function WishWizard() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TagInput — Reusable tag component
+   TagInput — Reusable tag component with suggestions
    ═══════════════════════════════════════════════════════════════ */
 
-function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (tags: string[]) => void; placeholder: string }) {
+function TagInput({
+  tags,
+  onChange,
+  placeholder,
+  suggestions = [],
+}: {
+  tags: string[]
+  onChange: (tags: string[]) => void
+  placeholder: string
+  suggestions?: string[]
+}) {
   const [input, setInput] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
-  const addTag = () => {
-    const trimmed = input.trim()
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim()
     if (trimmed && !tags.includes(trimmed)) {
       onChange([...tags, trimmed])
-      setInput('')
     }
+    setInput('')
+    setShowSuggestions(false)
   }
 
+  const filteredSuggestions = suggestions.filter(
+    (s) =>
+      s.toLowerCase().includes(input.toLowerCase()) &&
+      !tags.includes(s)
+  )
+
   return (
-    <div className="bg-void-900 border border-lavender/20 rounded-xl p-3">
-      <div className="flex flex-wrap gap-2 mb-2">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gold-400/10 text-gold-400 text-sm"
-          >
-            {tag}
-            <button
-              onClick={() => onChange(tags.filter((t) => t !== tag))}
-              className="hover:text-cream transition-colors"
+    <div className="relative">
+      <div className="bg-void-900 border border-lavender/20 rounded-xl p-3">
+        <div className="flex flex-wrap gap-2 mb-2">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gold-400/10 text-gold-400 text-sm"
             >
-              ×
+              {tag}
+              <button
+                onClick={() => onChange(tags.filter((t) => t !== tag))}
+                className="hover:text-cream transition-colors"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value)
+              setShowSuggestions(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addTag(input)
+              }
+              if (e.key === 'Escape') {
+                setShowSuggestions(false)
+              }
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            placeholder={placeholder}
+            className="flex-1 bg-transparent text-cream placeholder:text-lavender/30 focus:outline-none text-sm"
+          />
+          <button
+            onClick={() => addTag(input)}
+            aria-label="Add tag"
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-gold-500/20 text-gold-400 hover:bg-gold-500/30 transition-all shrink-0"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      {/* Suggestions dropdown */}
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-void-900 border border-lavender/20 rounded-xl shadow-lg">
+          {filteredSuggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              onClick={() => addTag(suggestion)}
+              className="w-full text-left px-3 py-2 text-lavender/70 hover:bg-gold-400/10 hover:text-cream transition-colors text-sm"
+            >
+              {suggestion}
             </button>
-          </span>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-          placeholder={placeholder}
-          className="flex-1 bg-transparent text-cream placeholder:text-lavender/30 focus:outline-none text-sm"
-        />
-        <button
-          onClick={addTag}
-          className="text-gold-400 hover:text-gold-300 text-sm font-medium"
-        >
-          Add
-        </button>
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
