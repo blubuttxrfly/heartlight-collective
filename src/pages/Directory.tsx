@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { useStorage } from '../lib/storage';
 import { fetchRemoteVendors } from '../lib/redisVendors';
 import { CREATOR_TAGS } from '../lib/constants';
@@ -11,7 +10,6 @@ import { Store, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { CreatorRecord, VendorRecord, ExchangeForm, OfferingItem } from '../types/ces';
 
 export default function Directory() {
-  const unified = useUnifiedStorage();
   const { vendors } = useStorage();
   const [profiles, setProfiles] = useState<CreatorRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,25 +43,23 @@ export default function Directory() {
     loadRemoteVendors();
   }, []);
 
-  const loadProfiles = async () => {
+  const loadProfiles = () => {
     setLoading(true);
     try {
-      // Show ALL profiles (pending, approved, returned) — the Heartlight Collective
-      // is young and every being should be visible in the Directory
-      const all = await unified.getProfiles();
+      // Read ALL queues synchronously — no async hooks, no race conditions
+      const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+      const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+      const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+      const all = [...pending, ...approved, ...returned]
+      console.log('[Directory] Sync localStorage read — total beings:', all.length, 'queues:', {
+        pending: pending.length,
+        approved: approved.length,
+        returned: returned.length
+      })
       setProfiles(all);
     } catch (err: any) {
       console.error('[Directory] Failed to load profiles:', err.message);
-      // Fallback: read ALL queues from localStorage
-      try {
-        const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
-        const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
-        const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
-        const all = [...pending, ...approved, ...returned]
-        setProfiles(all);
-      } catch {
-        setProfiles([]);
-      }
+      setProfiles([]);
     } finally {
       setLoading(false);
     }

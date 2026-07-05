@@ -5,7 +5,6 @@ import { FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram } from 'react-
 import { FaThreads } from 'react-icons/fa6'
 import { SiSignal } from 'react-icons/si'
 import { getContactUrl } from '../lib/constants'
-import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 import { useState, useEffect } from 'react'
 import type { CreatorRecord } from '../types/ces'
 
@@ -23,7 +22,6 @@ const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string 
 
 export default function Profile() {
   const { ces } = useParams<{ ces: string }>()
-  const unified = useUnifiedStorage()
   const [profile, setProfile] = useState<CreatorRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,58 +33,29 @@ export default function Profile() {
       return
     }
     
-    let isMounted = true
+    // Read ALL localStorage queues synchronously — no async hooks, no race conditions
+    const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+    const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+    const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+    const allProfiles = [...pending, ...approved, ...returned]
     
-    const loadProfile = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Try unified storage (API + localStorage hybrid)
-        const found = await unified.findProfileByCES(ces)
-        
-        if (isMounted) {
-          if (found) {
-            setProfile(found)
-          } else {
-            // Final fallback: try pure localStorage across ALL queues
-            const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
-            const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
-            const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
-            const allProfiles = [...pending, ...approved, ...returned]
-            console.log('[Profile] localStorage fallback — total profiles found:', allProfiles.length)
-            const localMatch = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
-            if (localMatch) {
-              console.log('[Profile] Found in localStorage:', localMatch.name, localMatch.cesNumber)
-              setProfile(localMatch)
-            } else {
-              console.log('[Profile] Not found in any localStorage queue')
-              setError('Profile not found')
-            }
-          }
-        }
-      } catch (err: any) {
-        console.error('Failed to load profile:', err)
-        if (isMounted) {
-          // Even on exception, try localStorage across ALL queues
-          const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
-          const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
-          const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
-          const allProfiles = [...pending, ...approved, ...returned]
-          const localMatch = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
-          if (localMatch) {
-            setProfile(localMatch)
-          } else {
-            setError(err.message || 'Failed to load profile')
-          }
-        }
-      } finally {
-        if (isMounted) setLoading(false)
-      }
+    console.log('[Profile] Reading localStorage — total profiles:', allProfiles.length, 'queues:', {
+      pending: pending.length,
+      approved: approved.length,
+      returned: returned.length
+    })
+    
+    const match = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+    
+    if (match) {
+      console.log('[Profile] Found profile:', match.name, 'CES:', match.cesNumber || match.ces_number)
+      setProfile(match)
+    } else {
+      console.log('[Profile] No profile found for CES:', ces)
+      setError('Profile not found')
     }
     
-    loadProfile()
-    return () => { isMounted = false }
+    setLoading(false)
   }, [ces])
 
   if (loading) {
