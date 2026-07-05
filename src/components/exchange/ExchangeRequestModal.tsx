@@ -301,6 +301,7 @@ export function ExchangeRequestModal({
       vendorId: vendor.id,
       requesterCes,
       requesterName,
+      isRequesterUnregistered: false,
       providerCes: vendor.ownerCes,
       providerName,
       message: message.trim(),

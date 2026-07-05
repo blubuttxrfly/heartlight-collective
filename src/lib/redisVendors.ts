@@ -5,7 +5,7 @@
 //  stay synchronized across devices and fresh browsers.
 // ─────────────────────────────────────────────────────────────
 
-import type { VendorRecord, OfferingItem } from '../types/ces'
+import type { VendorRecord, OfferingItem, VendorShopType } from '../types/ces'
 
 interface ApiVendor {
   id: string
@@ -14,6 +14,7 @@ interface ApiVendor {
   description?: string
   core_directive?: string
   logo_url?: string
+  vendor_type?: string
   owner_ces: string
   owner_name?: string
   members?: unknown[]
@@ -69,6 +70,7 @@ function apiVendorToRecord(v: ApiVendor): VendorRecord {
     name: String(v.name),
     slug: String(v.slug || v.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || v.id),
     description: String(v.description || v.core_directive || ''),
+    vendorType: (v.vendor_type as VendorShopType) || 'vendor_shop',
     coreDirective: v.core_directive || undefined,
     logoUrl: v.logo_url || undefined,
     ownerCes: String(v.owner_ces),
