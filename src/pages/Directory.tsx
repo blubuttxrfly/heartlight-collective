@@ -54,11 +54,13 @@ export default function Directory() {
       setProfiles(all);
     } catch (err: any) {
       console.error('[Directory] Failed to load profiles:', err.message);
-      // Fallback: read directly from localStorage
+      // Fallback: read ALL queues from localStorage
       try {
-        const raw = localStorage.getItem('hlc_approved') || localStorage.getItem('hlc_pending') || '[]';
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) setProfiles(parsed);
+        const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+        const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+        const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+        const all = [...pending, ...approved, ...returned]
+        setProfiles(all);
       } catch {
         setProfiles([]);
       }

@@ -305,7 +305,11 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
       const next = { ...prev };
       (['pending', 'approved', 'returned'] as const).forEach((key) => {
         const list = next[key];
-        const index = list.findIndex((p) => p.id === profile.id || (p.cesNumber && p.cesNumber === profile.cesNumber));
+        const index = list.findIndex((p) => 
+          p.id === profile.id || 
+          (p.cesNumber && p.cesNumber === profile.cesNumber) ||
+          ((p as any).ces_number && (p as any).ces_number === profile.cesNumber)
+        );
         if (index >= 0) {
           next[key] = [...list.slice(0, index), profile, ...list.slice(index + 1)];
         }
@@ -342,7 +346,9 @@ export function StorageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const findProfileByCES = useCallback((ces: string) => {
-    return getProfiles().find((p) => p.cesNumber === ces);
+    const all = getProfiles();
+    // Try cesNumber first (standard), then ces_number (legacy/API shape)
+    return all.find((p) => p.cesNumber === ces) || all.find((p) => (p as any).ces_number === ces);
   }, [getProfiles]);
 
   const findProfileById = useCallback((id: string) => {

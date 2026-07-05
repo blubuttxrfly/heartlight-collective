@@ -49,17 +49,18 @@ export default function Profile() {
           if (found) {
             setProfile(found)
           } else {
-            // Final fallback: try pure localStorage
-            const raw = localStorage.getItem('hlc_pending') || localStorage.getItem('hlc_approved') || '[]'
-            try {
-              const parsed = JSON.parse(raw)
-              const localMatch = parsed.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
-              if (localMatch) {
-                setProfile(localMatch)
-              } else {
-                setError('Profile not found')
-              }
-            } catch {
+            // Final fallback: try pure localStorage across ALL queues
+            const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+            const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+            const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+            const allProfiles = [...pending, ...approved, ...returned]
+            console.log('[Profile] localStorage fallback — total profiles found:', allProfiles.length)
+            const localMatch = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+            if (localMatch) {
+              console.log('[Profile] Found in localStorage:', localMatch.name, localMatch.cesNumber)
+              setProfile(localMatch)
+            } else {
+              console.log('[Profile] Not found in any localStorage queue')
               setError('Profile not found')
             }
           }
@@ -67,17 +68,15 @@ export default function Profile() {
       } catch (err: any) {
         console.error('Failed to load profile:', err)
         if (isMounted) {
-          // Even on exception, try localStorage
-          const raw = localStorage.getItem('hlc_pending') || localStorage.getItem('hlc_approved') || '[]'
-          try {
-            const parsed = JSON.parse(raw)
-            const localMatch = parsed.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
-            if (localMatch) {
-              setProfile(localMatch)
-            } else {
-              setError(err.message || 'Failed to load profile')
-            }
-          } catch {
+          // Even on exception, try localStorage across ALL queues
+          const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+          const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+          const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+          const allProfiles = [...pending, ...approved, ...returned]
+          const localMatch = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+          if (localMatch) {
+            setProfile(localMatch)
+          } else {
             setError(err.message || 'Failed to load profile')
           }
         }

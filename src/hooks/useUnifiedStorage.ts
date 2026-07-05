@@ -183,8 +183,31 @@ export function useUnifiedStorage() {
       console.warn('[UnifiedStorage] API fetch failed, using localStorage')
     }
 
+    // Try localStorage via hook
+    const localProfile = local.findProfileByCES(ces);
+    if (localProfile) {
+      setLoading(false)
+      return localProfile;
+    }
+
+    // Deep fallback: read localStorage directly in case StorageProvider state is stale
+    try {
+      const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+      const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+      const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+      const allProfiles = [...pending, ...approved, ...returned]
+      const match = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+      if (match) {
+        console.log('[UnifiedStorage] Found profile in localStorage fallback:', match.name, ces)
+        setLoading(false)
+        return match as CreatorRecord;
+      }
+    } catch {
+      // ignore
+    }
+
     setLoading(false)
-    return local.findProfileByCES(ces)
+    return undefined
   }, [local, setLoading])
 
   /* ── Update Profile ── */
