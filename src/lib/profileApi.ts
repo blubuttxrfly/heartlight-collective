@@ -98,7 +98,7 @@ export async function updateProfileApi(ces: string, profile: CreatorRecord): Pro
 
 /** GET /api/profiles/stewardship/{status} — list by stewardship */
 export async function fetchProfilesByStewardship(status: string): Promise<CreatorRecord[]> {
-  const result = await getJson<Record<string, unknown>[]>('/api/profiles/stewardship/${status}')
+  const result = await getJson<Record<string, unknown>[]>(`/api/profiles/stewardship/${status}`)
   if (!result.success || !result.data) return []
   return result.data.map(rowToCreatorRecord)
 }

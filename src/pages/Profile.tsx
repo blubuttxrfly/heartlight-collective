@@ -39,37 +39,56 @@ export default function Profile() {
     
     const loadProfile = async () => {
       try {
-        console.log('[Profile] Loading profile for CES:', ces)
         setLoading(true)
         setError(null)
         
+        // Try unified storage (API + localStorage hybrid)
         const found = await unified.findProfileByCES(ces)
         
         if (isMounted) {
-          setProfile(found || null)
-          if (!found) {
-            setError('Profile not found')
+          if (found) {
+            setProfile(found)
+          } else {
+            // Final fallback: try pure localStorage
+            const raw = localStorage.getItem('hlc_pending') || localStorage.getItem('hlc_approved') || '[]'
+            try {
+              const parsed = JSON.parse(raw)
+              const localMatch = parsed.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+              if (localMatch) {
+                setProfile(localMatch)
+              } else {
+                setError('Profile not found')
+              }
+            } catch {
+              setError('Profile not found')
+            }
           }
         }
       } catch (err: any) {
         console.error('Failed to load profile:', err)
         if (isMounted) {
-          setError(err.message || 'Failed to load profile')
+          // Even on exception, try localStorage
+          const raw = localStorage.getItem('hlc_pending') || localStorage.getItem('hlc_approved') || '[]'
+          try {
+            const parsed = JSON.parse(raw)
+            const localMatch = parsed.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+            if (localMatch) {
+              setProfile(localMatch)
+            } else {
+              setError(err.message || 'Failed to load profile')
+            }
+          } catch {
+            setError(err.message || 'Failed to load profile')
+          }
         }
       } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+        if (isMounted) setLoading(false)
       }
     }
     
     loadProfile()
-    
-    // Cleanup: prevent state updates after unmount
-    return () => {
-      isMounted = false
-    }
-  }, [ces]) // Remove 'unified' from dependencies to prevent re-fetching
+    return () => { isMounted = false }
+  }, [ces])
 
   if (loading) {
     return (
