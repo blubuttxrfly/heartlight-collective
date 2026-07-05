@@ -440,6 +440,7 @@ export interface VendorRecord {
   description: string;           // Short bio / mission
   coreDirective?: string;        // Full Vendor Shop bio / mission
   logoUrl?: string;              // Storefront image
+  vendorType: VendorShopType;    // Wave 10 — what kind of co-operation
   ownerCes: string;              // C.E.S. of the founding being
   ownerName: string;
   members: VendorMember[];       // Co-creators who can manage offerings
@@ -507,6 +508,12 @@ export interface ExchangeRequest {
   vendorId: string;
   requesterCes: string;
   requesterName: string;
+  // Wave 10 — unregistered requester
+  requesterUnregId?: string;
+  isRequesterUnregistered?: boolean;
+  requesterContactEmail?: string;
+  requesterContactPhone?: string;
+  requesterPreferredContact?: string;
   providerCes: string;
   providerName: string;
   message: string;               // Personal message / need statement
@@ -633,8 +640,15 @@ export interface ExchangeAgreement {
   offeringId?: string;           // for vendor offerings
   vendorId?: string;
   wishId?: string;               // for wish/gift exchanges (no vendor)
+  // Requester identity
   requesterCes: string;
   requesterName: string;
+  // Wave 10 — unregistered requester support
+  requesterUnregId?: string;        // references UnregisteredProfile
+  isRequesterUnregistered: boolean;
+  requesterContactEmail?: string;
+  requesterContactPhone?: string;
+  requesterPreferredContact?: string;
   providerCes: string;
   providerName: string;
   message: string;               // initial resonance statement
@@ -789,7 +803,8 @@ export type WishStatus =
 
 export interface Wish {
   id: string;
-  wishingCes: string;           // C.E.S. of the one who posted
+  wishingCes?: string;           // C.E.S. of the one who posted (registered)
+  wishingUnregId?: string;       // Wave 10 — unregistered profile id
   wishingName: string;
   title: string;                // "Need help with React + Supabase integration"
   description: string;          // Full context, what success looks like
@@ -797,6 +812,16 @@ export interface Wish {
   urgency: WishUrgency;
   status: WishStatus;
   selectedCodes: number[];      // Which of the 12 Codes guide this wish
+  // Wave 10 — matching fields
+  skillsNeeded?: string[];
+  resourcesNeeded?: string[];
+  exchangeForms?: ExchangeForm[];
+  preferredDeliveryMethod?: 'in_person' | 'virtual' | 'shipping';
+  completionTimeline?: 'urgent' | 'week' | 'month' | 'ongoing';
+  locationData?: LocationData;
+  matchedCes?: string[];         // scored matches (registered beings)
+  matchedVendorIds?: string[];   // scored matches (Vendor Shops)
+  isUnregistered?: boolean;
   claimedByCes?: string;        // C.E.S. of fulfiller (once claimed)
   claimedByName?: string;
   claimedAt?: string;
@@ -834,4 +859,67 @@ export interface WishLocation {
   lon: number | null;
   continent: string | null;
   scope: WishScope;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Wave 10 — Resonant Matching Gateway
+//  Unregistered C.E.S. Profiles, Vendor Shop Types, Match Engine
+// ═══════════════════════════════════════════════════════════════
+
+/** A being who has not yet completed full C.E.S. registration
+    but can cast wishes, request exchanges, and participate in ALL exchange forms. */
+export interface UnregisteredProfile {
+  id: string;                 // "unreg_" + uuid
+  name: string;
+  email?: string;
+  phone?: string;
+  preferredContactMethod: 'email' | 'phone' | 'signal' | 'telegram' | 'discord' | 'other';
+  availability?: string;      // e.g. "Mon-Fri 9am-5pm EST"
+  budgetRange?: {
+    min?: number;
+    max?: number;
+    currency?: string;
+  };
+  bio?: string;
+  skills?: string[];
+  resources?: string[];
+  locationData?: LocationData;
+  flowBackAgreed: boolean;
+  codesAcknowledged: boolean;
+  createdAt: string;
+}
+
+/** Vendor Shops may represent many kinds of co-operations. */
+export type VendorShopType =
+  | 'organization'
+  | 'homestead'
+  | 'online_network_state'
+  | 'ministry'
+  | 'coven'
+  | 'vendor_shop'
+  | 'community'
+  | 'crew'
+  | 'cooperative'
+  | 'other';
+
+/** Match result returned by the resonant matching engine. */
+export interface MatchResult {
+  candidateId: string;        // ces_number or vendorId or unregId
+  candidateType: 'registered' | 'vendor' | 'unregistered';
+  score: number;              // 0–100+ resonant score
+  scorePercent: number;       // Normalized 0–100
+  reasons: string[];          // Human-readable why this matched
+  profile?: CreatorRecord;
+  vendor?: VendorRecord;
+}
+
+/** The resonant matching engine scores wishes against candidates. */
+export interface MatchScoreWeights {
+  category: number;           // +30 default
+  skills: number;             // +20 per overlap
+  resources: number;        // +15 per overlap
+  location: number;         // +25 close / +15 medium / +5 continent
+  exchangeAvenues: number;  // +20 if compatible
+  timeline: number;           // +10
+  availability: number;     // +10
 }

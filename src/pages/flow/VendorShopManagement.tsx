@@ -67,6 +67,7 @@ function CreateStorefrontModal({ onClose, onCreate }: { onClose: () => void; onC
       name: name.trim(),
       slug: slugify(name.trim()),
       description: description.trim(),
+      vendorType: 'vendor_shop',  // TODO: add UI dropdown for beings to choose type
       ownerCes: myCes,
       ownerName: myName,
       members: [],

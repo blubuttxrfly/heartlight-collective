@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import ExchangeLayout from './pages/exchange/ExchangeLayout'
 import ExchangeDiscovery from './pages/exchange/ExchangeDiscovery'
 import PostWish from './pages/PostWish'
+import WishWizard from './components/wish/WishWizard'
 import Flow from './pages/Flow'
 import Charter from './pages/Charter'
 import Codes from './pages/Codes'
@@ -41,8 +42,8 @@ function App() {
             <Route path="gifts" element={<ExchangeDiscovery typeFilter="offer" />} />
             <Route path="vendors" element={null} />
           </Route>
-          <Route path="/exchange/wish/cast-wish" element={<PostWish />} />
-          <Route path="/exchange/gift/share-gift" element={<PostWish />} />
+          <Route path="/exchange/wish/cast-wish" element={<WishWizard />} />
+          <Route path="/exchange/gift/share-gift" element={<WishWizard />} />
 
           {/* Legacy Exchange aliases */}
           <Route path="/post-wish" element={<Navigate to="/exchange/wish/cast-wish" replace />} />
