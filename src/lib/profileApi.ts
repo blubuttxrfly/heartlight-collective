@@ -87,13 +87,17 @@ export async function fetchProfileByCes(ces: string): Promise<CreatorRecord | un
 /** POST /api/profiles — create a new profile */
 export async function createProfileApi(profile: CreatorRecord): Promise<ApiResult<CreatorRecord>> {
   const body = profileToApiBody(profile)
-  return postJson('/api/profiles', body)
+  const result = await postJson<unknown>('/api/profiles', body)
+  if (!result.success || !result.data) return result as ApiResult<CreatorRecord>
+  return { success: true, data: rowToCreatorRecord(result.data as Record<string, unknown>) }
 }
 
 /** PUT /api/profiles/{ces} — update an existing profile */
 export async function updateProfileApi(ces: string, profile: CreatorRecord): Promise<ApiResult<CreatorRecord>> {
   const body = profileToApiBody(profile)
-  return putJson(`/api/profiles/${ces}`, body)
+  const result = await putJson<unknown>(`/api/profiles/${ces}`, body)
+  if (!result.success || !result.data) return result as ApiResult<CreatorRecord>
+  return { success: true, data: rowToCreatorRecord(result.data as Record<string, unknown>) }
 }
 
 /** GET /api/profiles/stewardship/{status} — list by stewardship */
@@ -108,7 +112,11 @@ export async function fetchProfilesByStewardship(status: string): Promise<Creato
    ═══════════════════════════════════════════════════════════════ */
 
 export async function verifyCesPassphrase(ces: string, passphrase: string): Promise<ApiResult<CreatorRecord>> {
-  return postJson('/api/auth/signin', { ces_number: ces, passphrase })
+  const result = await postJson<unknown>('/api/auth/signin', { ces, passphrase })
+  if (!result.success || !result.data) return result as ApiResult<CreatorRecord>
+  const data = result.data as Record<string, unknown>
+  const profile = (data.profile as Record<string, unknown>) || data
+  return { success: true, data: rowToCreatorRecord(profile) }
 }
 
 /* ═══════════════════════════════════════════════════════════════

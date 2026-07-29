@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useStorage } from '../lib/storage';
 import { fetchRemoteVendors } from '../lib/redisVendors';
+import { fetchProfiles } from '../lib/profileApi';
 import { CREATOR_TAGS } from '../lib/constants';
 import { StorefrontCard } from '../components/StorefrontCard';
 import { ExchangePolicyBadges } from '../components/ExchangePolicyBadges';
@@ -26,6 +27,22 @@ export default function Directory() {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
 
+  // Remote beings from Upstash Redis
+  const [remoteProfiles, setRemoteProfiles] = useState<CreatorRecord[]>([]);
+  const [remoteProfileError, setRemoteProfileError] = useState<string | null>(null);
+
+  // Merge localStorage beings with remote Redis beings (remote wins by CES)
+  const allProfiles = useMemo(() => {
+    const mergedMap = new Map<string, CreatorRecord>();
+    for (const p of profiles) {
+      mergedMap.set(p.cesNumber, p);
+    }
+    for (const p of remoteProfiles) {
+      if (p.cesNumber) mergedMap.set(p.cesNumber, p);
+    }
+    return Array.from(mergedMap.values());
+  }, [profiles, remoteProfiles]);
+
   // Merge localStorage vendors with remote Redis vendors (remote wins by id)
   const allVendors = useMemo(() => {
     const mergedMap = new Map<string, VendorRecord>();
@@ -41,6 +58,7 @@ export default function Directory() {
   useEffect(() => {
     loadProfiles();
     loadRemoteVendors();
+    loadRemoteProfiles();
   }, []);
 
   const loadProfiles = () => {
@@ -65,6 +83,17 @@ export default function Directory() {
     }
   };
 
+  const loadRemoteProfiles = async () => {
+    try {
+      const remote = await fetchProfiles();
+      console.log('[Directory] Remote profiles fetched:', remote.length);
+      setRemoteProfiles(remote);
+    } catch (err: any) {
+      console.warn('[Directory] Failed to fetch remote profiles:', err.message);
+      setRemoteProfileError(err.message);
+    }
+  };
+
   const loadRemoteVendors = async () => {
     const { vendors: remote, error } = await fetchRemoteVendors();
     setRemoteVendors(remote);
@@ -81,7 +110,7 @@ export default function Directory() {
   };
 
   const filteredProfiles = useMemo(() => {
-    return profiles.filter((p) => {
+    return allProfiles.filter((p) => {
       if (p.cesNumber === '111111111') return false;
       if (p.isPrivate) return false; // Wave 8.3 — hide private profiles from public Directory
       if (selectedTags.size > 0 && !(p.tags || []).some((t) => selectedTags.has(t))) return false;
