@@ -335,9 +335,11 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     // 'universal' = show all (after category + search filters)
 
     // Sort: urgent first, then by recency
-    const urgencyOrder = { 'time-sensitive': 0, 'high': 1, 'medium': 2, 'low': 3 }
+    const urgencyOrder: Record<string, number> = { 'time-sensitive': 0, 'high': 1, 'medium': 2, 'low': 3 }
     list.sort((a, b) => {
-      const urgencyDiff = urgencyOrder[a.urgency] - urgencyOrder[b.urgency]
+      const urgencyA = urgencyOrder[a.urgency as string] ?? 3
+      const urgencyB = urgencyOrder[b.urgency as string] ?? 3
+      const urgencyDiff = urgencyA - urgencyB
       if (urgencyDiff !== 0) return urgencyDiff
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
@@ -687,9 +689,9 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
                   }`}>
                     {wish.type === 'wish' ? '💫 Wish' : wish.type === 'offering' ? '🏪 Offering' : '🎁 Gift'}
                   </span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${URGENCY_CONFIG[wish.urgency].bg} ${URGENCY_CONFIG[wish.urgency].color}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${(URGENCY_CONFIG[wish.urgency as keyof typeof URGENCY_CONFIG] || URGENCY_CONFIG.low).bg} ${(URGENCY_CONFIG[wish.urgency as keyof typeof URGENCY_CONFIG] || URGENCY_CONFIG.low).color}`}>
                     <Clock className="w-2.5 h-2.5 inline mr-1" />
-                    {URGENCY_CONFIG[wish.urgency].label}
+                    {(URGENCY_CONFIG[wish.urgency as keyof typeof URGENCY_CONFIG] || URGENCY_CONFIG.low).label}
                   </span>
                   {wish.isContinualOffering && (
                     <span className="px-2 py-0.5 rounded-full text-xs bg-green-400/10 text-green-300 flex items-center gap-1">
@@ -953,7 +955,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
 /* ─── Code Frequency Ring (offering detail only) ─── */
 function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any; findVendorById: (id: string) => VendorRecord | undefined; onClose: () => void; onClaim: () => void }) {
-  const u = URGENCY_CONFIG[wish.urgency]
+  const u = URGENCY_CONFIG[wish.urgency as keyof typeof URGENCY_CONFIG] || URGENCY_CONFIG.low
   const isOffering = wish.type === 'offering'
 
   const formatPrice = () => {

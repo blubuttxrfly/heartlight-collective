@@ -38,7 +38,7 @@ export function getRayAstrologyForSign(sign: string): RayAstrologyInfo | undefin
   return {
     sign: normalized,
     ray: ray.label.split(' — ')[0],
-    code: ray.code,
+    code: String(index + 1),
     color: ray.color,
     number: index + 1,
   }

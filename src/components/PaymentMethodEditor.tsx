@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { useState, useCallback } from 'react';
-import { Plus, Trash2, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import type { PaymentMethodConfig, PaymentMethodType } from '../types/ces';
 import { getPaymentUrl, formatPaymentLabel } from '../lib/payments';
 
@@ -65,9 +65,15 @@ export default function PaymentMethodEditor({ methods, onChange }: PaymentMethod
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-lavender">Peer-to-Peer Payment Methods</h3>
-      <p className="text-sm text-lavender/60">
-        Add direct links so exchange partners can send or receive mutual aid with one click.
-      </p>
+      <div className="text-sm text-lavender/70 leading-relaxed">
+        <p className="mb-1">
+          Each payment method can be kept private (only you see it) or made public on your profile.
+        </p>
+        <p>
+          <span className="inline-flex items-center gap-1 text-green-300"><Eye className="w-3 h-3" /> Public</span> means it appears under "Mutual Aid" on your public profile.
+          <span className="inline-flex items-center gap-1 text-lavender/40 ml-2"><EyeOff className="w-3 h-3" /> Private</span> means it stays hidden but can still be used in exchanges.
+        </p>
+      </div>
 
       {methods.map((method, idx) => {
         const typeMeta = PAYMENT_TYPES.find(p => p.type === method.type)!;
@@ -77,24 +83,30 @@ export default function PaymentMethodEditor({ methods, onChange }: PaymentMethod
             <div className="flex items-center justify-between">
               <span className="font-medium text-lavender">{typeMeta.label}</span>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1 text-sm text-lavender/70 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={method.enabled}
-                    onChange={() => toggle(idx)}
-                    className="accent-gold-400"
-                  />
-                  Enabled
-                </label>
-                <label className="flex items-center gap-1 text-sm text-lavender/70 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!method.public}
-                    onChange={() => togglePublic(idx)}
-                    className="accent-gold-400"
-                  />
-                  Show on profile
-                </label>
+                <button
+                  type="button"
+                  onClick={() => toggle(idx)}
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-all ${
+                    method.enabled
+                      ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
+                      : 'bg-void-800/60 border-lavender/10 text-lavender/40'
+                  }`}
+                >
+                  {method.enabled ? 'Enabled' : 'Disabled'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => togglePublic(idx)}
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-all ${
+                    method.public
+                      ? 'bg-green-400/10 border-green-400/30 text-green-300'
+                      : 'bg-void-800/60 border-lavender/10 text-lavender/40'
+                  }`}
+                  title={method.public ? 'Visible on public profile' : 'Hidden from public profile'}
+                >
+                  {method.public ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                  {method.public ? 'Public' : 'Private'}
+                </button>
                 <button
                   type="button"
                   onClick={() => remove(idx)}

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Mail, Phone, Link as LinkIcon, Banknote } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, Link as LinkIcon, Sun, Moon, Sunrise } from 'lucide-react'
 import { FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { FaThreads } from 'react-icons/fa6'
 import { SiSignal } from 'react-icons/si'
@@ -163,9 +163,24 @@ export default function Profile() {
             {profile.location && (
               <p className="text-sm text-lavender/50 mb-3">📍 {profile.location}</p>
             )}
-            <p className="text-xs font-mono text-gold-400/80">
+            <p className="text-xs font-mono text-gold-400/80 mb-4">
               C.E.S. {profile.cesNumber}
             </p>
+
+            {/* Astrology Placements */}
+            {(profile.sunPlacement || profile.moonPlacement || profile.ascendantPlacement) && (
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                  {profile.sunPlacement && (
+                    <AstrologyBadge icon={Sun} label="Sun" sign={profile.sunPlacement} />
+                  )}
+                  {profile.moonPlacement && (
+                    <AstrologyBadge icon={Moon} label="Moon" sign={profile.moonPlacement} />
+                  )}
+                  {profile.ascendantPlacement && (
+                    <AstrologyBadge icon={Sunrise} label="Ascendant" sign={profile.ascendantPlacement} />
+                  )}
+                </div>
+            )}
           </div>
         </div>
 
@@ -200,13 +215,13 @@ export default function Profile() {
             <h2 className="font-serif text-xl text-cream mb-3">Placements</h2>
             <div className="flex flex-wrap gap-3 text-lavender/70">
               {profile.sunPlacement && (
-                <AstrologyBadge emoji="☀️" label="Sun" sign={profile.sunPlacement} />
+                <AstrologyBadge icon={Sun} label="Sun" sign={profile.sunPlacement} />
               )}
               {profile.moonPlacement && (
-                <AstrologyBadge emoji="🌙" label="Moon" sign={profile.moonPlacement} />
+                <AstrologyBadge icon={Moon} label="Moon" sign={profile.moonPlacement} />
               )}
               {profile.ascendantPlacement && (
-                <AstrologyBadge emoji="🌅" label="Ascendant" sign={profile.ascendantPlacement} />
+                <AstrologyBadge icon={Sunrise} label="Ascendant" sign={profile.ascendantPlacement} />
               )}
             </div>
           </div>
@@ -316,11 +331,11 @@ export default function Profile() {
   )
 }
 
-function AstrologyBadge({ emoji, label, sign }: { emoji: string; label: string; sign: string }) {
+function AstrologyBadge({ icon: Icon, label, sign }: { icon: React.ComponentType<{ className?: string }>; label: string; sign: string }) {
   const ray = getRayAstrologyForSign(sign)
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10">
-      <span>{emoji}</span>
+      <Icon className="w-4 h-4 text-lavender/60" />
       <span className="text-sm">{label} in {sign}</span>
       {ray && (
         <span
