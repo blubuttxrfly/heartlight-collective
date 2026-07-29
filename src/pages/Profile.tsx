@@ -209,24 +209,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Astrology */}
-        {(profile.sunPlacement || profile.moonPlacement || profile.ascendantPlacement) && (
-          <div className="mb-8">
-            <h2 className="font-serif text-xl text-cream mb-3">Placements</h2>
-            <div className="flex flex-wrap gap-3 text-lavender/70">
-              {profile.sunPlacement && (
-                <AstrologyBadge icon={Sun} label="Sun" sign={profile.sunPlacement} />
-              )}
-              {profile.moonPlacement && (
-                <AstrologyBadge icon={Moon} label="Moon" sign={profile.moonPlacement} />
-              )}
-              {profile.ascendantPlacement && (
-                <AstrologyBadge icon={Sunrise} label="Ascendant" sign={profile.ascendantPlacement} />
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Wish Availability */}
         <div className="mb-8">
           <span
@@ -333,16 +315,19 @@ export default function Profile() {
 
 function AstrologyBadge({ icon: Icon, label, sign }: { icon: React.ComponentType<{ className?: string }>; label: string; sign: string }) {
   const ray = getRayAstrologyForSign(sign)
+  const rayColor = ray?.color || '#c0c0d8'
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10">
-      <Icon className="w-4 h-4 text-lavender/60" />
-      <span className="text-sm">{label} in {sign}</span>
+      <span style={{ color: rayColor }}>
+        <Icon className="w-4 h-4" />
+      </span>
+      <span className="text-sm" style={{ color: rayColor }}>{sign}</span>
       {ray && (
         <span
           className="text-xs px-2 py-0.5 rounded-full border"
           style={{ color: ray.color, borderColor: `${ray.color}40`, backgroundColor: `${ray.color}15` }}
         >
-          {ray.code} · {ray.ray}
+          {ray.code} · {ray.ray} Ray
         </span>
       )}
     </div>

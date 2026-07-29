@@ -279,11 +279,11 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(w =>
-        w.title.toLowerCase().includes(q) ||
-        w.description.toLowerCase().includes(q) ||
-        w.skills.some((s: string) => s.toLowerCase().includes(q)) ||
-        w.category.toLowerCase().includes(q) ||
-        w.postedByName.toLowerCase().includes(q)
+        (w.title || '').toLowerCase().includes(q) ||
+        (w.description || '').toLowerCase().includes(q) ||
+        (w.skills || []).some((s: string) => s.toLowerCase().includes(q)) ||
+        (w.category || '').toLowerCase().includes(q) ||
+        (w.postedByName || '').toLowerCase().includes(q)
       )
     }
 
@@ -713,7 +713,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
               </div>
 
               {/* Gallery thumbnail */}
-              {wish.gallery && wish.gallery.length > 0 && (
+              {wish.gallery?.length > 0 && (
                 <div className="mb-3 rounded-xl overflow-hidden border border-lavender/10">
                   <img
                     src={wish.gallery[0].url}
@@ -735,7 +735,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
               </p>
 
               {/* Skills */}
-              {wish.skills.length > 0 && (
+              {wish.skills?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                   {wish.skills.slice(0, 4).map(skill => (
                     <span key={skill} className="px-2 py-0.5 rounded-full bg-void-900 border border-lavender/10 text-lavender/50 text-xs">
@@ -1026,9 +1026,9 @@ function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any
 
           <h2 className="font-serif text-2xl text-cream mb-2">{wish.title}</h2>
           <p className="text-sm text-lavender/40">
-            {isOffering ? `Offered by ${wish.vendorName || wish.postedByName}` : `Posted by ${wish.postedByName}`}
+            {isOffering ? `Offered by ${wish.vendorName || wish.postedByName || 'Unknown'}` : `Posted by ${wish.postedByName || 'Unknown'}`}
             {' • '}
-            {wish.category} {CATEGORY_EMOJIS[wish.category]}
+            {wish.category || 'Uncategorized'} {CATEGORY_EMOJIS[wish.category || 'Other'] || '✨'}
           </p>
         </div>
 
@@ -1047,7 +1047,7 @@ function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any
                 <p className="text-sm text-cream">{wish.vendorName || wish.postedByName}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {wish.vendorLinks?.filter((l: any) => l.url.trim()).map((l: any) => (
+                {wish.vendorLinks?.filter((l: any) => l.url?.trim()).map((l: any) => (
                   <a
                     key={l.id}
                     href={l.url}
@@ -1064,7 +1064,7 @@ function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any
           )}
 
           {/* Gallery */}
-          {wish.gallery && wish.gallery.length > 0 && (
+          {wish.gallery?.length > 0 && (
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-4">
               <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">Gallery</label>
               <div className="grid grid-cols-2 gap-2">
@@ -1090,27 +1090,27 @@ function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any
               <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Exchange Type' : 'Location'}</label>
               <div className="text-sm text-cream flex items-center gap-1">
                 {isOffering ? <Store className="w-3.5 h-3.5 text-lavender/40" /> : <MapPin className="w-3.5 h-3.5 text-lavender/40" />}
-                {isOffering ? formatPrice() : wish.location}
+                {isOffering ? formatPrice() : (wish.location || 'Anywhere')}
               </div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
               <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Availability' : 'Time Commitment'}</label>
-              <div className="text-sm text-cream">{isOffering ? wish.availability : wish.timeCommitment}</div>
+              <div className="text-sm text-cream">{isOffering ? (wish.availability || 'Available') : (wish.timeCommitment || '')}</div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
               <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Vendor' : 'Exchange Avenue'}</label>
-              <div className="text-sm text-cream">{isOffering ? wish.vendorName || wish.postedByName : wish.exchangeAvenue}</div>
+              <div className="text-sm text-cream">{isOffering ? (wish.vendorName || wish.postedByName || 'Unknown') : (wish.exchangeAvenue || '')}</div>
             </div>
 
             <div className="rounded-xl border border-lavender/10 bg-void-800/40 p-3">
               <label className="block text-xs text-lavender/50 mb-1">{isOffering ? 'Category' : 'Resources'}</label>
               <div className="flex flex-wrap gap-1">
                 {isOffering ? (
-                  <span className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">{wish.category}</span>
+                  <span className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">{wish.category || 'Other'}</span>
                 ) : (
-                  wish.resources.map(r => (
+                  (wish.resources || []).map((r: string) => (
                     <span key={r} className="text-xs text-lavender/60 bg-void-900 px-2 py-0.5 rounded-full">
                       {r}
                     </span>
@@ -1121,7 +1121,7 @@ function WishDetailModal({ wish, findVendorById, onClose, onClaim }: { wish: any
           </div>
 
           {/* Skills */}
-          {!isOffering && wish.skills.length > 0 && (
+          {!isOffering && (wish.skills?.length > 0) && (
             <div>
               <label className="block text-xs text-lavender/50 mb-2 uppercase tracking-wider">{wish.type === 'wish' ? 'Skills Needed' : 'Skills Offered'}</label>
               <div className="flex flex-wrap gap-2">
