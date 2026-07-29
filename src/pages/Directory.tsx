@@ -125,7 +125,7 @@ export default function Directory() {
       }
       return true;
     });
-  }, [profiles, selectedTags, search]);
+  }, [allProfiles, selectedTags, search]);
 
   const filteredVendors = useMemo(() => {
     return allVendors.filter((v) => {

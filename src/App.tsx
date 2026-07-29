@@ -21,6 +21,7 @@ import Profile from './pages/Profile'
 import ResourceFlow from './pages/ResourceFlow'
 import AuthCallback from './pages/AuthCallback'
 import Account from './pages/Account'
+import MigrateProfiles from './pages/MigrateProfiles'
 
 function StorefrontRedirect() {
   const { slug } = useParams<{ slug: string }>()
@@ -67,6 +68,7 @@ function App() {
           <Route path="/account" element={<Account />} />
           <Route path="/profile/:ces" element={<Profile />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/migrate-profiles" element={<MigrateProfiles />} />
 
           {/* Legacy storefront alias */}
           <Route path="/storefront/:slug" element={<StorefrontRedirect />} />

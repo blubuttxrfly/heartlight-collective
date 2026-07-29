@@ -8,6 +8,7 @@
 
 import { redis, Keys } from '../_lib/redis.js'
 import { json, error } from '../_lib/response.js'
+import { hashPassphrase } from '../_lib/auth.js'
 
 // ── Helper: read and parse a profile ──
 async function readProfile(ces: string): Promise<Record<string, unknown> | null> {
@@ -55,18 +56,25 @@ async function PUT(request: Request,
     }
 
     const body = await request.json()
-    const { ces_number, ces_passphrase_hash, ...updates } = body as Record<string, unknown>
+    const { ces_number, ces_passphrase_hash, passphrase, ...updates } = body as Record<string, unknown>
 
     // Prevent CES number changes via this route (use delete + create)
-    // Prevent direct hash updates from the client (auth route handles passphrase changes)
     const now = new Date().toISOString()
     const updatedProfile: Record<string, unknown> = {
       ...existing,
       ...updates,
       ces_number: ces, // preserve original CES
-      ces_passphrase_hash: existing.ces_passphrase_hash, // preserve existing hash
       updated_at: now,
     }
+
+    // Handle passphrase updates securely: accept a plain passphrase and hash it
+    if (passphrase && typeof passphrase === 'string' && passphrase.length >= 6) {
+      updatedProfile.ces_passphrase_hash = await hashPassphrase(passphrase)
+    } else if (ces_passphrase_hash && typeof ces_passphrase_hash === 'string') {
+      // Migration or admin tools may provide a pre-hashed value
+      updatedProfile.ces_passphrase_hash = ces_passphrase_hash
+    }
+    // If neither is provided, preserve existing hash
 
     await redis.set(Keys.profile(ces), JSON.stringify(updatedProfile))
 

@@ -6,6 +6,7 @@ import { FaThreads } from 'react-icons/fa6'
 import { SiSignal } from 'react-icons/si'
 import { getContactUrl } from '../lib/constants'
 import { useState, useEffect } from 'react'
+import { fetchProfileByCes } from '../lib/profileApi'
 import type { CreatorRecord } from '../types/ces'
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -32,30 +33,47 @@ export default function Profile() {
       setLoading(false)
       return
     }
-    
-    // Read ALL localStorage queues synchronously — no async hooks, no race conditions
-    const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
-    const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
-    const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
-    const allProfiles = [...pending, ...approved, ...returned]
-    
-    console.log('[Profile] Reading localStorage — total profiles:', allProfiles.length, 'queues:', {
-      pending: pending.length,
-      approved: approved.length,
-      returned: returned.length
-    })
-    
-    const match = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
-    
-    if (match) {
-      console.log('[Profile] Found profile:', match.name, 'CES:', match.cesNumber || match.ces_number)
-      setProfile(match)
-    } else {
-      console.log('[Profile] No profile found for CES:', ces)
-      setError('Profile not found')
+
+    const loadProfile = async () => {
+      // Try Redis-backed API first for cross-device profile visibility
+      try {
+        const remote = await fetchProfileByCes(ces)
+        if (remote) {
+          console.log('[Profile] Remote profile found:', remote.name, 'CES:', remote.cesNumber)
+          setProfile(remote)
+          setLoading(false)
+          return
+        }
+      } catch (err: any) {
+        console.warn('[Profile] API fetch failed, falling back to localStorage:', err.message)
+      }
+
+      // Fall back to localStorage
+      const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]')
+      const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]')
+      const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]')
+      const allProfiles = [...pending, ...approved, ...returned]
+
+      console.log('[Profile] Reading localStorage — total profiles:', allProfiles.length, 'queues:', {
+        pending: pending.length,
+        approved: approved.length,
+        returned: returned.length
+      })
+
+      const match = allProfiles.find((p: any) => p.cesNumber === ces || p.ces_number === ces)
+
+      if (match) {
+        console.log('[Profile] Found profile:', match.name, 'CES:', match.cesNumber || match.ces_number)
+        setProfile(match)
+      } else {
+        console.log('[Profile] No profile found for CES:', ces)
+        setError('Profile not found')
+      }
+
+      setLoading(false)
     }
-    
-    setLoading(false)
+
+    loadProfile()
   }, [ces])
 
   if (loading) {
