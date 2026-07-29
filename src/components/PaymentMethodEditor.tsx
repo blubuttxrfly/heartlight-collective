@@ -30,6 +30,7 @@ export default function PaymentMethodEditor({ methods, onChange }: PaymentMethod
     const config: PaymentMethodConfig = {
       type: nextType,
       enabled: true,
+      public: false,
       [PAYMENT_TYPES.find(p => p.type === nextType)!.field]: nextValue.trim(),
       note: nextNote.trim() || undefined,
       preferredCurrency: 'USD',
@@ -46,6 +47,12 @@ export default function PaymentMethodEditor({ methods, onChange }: PaymentMethod
   const toggle = useCallback((idx: number) => {
     const next = [...methods];
     next[idx] = { ...next[idx], enabled: !next[idx].enabled };
+    onChange(next);
+  }, [methods, onChange]);
+
+  const togglePublic = useCallback((idx: number) => {
+    const next = [...methods];
+    next[idx] = { ...next[idx], public: !next[idx].public };
     onChange(next);
   }, [methods, onChange]);
 
@@ -78,6 +85,15 @@ export default function PaymentMethodEditor({ methods, onChange }: PaymentMethod
                     className="accent-gold-400"
                   />
                   Enabled
+                </label>
+                <label className="flex items-center gap-1 text-sm text-lavender/70 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!method.public}
+                    onChange={() => togglePublic(idx)}
+                    className="accent-gold-400"
+                  />
+                  Show on profile
                 </label>
                 <button
                   type="button"

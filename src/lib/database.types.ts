@@ -20,6 +20,7 @@ export interface Database {
           location: string
           sun_placement: string | null
           moon_placement: string | null
+          ascendant_placement: string | null
           emoji: string
           photo_url: string | null
           bio: string
@@ -82,6 +83,7 @@ export interface Database {
           location?: string
           sun_placement?: string | null
           moon_placement?: string | null
+          ascendant_placement?: string | null
           emoji?: string
           photo_url?: string | null
           bio?: string

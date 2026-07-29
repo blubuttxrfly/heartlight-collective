@@ -49,6 +49,7 @@ export default function EditProfile() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [sunPlacement, setSunPlacement] = useState('');
   const [moonPlacement, setMoonPlacement] = useState('');
+  const [ascendantPlacement, setAscendantPlacement] = useState('');
   const [bio, setBio] = useState('');
   const [photo, setPhoto] = useState('');
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
@@ -123,6 +124,7 @@ export default function EditProfile() {
         setLocationData(p.locationData || null);
         setSunPlacement(p.sunPlacement || '');
         setMoonPlacement(p.moonPlacement || '');
+        setAscendantPlacement(p.ascendantPlacement || '');
         setBio(p.bio || '');
         setPhoto(p.photo || '');
         setTags(p.tags || []);
@@ -244,6 +246,7 @@ export default function EditProfile() {
         locationData: locationData || undefined,
         sunPlacement: sunPlacement.trim(),
         moonPlacement: moonPlacement.trim(),
+        ascendantPlacement: ascendantPlacement.trim(),
         bio: bio.trim(),
         photo,
         tags,
@@ -492,6 +495,21 @@ export default function EditProfile() {
                 </select>
               </div>
             </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                Ascendant (Rising)
+              </label>
+              <select
+                value={ascendantPlacement}
+                onChange={(e) => setAscendantPlacement(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
+              >
+                <option value="">Select...</option>
+                {ASTROLOGY_SIGNS.map(sign => (
+                  <option key={sign} value={sign}>{sign}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Bio */}
@@ -563,13 +581,13 @@ export default function EditProfile() {
             
             <div>
               <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                Portfolio Link
+                Website / Portfolio Link
               </label>
               <input
                 type="text"
                 value={portfolioLink}
                 onChange={(e) => setPortfolioLink(e.target.value)}
-                placeholder="https://yourportfolio.com"
+                placeholder="https://yourwebsite.com"
                 className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
               />
             </div>

@@ -114,6 +114,7 @@ export interface CreatorRecord {
   location: string;
   sunPlacement?: string;
   moonPlacement?: string;
+  ascendantPlacement?: string;
   emoji: string;
   photo: string | null;
 
@@ -341,6 +342,8 @@ export interface WorkStudyExchangeConfig {
 export interface PaymentMethodConfig {
   type: PaymentMethodType;
   enabled: boolean;
+  // Public visibility on individual profile / storefront
+  public?: boolean;
   // Direct peer-to-peer / platform links
   stripePaymentLink?: string;   // Stripe Checkout / Payment Link URL
   stripeAccountId?: string;     // Stripe Connect account ID (legacy)

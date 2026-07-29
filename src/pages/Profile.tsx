@@ -1,12 +1,14 @@
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Mail, Phone, Link as LinkIcon } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, Link as LinkIcon, Banknote } from 'lucide-react'
 import { FaInstagram, FaYoutube, FaSpotify, FaDiscord, FaTelegram } from 'react-icons/fa'
 import { FaThreads } from 'react-icons/fa6'
 import { SiSignal } from 'react-icons/si'
 import { getContactUrl } from '../lib/constants'
 import { useState, useEffect } from 'react'
 import { fetchProfileByCes } from '../lib/profileApi'
+import { getPaymentUrl, formatPaymentLabel, paymentTypeIcon } from '../lib/payments'
+import { getRayAstrologyForSign } from '../lib/astrology'
 import type { CreatorRecord } from '../types/ces'
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -193,15 +195,18 @@ export default function Profile() {
         )}
 
         {/* Astrology */}
-        {(profile.sunPlacement || profile.moonPlacement) && (
+        {(profile.sunPlacement || profile.moonPlacement || profile.ascendantPlacement) && (
           <div className="mb-8">
             <h2 className="font-serif text-xl text-cream mb-3">Placements</h2>
-            <div className="flex gap-4 text-lavender/60">
+            <div className="flex flex-wrap gap-3 text-lavender/70">
               {profile.sunPlacement && (
-                <span>☀️ Sun in {profile.sunPlacement}</span>
+                <AstrologyBadge emoji="☀️" label="Sun" sign={profile.sunPlacement} />
               )}
               {profile.moonPlacement && (
-                <span>🌙 Moon in {profile.moonPlacement}</span>
+                <AstrologyBadge emoji="🌙" label="Moon" sign={profile.moonPlacement} />
+              )}
+              {profile.ascendantPlacement && (
+                <AstrologyBadge emoji="🌅" label="Ascendant" sign={profile.ascendantPlacement} />
               )}
             </div>
           </div>
@@ -250,7 +255,7 @@ export default function Profile() {
         {/* Portfolio Link */}
         {profile.portfolioLink && (
           <div className="mb-8">
-            <h2 className="font-serif text-xl text-cream mb-3">Portfolio</h2>
+            <h2 className="font-serif text-xl text-cream mb-3">Website</h2>
             <a
               href={profile.portfolioLink}
               target="_blank"
@@ -258,8 +263,42 @@ export default function Profile() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
             >
               <LinkIcon className="w-4 h-4" />
-              Visit Portfolio
+              Visit Website
             </a>
+          </div>
+        )}
+
+        {/* Public Peer Payment Methods */}
+        {profile.peerPaymentMethods?.some((m) => m.enabled && m.public) && (
+          <div className="mb-8">
+            <h2 className="font-serif text-xl text-cream mb-3">Mutual Aid</h2>
+            <div className="flex flex-wrap gap-3">
+              {profile.peerPaymentMethods
+                .filter((m) => m.enabled && m.public)
+                .map((method, idx) => {
+                  const url = getPaymentUrl(method)
+                  const label = formatPaymentLabel(method)
+                  return (
+                    <a
+                      key={`${method.type}-${idx}`}
+                      href={url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                        url
+                          ? 'bg-green-400/10 border-green-400/30 text-green-300 hover:bg-green-400/20'
+                          : 'bg-void-800/60 border-lavender/10 text-lavender/40 cursor-default'
+                      }`}
+                      onClick={(e) => {
+                        if (!url) e.preventDefault()
+                      }}
+                    >
+                      <span className="text-sm">{paymentTypeIcon(method.type)}</span>
+                      <span className="text-sm">{label}</span>
+                    </a>
+                  )
+                })}
+            </div>
           </div>
         )}
 
@@ -273,6 +312,24 @@ export default function Profile() {
           </Link>
         </div>
       </motion.div>
+    </div>
+  )
+}
+
+function AstrologyBadge({ emoji, label, sign }: { emoji: string; label: string; sign: string }) {
+  const ray = getRayAstrologyForSign(sign)
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-void-800/60 border border-lavender/10">
+      <span>{emoji}</span>
+      <span className="text-sm">{label} in {sign}</span>
+      {ray && (
+        <span
+          className="text-xs px-2 py-0.5 rounded-full border"
+          style={{ color: ray.color, borderColor: `${ray.color}40`, backgroundColor: `${ray.color}15` }}
+        >
+          {ray.code} · {ray.ray}
+        </span>
+      )}
     </div>
   )
 }

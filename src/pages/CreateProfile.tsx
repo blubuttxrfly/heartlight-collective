@@ -81,6 +81,7 @@ export default function CreateProfile() {
   const [locationData, setLocationData] = useState<LocationData | null>(null)
   const [sun, setSun] = useState('')
   const [moon, setMoon] = useState('')
+  const [ascendant, setAscendant] = useState('')
   const [photo, setPhoto] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [broadcastOptIn, setBroadcastOptIn] = useState(false)
@@ -235,6 +236,7 @@ export default function CreateProfile() {
       locationData: locationData || undefined,
       sunPlacement: sun,
       moonPlacement: moon,
+      ascendantPlacement: ascendant,
       emoji: initials,
       photo: photo,
       bio: bio.trim(),
@@ -292,7 +294,7 @@ export default function CreateProfile() {
     } catch (err: any) {
       console.error('[CreateProfile] Profile creation failed:', err);
     }
-  }, [name, pronouns, title, locationData, sun, moon, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile, isPrivate, email, broadcastOptIn]);
+  }, [name, pronouns, title, locationData, sun, moon, ascendant, photo, bio, tags, numerology, accessibility, consent, portfolioLink, wishAvailability, portfolioItems, contactMethods, contactVisibility, passphrase, cesValue, isCesComplete, getProfiles, addProfile, isPrivate, email, broadcastOptIn]);
 
   // ── Steps ──
   const steps = [
@@ -434,6 +436,7 @@ export default function CreateProfile() {
           <Select label="Sun Placement" value={sun} onChange={setSun} options={ASTROLOGY_SIGNS} />
           <Select label="Moon Placement" value={moon} onChange={setMoon} options={ASTROLOGY_SIGNS} />
         </div>
+        <Select label="Ascendant (Rising)" value={ascendant} onChange={setAscendant} options={ASTROLOGY_SIGNS} />
 
         {/* 3. Bio */}
         <div>
@@ -502,7 +505,7 @@ export default function CreateProfile() {
         </div>
 
         {/* 5. Portfolio Link */}
-        <Field label="Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="Website, Instagram, SoundCloud, or portfolio URL" />
+        <Field label="Website / Portfolio Link" value={portfolioLink} onChange={setPortfolioLink} placeholder="https://yourwebsite.com" />
 
         {/* 6. Portfolio Upload */}
         <div>
