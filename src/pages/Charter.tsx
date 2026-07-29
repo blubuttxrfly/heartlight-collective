@@ -1,53 +1,131 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import {
+  ScrollText,
+  Sparkles,
+  Globe,
+  Heart,
+  HandHeart,
+  Users,
+  Gift,
+  ArrowLeftRight,
+  Banknote,
+  Scale,
+  Store,
+  Video,
+  MapPin,
+  Landmark,
+  Leaf,
+  Lock,
+  Gem,
+  Shield,
+  Plane,
+  MousePointerClick,
+  FileText,
+  CheckCircle,
+} from 'lucide-react'
 
 /* Data */
 const flowSteps = [
-  { step: '1. Create Core Energetic Signature', title: 'Join As A Co-Creator',
-    body: 'Every being enters through a Core Energetic Signature. Your signature holds your resonance, offerings, exchange pathways, and seasonal capacity inside the Heartlight Exchange.' },
-  { step: '2. Enter The Wishing Well', title: 'Cast And Answer Wishes',
-    body: 'Wishes are cast through an active Core Energetic Signature. The same Wishing Well lets beings answer wishes, feel resonance, and step forward for the roles they are called to fulfill.' },
-  { step: '3. Grant Through Co-Creation', title: 'Weave The Exchange',
-    body: 'When resonance is mutual, the co-creation moves into seasonal agreements, shared stewardship, and eventually into a granted wish that the wish-holder marks as fulfilled.' },
+  {
+    step: '1. Cast or Share',
+    title: 'Cast a Wish, Share a Gift',
+    body: 'Every being enters the Wish & Gift Exchange through a Core Energetic Signature. From there you may cast a wish, share a gift, or open a Vendor Shop of offerings. Each post carries the exchange forms it welcomes.',
+    icon: Heart,
+  },
+  {
+    step: '2. Discover & Resonate',
+    title: 'Browse Wishes, Gifts, Offerings, and Vendors',
+    body: 'Use tags, categories, roles, and location scope to discover what is alive in the field. Offerings include products, services, virtual sessions, and work-study exchanges. Virtual sessions may be hosted on Google Meet, Zoom, Jitsi, Teams, or another agreed platform.',
+    icon: MousePointerClick,
+  },
+  {
+    step: '3. Request with Booking',
+    title: 'Request an Aligned Exchange',
+    body: 'When resonance is mutual, a being requests the exchange. For scheduled offerings, a real calendar slot is proposed from the provider\'s availability. The request also names the exchange form: gift, barter, fixed price, negotiable, collective-funded, or peer payment.',
+    icon: CheckCircle,
+  },
+  {
+    step: '4. Agree & Dedicate',
+    title: 'Enter an Exchange Agreement',
+    body: 'The request becomes a living Exchange Agreement. Consent, privacy, scope, hybrid payment, and meeting details are confirmed. When a monetary component is present, 99% of profits auto-dedicates to the Heartlight Collective destinations for Earth, homes, and ALL the Living.',
+    icon: FileText,
+  },
+  {
+    step: '5. Fulfill & Complete',
+    title: 'Meet, Fulfill, and Close the Cycle',
+    body: 'The exchange is fulfilled — in person, in community, or through a virtual session link. Agreements may carry quests and present-moment reflection. Once complete, gratitude is recorded and the cycle returns energy to the collective field.',
+    icon: Sparkles,
+  },
 ]
 
-const seasons = [
-  { emoji: '❄️', label: 'Winter Solstice', name: 'Hearth of Wishes',
-    body: 'Wishes arrive as letters, voice notes, art, prayers, or story sparks. Early resonance and gentle matching begin here.',
-    border: 'border-blue-400/30', text: 'text-blue-300' },
-  { emoji: '🌱', label: 'Spring Equinox', name: 'Seed of Co-Creation',
-    body: 'Agreements set the scope, exchange, and timeline. Sketches, first drafts, and prototypes begin taking root.',
-    border: 'border-emerald-400/30', text: 'text-emerald-300' },
-  { emoji: '🌞', label: 'Summer Solstice', name: 'Bloom of Form',
-    body: 'Crafting, refining, recording, editing, and shaping bring the offering into embodied form in the world.',
-    border: 'border-yellow-400/30', text: 'text-yellow-300' },
-  { emoji: '🍂', label: 'Fall Equinox', name: 'Heartlight Harvest',
-    body: 'Exchange completes. Gifts deliver, gratitude lands, and the cycle closes through witnessing, celebration, and storyfire.',
-    border: 'border-red-400/30', text: 'text-red-300' },
+const exchangeForms = [
+  {
+    icon: Gift,
+    title: 'Gift Exchange',
+    body: 'A being offers their gift freely from overflow, as an act of love and sacred service. Gifting is always clearly named, never assumed, and chosen with full sovereignty.',
+  },
+  {
+    icon: ArrowLeftRight,
+    title: 'Barter, Trade, or Skill Swap',
+    body: 'One offering in return for another. Both beings bring their gifts and agree on scope. Energy flows in both directions with joy, clarity, and equity.',
+  },
+  {
+    icon: Banknote,
+    title: 'Currency Fixed Price',
+    body: 'A clear, agreed-upon offering in exchange for currency. Both beings know what is being exchanged before co-creation begins, held with transparency and care.',
+  },
+  {
+    icon: Scale,
+    title: 'Currency Sliding Scale',
+    body: 'Coming soon. A range of exchange honoring that different beings hold different access to currency. The Co-Creator will set the range; the receiver will choose with honesty and resonance.',
+  },
+  {
+    icon: HandHeart,
+    title: 'Collective-Funded or Scholarship Exchange',
+    body: 'Community-supported offerings that allow beings to receive who may not have access to other pathways. Scholarships and grants may be offered by Co-Creators or funded through collective generosity.',
+  },
+  {
+    icon: Landmark,
+    title: 'Grants & Seasonal Initiatives',
+    body: 'Seasonal pools may support collective dreams, community land, creative works, and aligned projects. These cycles are internal to the Heartlight Collective and will unfold as the field grows.',
+  },
 ]
 
-const pathways = [
-  { icon: '💱', title: 'Currency Fixed Price',
-    body: 'A clear, agreed-upon offering in exchange for currency. Both beings know what is being exchanged before co-creation begins, held with transparency and care.' },
-  { icon: '🎚️', title: 'Currency Sliding Scale',
-    body: 'A range of exchange is offered, honoring that different beings hold different access to currency. The Co-Creator sets the range; the receiver chooses with honesty and resonance.' },
-  { icon: '🤝', title: 'Value Exchange Trade or Skill Swap',
-    body: 'One offering in return for another. Both beings bring their gifts and agree on the scope of what is exchanged. Energy flows in both directions with joy and equity.' },
-  { icon: '🎁', title: 'Gift Exchange',
-    body: 'A Co-Creator offers their gift freely from their overflow, as an act of love and sacred service. This is clearly named as gifting — never assumed, always chosen with sovereignty.' },
-  { icon: '🌱', title: 'Scholarship Exchange',
-    body: 'Community-supported offerings that allow beings to receive who may not have access to other pathways. Scholarships may be offered by Co-Creators or funded through the collective generosity of the Exchange.' },
+const offeringTypes = [
+  {
+    icon: Store,
+    title: 'Vendor Shops',
+    body: 'A being or collective may open a Vendor Shop to list offerings. Each shop has a profile icon, links, exchange policies, and a collection of offerings available to the field.',
+  },
+  {
+    icon: Video,
+    title: 'Virtual Sessions',
+    body: 'Offerings may be virtual meeting sessions with booking through real calendar availability. Supported platforms include Google Meet, Zoom, Jitsi, Microsoft Teams, or another platform the beings agree upon.',
+  },
+  {
+    icon: MapPin,
+    title: 'Community & Work-Study Exchanges',
+    body: 'Some offerings happen in physical places — community gathering locations, work-study programs, and in-person co-creation. Locations carry real address, directions, and accessibility notes.',
+  },
+  {
+    icon: Plane,
+    title: 'Digital & Physical Offerings',
+    body: 'Offerings may travel as digital gifts, handcrafted objects, mentorship, community circles, teachings, talismans, or any form a Co-Creator is called to share.',
+  },
 ]
 
-const digitalOfferings = ['Audio blessings','Sigils and sacred art','Guided visualizations','Ritual pages and scripts','Oracle-style messages','Mini courses and teachings','Music and sound healing','Mentorship sessions','Community circles']
-const physicalOfferings = ['Handcrafted talismans','Tea blends and apothecary','Charms and sacred objects','Scrolls and printed art','Custom co-created wands, staffs, etc.','Altar objects','Woven and textile crafts']
+const dedications = [
+  { emoji: '🌍', title: 'Earth Initiatives', body: 'Climate action, renewable energy, regeneration, and healing.' },
+  { emoji: '🏠', title: 'Sovereign Homes', body: 'Community spaces, housing, mutual aid, and interdependence.' },
+  { emoji: '♾️', title: 'ALL the Living', body: 'Biodiversity, ecosystems, collective flourishing, and thrival.' },
+]
 
-function SectionTitle({ icon, children }: { icon?: string; children: React.ReactNode }) {
+function SectionTitle({ icon: Icon, children }: { icon?: React.ElementType; children: React.ReactNode }) {
   return (
     <h2 className="font-serif text-xl text-gold-300 mb-4 flex items-center gap-2">
-      {icon && <span>{icon}</span>}
       {children}
+      {Icon && <Icon className="w-5 h-5" />}
     </h2>
   )
 }
@@ -59,25 +137,36 @@ function BodyText({ children }: { children: React.ReactNode }) {
 export default function Charter() {
   return (
     <div className="px-4 pb-16 max-w-4xl mx-auto">
-      <div className="mb-6 pt-2">
-        <Link to="/" className="inline-flex items-center gap-2 text-lavender/50 hover:text-gold-400 transition-colors text-sm">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Collective
-        </Link>
-      </div>
-
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8 mb-8">
-        <h1 className="font-serif text-3xl md:text-4xl text-gold-300 mb-3">📜 Heartlight Exchange Charter</h1>
-        <p className="font-serif italic text-lg text-lavender/60 max-w-xl mx-auto">A living vow for Atlas Island's seasonal co-creation economy</p>
+        <h1 className="font-serif text-3xl md:text-4xl text-gold-300 mb-3 flex items-center justify-center gap-3">
+          Heartlight Collective Charter
+          <ScrollText className="w-8 h-8" />
+        </h1>
+        <p className="font-serif italic text-lg text-lavender/60 max-w-xl mx-auto">
+          A living vow for the Heartlight Collective and our aligned exchanges
+        </p>
       </motion.div>
 
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-12">
-        <SectionTitle icon="✦">How The Exchange Flows</SectionTitle>
-        <BodyText>Heartlight Exchange moves through a simple living rhythm: beings join through a Core Energetic Signature, cast and answer wishes through the Wishing Well, and then complete co-creations through resonance, agreement, and granting.</BodyText>
-        <div className="grid md:grid-cols-3 gap-4 mt-6">
+        <SectionTitle icon={Sparkles}>How the Exchange Flows</SectionTitle>
+        <BodyText>
+          The Wish & Gift Exchange moves through a simple living rhythm: beings join through a Core Energetic Signature,
+          cast and answer wishes, discover offerings, request aligned exchanges with real booking, and complete co-creations
+          through resonance, agreement, and fulfillment.
+        </BodyText>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {flowSteps.map((s, i) => (
-            <motion.div key={s.step} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }} className="rounded-2xl border border-gold-400/15 bg-void-800/40 p-5">
-              <p className="text-xs uppercase tracking-widest text-gold-400 mb-2 font-sans">{s.step}</p>
+            <motion.div
+              key={s.step}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.1 }}
+              className="rounded-2xl border border-gold-400/15 bg-void-800/40 p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <s.icon className="w-5 h-5 text-gold-400" />
+                <p className="text-xs uppercase tracking-widest text-gold-400 font-sans">{s.step}</p>
+              </div>
               <h3 className="font-serif text-lg text-cream mb-2">{s.title}</h3>
               <p className="text-sm text-lavender/60 leading-relaxed">{s.body}</p>
             </motion.div>
@@ -88,37 +177,93 @@ export default function Charter() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="rounded-2xl border border-gold-400/25 bg-gold-400/5 p-8 text-center mb-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(250,209,68,0.07),transparent_65%)] pointer-events-none" />
         <p className="font-serif italic text-lg text-gold-300 leading-relaxed relative z-10 max-w-2xl mx-auto">
-          Heartlight Exchanges exist to harmonize the Ray frequencies of ALL through intentional co-creation. Beings across Earth and beyond may share wishes, requests, offerings, lessons, art, healing, and sacred skill crafted with care by Atlastizens in a mutual energetic exchange.
+          Heartlight Exchanges exist to harmonize the Ray frequencies of ALL through intentional co-creation.
+          Beings across Earth and beyond may share wishes, gifts, offerings, lessons, art, healing, and sacred skill
+          crafted with care by sovereign members of the Heartlight Collective.
         </p>
       </motion.div>
 
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mb-12">
-        <SectionTitle icon="🌍">Seasonal Exchange Thresholds</SectionTitle>
-        <p className="font-serif italic text-lavender/60 mb-6 max-w-2xl">The seasonal wheel now lives as one connected threshold map, so each phase touches the next and the co-creation cycle reads as a single living pattern.</p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {seasons.map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + i * 0.1 }} className={`rounded-2xl border ${s.border} bg-void-800/40 p-6 relative overflow-hidden hover:shadow-lg transition-all duration-300`}>
-              <div className="text-3xl mb-2">{s.emoji}</div>
-              <p className={`text-xs uppercase tracking-widest ${s.text} mb-1 font-sans`}>{s.label}</p>
-              <h3 className="font-serif text-xl text-cream mb-3">{s.name}</h3>
-              <p className="text-sm text-lavender/60 leading-relaxed">{s.body}</p>
+        <SectionTitle icon={Globe}>The Heartlight Collective & Earth Dedication</SectionTitle>
+        <div className="rounded-2xl border border-green-400/20 bg-green-400/5 p-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_0%,rgba(74,222,128,0.07),transparent_65%)] pointer-events-none" />
+          <div className="relative z-10">
+            <p className="font-serif italic text-lg text-green-300 leading-relaxed mb-6 max-w-2xl mx-auto text-center">
+              The Heartlight Collective is a unanimous agreement dedication to directing{' '}
+              <span className="text-green-400 font-medium">99% of all profits</span> back to our Earth, homes,
+              sovereign interdependent communities, and ALL the Living.
+            </p>
+            <p className="text-sm text-lavender/70 leading-relaxed mb-6 max-w-2xl mx-auto text-center">
+              Through the Wish & Gift Exchange, funds flow toward Earth-conscious initiatives, climate action projects,
+              community resilience, regenerative systems, and aligned exchanges that serve our Greatest & Highest Good.
+              This is not a donation — this is a sacred reallocation of energy back to the living systems that sustain us all.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-6">
+              {dedications.map((d) => (
+                <div key={d.title} className="rounded-xl border border-green-400/10 bg-void-800/40 p-4 text-center">
+                  <div className="text-3xl mb-2">{d.emoji}</div>
+                  <div className="text-sm text-cream mb-1">{d.title}</div>
+                  <div className="text-xs text-lavender/50">{d.body}</div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-lavender/40 text-center">
+              1% covers operational costs. 99% returns to Earth and community. This is our living agreement, honored by every Co-Creator in the Heartlight Exchange.
+            </p>
+          </div>
+        </div>
+      </motion.section>
+
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-12">
+        <SectionTitle icon={Users}>Heartlight Co-Creators</SectionTitle>
+        <BodyText>
+          Heartlight Co-Creators are sovereign beings whose occupation is co-creating for ALL through reciprocity.
+          Recipients may discover a Co-Creator through the Exchange, and Co-Creators respond through resonance and capacity.
+          Vendor Shops allow individuals and collectives to offer their gifts in an organized, transparent, and reachable way.
+        </BodyText>
+      </motion.section>
+
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mb-12">
+        <SectionTitle icon={Store}>Offerings & Vendor Shops</SectionTitle>
+        <BodyText>
+          Vendor Shops are living storefronts within the Wish & Gift Exchange. Each shop may display a profile icon, links,
+          exchange policies, and a gallery of offerings. Offerings may be products, services, virtual sessions, or work-study exchanges.
+        </BodyText>
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+          {offeringTypes.map((o, i) => (
+            <motion.div
+              key={o.title}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 + i * 0.08 }}
+              className="flex gap-4 items-start p-4 rounded-xl border border-gold-400/10 bg-void-800/30"
+            >
+              <o.icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-gold-400" />
+              <div>
+                <h3 className="font-serif text-base text-cream mb-1">{o.title}</h3>
+                <p className="text-sm text-lavender/60 leading-relaxed">{o.body}</p>
+              </div>
             </motion.div>
           ))}
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mb-12">
-        <SectionTitle icon="🦋">Heartlight Co-Creators</SectionTitle>
-        <BodyText>Heartlight Co-Creators are Atlastizens whose occupation is co-creating for ALL through reciprocity. Recipients may select a Co-Creator directly via Core Energetic Signatures, and Co-Creators respond through resonance and capacity for that season.</BodyText>
-      </motion.section>
-
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }} className="mb-12">
-        <SectionTitle icon="🎁">Exchange Pathways</SectionTitle>
-        <BodyText>Every exchange is an act of sacred reciprocity. Heartlight Exchange pathways flow through five forms; choose the one that feels most resonant for each co-creation.</BodyText>
+      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }} className="mb-12">
+        <SectionTitle icon={HandHeart}>Exchange Pathways</SectionTitle>
+        <BodyText>
+          Every exchange is an act of sacred reciprocity. The Wish & Gift Exchange welcomes multiple exchange forms;
+          choose the one that feels most resonant for each co-creation. Some pathways are live now, and others will arrive as the field grows.
+        </BodyText>
         <div className="grid gap-3 mt-6">
-          {pathways.map((p, i) => (
-            <motion.div key={p.title} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 + i * 0.08 }} className="flex gap-4 items-start p-4 rounded-xl border border-gold-400/10 bg-void-800/30">
-              <span className="text-xl flex-shrink-0 mt-0.5">{p.icon}</span>
+          {exchangeForms.map((p, i) => (
+            <motion.div
+              key={p.title}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.9 + i * 0.08 }}
+              className="flex gap-4 items-start p-4 rounded-xl border border-gold-400/10 bg-void-800/30"
+            >
+              <p.icon className="w-5 h-5 flex-shrink-0 mt-0.5 text-gold-400" />
               <div>
                 <h3 className="font-serif text-base text-cream mb-1">{p.title}</h3>
                 <p className="text-sm text-lavender/60 leading-relaxed">{p.body}</p>
@@ -128,63 +273,56 @@ export default function Charter() {
         </div>
       </motion.section>
 
-      <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 }} className="mb-12">
-        <SectionTitle icon="🌐">Offerings That Travel Worldwide</SectionTitle>
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
-          <div className="rounded-2xl border border-magenta-500/15 bg-void-800/30 p-6">
-            <p className="text-xs uppercase tracking-widest text-orichalcum mb-4">✨ Digital Gifts</p>
-            <ul className="space-y-2">
-              {digitalOfferings.map((o) => (
-                <li key={o} className="text-sm text-lavender/60 pl-4 relative border-l-2 border-gold-400/20 leading-relaxed">
-                  <span className="absolute left-0 top-1.5 text-[0.5rem] text-gold-400 opacity-60">✦</span>
-                  {o}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-magenta-500/15 bg-void-800/30 p-6">
-            <p className="text-xs uppercase tracking-widest text-orichalcum mb-4">🪄 Physical Gifts</p>
-            <ul className="space-y-2">
-              {physicalOfferings.map((o) => (
-                <li key={o} className="text-sm text-lavender/60 pl-4 relative border-l-2 border-gold-400/20 leading-relaxed">
-                  <span className="absolute left-0 top-1.5 text-[0.5rem] text-gold-400 opacity-60">✦</span>
-                  {o}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </motion.section>
-
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.0 }} className="mb-12">
-        <SectionTitle icon="🤍">Accessibility Promise</SectionTitle>
-        <BodyText>Offerings may be created in multiple formats whenever it supports the receiver: text, audio, captioned video, sensory-friendly pacing, simplified steps, multiple time-zone windows.</BodyText>
+        <SectionTitle icon={Leaf}>Accessibility Promise</SectionTitle>
+        <BodyText>
+          Offerings may be created in multiple formats whenever it supports the receiver: text, audio, captioned video,
+          sensory-friendly pacing, simplified steps, multiple time-zone windows, and clear accessibility notes for in-person locations.
+        </BodyText>
       </motion.section>
 
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }} className="mb-12">
-        <SectionTitle icon="🔒">Privacy Assurance</SectionTitle>
-        <BodyText>The Privacy Assurance is sacred to the thrival and harmony of every co-creator in the Heartlight Exchange. Letters, personal stories, and creative details stay held within the sacred container shared by the receiver and their chosen Co-Creator. Consent governs every moment of sharing before, during, and after the exchange.</BodyText>
+        <SectionTitle icon={Lock}>Privacy Assurance</SectionTitle>
+        <BodyText>
+          The Privacy Assurance is sacred to the thrival and harmony of every co-creator in the Heartlight Exchange.
+          Letters, personal stories, and creative details stay held within the sacred container shared by the receiver and their chosen Co-Creator.
+          Consent governs every moment of sharing before, during, and after the exchange.
+        </BodyText>
         <div className="mt-4">
-          <Link to="/privacy" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all text-sm">🔒 View Full Privacy Assurance →</Link>
+          <Link to="/privacy" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all text-sm">
+            View Full Privacy Assurance <Lock className="w-4 h-4" />
+          </Link>
         </div>
       </motion.section>
 
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2 }} className="mb-12">
-        <SectionTitle icon="💎">The 12 Codes of ALL</SectionTitle>
-        <BodyText>The 12 Codes of ALL are the living values that Atlas Island and the Heartlight Exchange uphold. Each Code is held by a Ray frequency and carries its own mantra of practice.</BodyText>
+        <SectionTitle icon={Gem}>The 12 Codes of ALL</SectionTitle>
+        <BodyText>
+          The 12 Codes of ALL are the living values that the Heartlight Collective upholds. Each Code is held by a Ray frequency
+          and carries its own mantra of practice.
+        </BodyText>
         <div className="mt-4">
-          <Link to="/codes" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all text-sm">💎 View All 12 Codes of ALL →</Link>
+          <Link to="/codes" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-gold-400/30 text-gold-300 hover:bg-gold-400/10 transition-all text-sm">
+            View All 12 Codes of ALL <Gem className="w-4 h-4" />
+          </Link>
         </div>
       </motion.section>
 
       <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 }} className="mb-12">
-        <SectionTitle icon="✨">Stewardship</SectionTitle>
-        <BodyText>A small circle of Stewards holds the directory, Codes, scholarships, seasonal announcements, and gentle conflict resolution through care and clarity.</BodyText>
+        <SectionTitle icon={Shield}>Stewardship</SectionTitle>
+        <BodyText>
+          A small circle of Stewards holds the directory, Codes, scholarships, seasonal announcements, and gentle conflict resolution
+          through care and clarity.
+        </BodyText>
       </motion.section>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4 }} className="text-center py-8 max-w-xl mx-auto">
-        <p className="font-serif italic text-lavender/50 mb-6 leading-relaxed">Join the Heartlight Exchange to share your Core Energetic Signature. Let's make our dreams and wishes come true!</p>
-        <Link to="/exchange" className="inline-block px-8 py-3 rounded-full border border-gold-400/40 text-gold-300 hover:bg-gold-400/10 transition-all font-serif">Create Your Core Energetic Signature</Link>
+        <p className="font-serif italic text-lavender/50 mb-6 leading-relaxed">
+          Join the Heartlight Collective to share your Core Energetic Signature. Let's make our dreams and wishes come true!
+        </p>
+        <Link to="/exchange" className="inline-flex items-center gap-2 px-8 py-3 rounded-full border border-gold-400/40 text-gold-300 hover:bg-gold-400/10 transition-all font-serif">
+          Enter the Wish & Gift Exchange <Heart className="w-4 h-4" />
+        </Link>
       </motion.div>
     </div>
   )

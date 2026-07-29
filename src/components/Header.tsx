@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity, Users, User } from 'lucide-react';
-import { useSession } from '../lib/session';
-import SignInOverlay from './SignInOverlay';
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { LogOut, Shield, ChevronDown, Heart, Globe, Infinity, Users, User, Inbox, Settings } from 'lucide-react'
+import { useSession } from '../lib/session'
+import SignInOverlay from './SignInOverlay'
 
 const primaryNav = [
   { path: '/', label: 'Collective', icon: Globe, hue: 'magenta' },
@@ -94,7 +94,13 @@ export default function Header() {
               >
                 <div className="px-4 py-3 border-b border-lavender/5">
                   <p className="text-xs text-lavender/50">C.E.S.</p>
-                  <p className="text-sm text-gold-300 font-mono">{user?.ces}</p>
+                  <p className="text-sm text-gold-300 font-mono mb-1">{user?.ces || '—'}</p>
+                  {user?.atlasEmail && (
+                    <>
+                      <p className="text-xs text-lavender/50">Email</p>
+                      <p className="text-xs text-cream/80 truncate">{user.atlasEmail}</p>
+                    </>
+                  )}
                 </div>
                 <Link
                   to={`/profile/${user?.ces}`}
@@ -111,11 +117,25 @@ export default function Header() {
                   Edit Profile
                 </Link>
                 <Link
-                  to="/my-storefronts"
+                  to="/account"
                   className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
                   onClick={() => setShowDropdown(false)}
                 >
-                  My Storefronts
+                  <Settings className="w-3 h-3 inline mr-1" /> Account
+                </Link>
+                <Link
+                  to="/flow/vendor-shop"
+                  className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  Vendor Shops
+                </Link>
+                <Link
+                  to="/flow?vendorInbox=1"
+                  className="block px-4 py-2 text-sm text-lavender/70 hover:text-cream hover:bg-white/5 transition-colors"
+                  onClick={() => setShowDropdown(false)}
+                >
+                  <Inbox className="w-3 h-3 inline mr-1" /> Vendor Inbox
                 </Link>
                 {isSteward && (
                   <Link

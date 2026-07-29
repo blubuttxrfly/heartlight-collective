@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, KeyRound, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, KeyRound, AlertTriangle, CheckCircle2, Mail } from 'lucide-react'
 import { useSession } from '../lib/session'
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
+import { requestMagicLink } from '../lib/atlasAuth'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -11,8 +12,12 @@ export default function SignIn() {
   const unified = useUnifiedStorage()
   const [ces, setCes] = useState('')
   const [passphrase, setPassphrase] = useState('')
+  const [email, setEmail] = useState('')
+  const [magicMode, setMagicMode] = useState(false)
+  const [magicSent, setMagicSent] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const isDev = import.meta.env.DEV || localStorage.getItem('hlc_dev_atlas') === 'true';
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +71,38 @@ export default function SignIn() {
     }
   }
 
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setMagicSent(false)
+
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await requestMagicLink(
+        normalizedEmail,
+        `${window.location.origin}/auth/callback?returnTo=/edit-profile`
+      )
+      if (result.success) {
+        setMagicSent(true)
+      } else {
+        setError(result.error || 'Could not send magic link.')
+      }
+    } catch (err: any) {
+      console.error('[SignIn] Magic link error:', err)
+      setError(err.message || 'Could not send magic link.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <motion.div
@@ -87,12 +124,32 @@ export default function SignIn() {
           </motion.div>
           <h1 className="font-serif text-2xl text-cream mb-2">Welcome Back</h1>
           <p className="text-sm text-lavender/50">
-            Enter your C.E.S. and passphrase to access your Co-Creation space.
+            {magicMode
+              ? 'Enter your email to receive a sacred sign-in doorway.'
+              : 'Enter your C.E.S. and passphrase to access your Co-Creation space.'}
           </p>
         </div>
 
-        {/* Success state */}
-        {success ? (
+        {/* Magic-link sent state */}
+        {magicSent ? (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="text-center py-8"
+          >
+            <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-3" />
+            <p className="text-lg text-cream mb-1">Sacred Doorway Sent</p>
+            <p className="text-sm text-lavender/50">
+              Check your email for the Atlas Island magic link. It expires in 15 minutes.
+            </p>
+            <button
+              onClick={() => { setMagicSent(false); setEmail('') }}
+              className="mt-6 px-6 py-2 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all text-sm"
+            >
+              Send another
+            </button>
+          </motion.div>
+        ) : success ? (
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -103,42 +160,68 @@ export default function SignIn() {
             <p className="text-sm text-lavender/50">Redirecting to your Collective space...✨</p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* C.E.S. Input */}
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                C.E.S. Number
-              </label>
-              <div className="relative">
-                <KeyRound className="w-4 h-4 text-lavender/30 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={ces}
-                  onChange={(e) => setCes(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                  maxLength={9}
-                  placeholder="111111111"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream text-lg tracking-wider text-center placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors font-serif"
-                  autoFocus
-                />
+          <form onSubmit={magicMode ? handleMagicLink : handleSubmit} className="space-y-5">
+            {magicMode ? (
+              /* ── Email magic link ── */
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-lavender/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[10px] text-lavender/30 mt-1">
+                  The magic link works across all Atlas Island subdomains and devices.
+                </p>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* C.E.S. Input */}
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                    C.E.S. Number
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-lavender/30 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={ces}
+                      onChange={(e) => setCes(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                      maxLength={9}
+                      placeholder="111111111"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream text-lg tracking-wider text-center placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors font-serif"
+                      autoFocus
+                    />
+                  </div>
+                </div>
 
-            {/* Passphrase */}
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                Passphrase
-              </label>
-              <input
-                type="password"
-                value={passphrase}
-                onChange={(e) => setPassphrase(e.target.value)}
-                placeholder="Your sacred passphrase"
-                className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors"
-              />
-              <p className="text-[10px] text-lavender/30 mt-1">
-                Your passphrase is set during profile creation. No password recovery via email.
-              </p>
-            </div>
+                {/* Passphrase */}
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                    Passphrase
+                  </label>
+                  <input
+                    type="password"
+                    value={passphrase}
+                    onChange={(e) => setPassphrase(e.target.value)}
+                    placeholder="Your sacred passphrase"
+                    className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors"
+                  />
+                  <p className="text-[10px] text-lavender/30 mt-1">
+                    Your passphrase is set during profile creation.
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Error Display */}
             {error && (
@@ -155,13 +238,45 @@ export default function SignIn() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (magicMode && !validEmail)}
               onClick={() => console.log('[SignIn] Button clicked!')}
               className="w-full py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
             >
-              {loading ? 'Opening Portal...' : 'Enter Co-Creation Space'}
+              {loading
+                ? 'Opening Portal...'
+                : magicMode
+                ? 'Send Magic Link'
+                : 'Enter Co-Creation Space'}
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
+
+            {/* Mode toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setMagicMode(!magicMode)
+                setError('')
+              }}
+              className="w-full py-2 rounded-xl border border-lavender/10 text-lavender/50 hover:text-lavender/70 hover:border-lavender/20 transition-all text-xs"
+            >
+              {magicMode
+                ? 'Sign in with C.E.S. + Passphrase instead'
+                : 'Sign in with Email Magic Link instead'}
+            </button>
+
+            {/* Dev Atlas quick-fill (CES mode only) */}
+            {!magicMode && isDev && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCes('111111111');
+                  setPassphrase('sovereign42');
+                }}
+                className="w-full py-2 rounded-xl border border-lavender/10 text-lavender/50 hover:text-lavender/70 hover:border-lavender/20 transition-all text-xs"
+              >
+                Dev: Fill Atlas (111111111 / sovereign42)
+              </button>
+            )}
 
             {/* Create Profile CTA */}
             <p className="text-center text-sm text-lavender/40 pt-4">

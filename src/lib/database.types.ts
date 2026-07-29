@@ -20,6 +20,7 @@ export interface Database {
           location: string
           sun_placement: string | null
           moon_placement: string | null
+          ascendant_placement: string | null
           emoji: string
           photo_url: string | null
           bio: string
@@ -36,6 +37,9 @@ export interface Database {
           directory_wish_status: string
           stewardship: string
           stewardship_note: string
+          peer_payment_methods: Json          // PaymentMethodConfig[]
+          location_data: Json | null           // LocationData
+          is_private: boolean                   // Hide from Directory + individual Exchange (Wave 8.3)
           created_at: string
           updated_at: string
         }
@@ -64,6 +68,9 @@ export interface Database {
           directory_wish_status?: string
           stewardship?: string
           stewardship_note?: string
+          peer_payment_methods?: Json
+          location_data?: Json | null
+          is_private?: boolean                  // Wave 8.3
           created_at?: string
           updated_at?: string
         }
@@ -76,6 +83,7 @@ export interface Database {
           location?: string
           sun_placement?: string | null
           moon_placement?: string | null
+          ascendant_placement?: string | null
           emoji?: string
           photo_url?: string | null
           bio?: string
@@ -92,22 +100,30 @@ export interface Database {
           directory_wish_status?: string
           stewardship?: string
           stewardship_note?: string
+          peer_payment_methods?: Json
+          location_data?: Json | null
+          is_private?: boolean                  // Wave 8.3
           updated_at?: string
         }
       }
 
-      /* ═══ Vendor Storefronts ═══ */
+      /* ═══ Vendors / Storefronts ═══ */
       vendors: {
         Row: {
-          id: string                    // vendor_123456
+          id: string
           name: string
           slug: string
           description: string
+          core_directive: string | null     // Vendor Shop bio / mission (nullable)
           logo_url: string | null
           owner_ces: string
           owner_name: string
           members: Json                 // VendorMember[]
           payment_methods: Json          // PaymentMethodConfig[]
+          exchange_policy: Json          // ExchangeForm[]
+          location_data: Json | null     // LocationData
+          tags: string[]
+          links: Json | null             // VendorLink[]
           status: string                // 'active' | 'paused' | 'under_review'
           collective_funded: boolean
           created_at: string
@@ -118,11 +134,16 @@ export interface Database {
           name: string
           slug: string
           description?: string
+          core_directive?: string | null
           logo_url?: string | null
           owner_ces: string
           owner_name: string
           members?: Json
           payment_methods?: Json
+          exchange_policy?: Json
+          location_data?: Json | null
+          tags?: string[]
+          links?: Json | null             // VendorLink[]
           status?: string
           collective_funded?: boolean
           created_at?: string
@@ -132,11 +153,16 @@ export interface Database {
           name?: string
           slug?: string
           description?: string
+          core_directive?: string | null
           logo_url?: string | null
           owner_ces?: string
           owner_name?: string
           members?: Json
           payment_methods?: Json
+          exchange_policy?: Json
+          location_data?: Json | null
+          tags?: string[]
+          links?: Json | null             // VendorLink[]
           status?: string
           collective_funded?: boolean
           updated_at?: string
@@ -159,6 +185,16 @@ export interface Database {
           consent_required: boolean
           max_participants: number | null
           stripe_price_id: string | null
+          exchange_policy: Json          // ExchangeForm[]
+          tags: string[]
+          // Wave 8.2 — session type and location
+          offering_type: string | null      // 'product' | 'service' | 'virtual_session' | 'work_study_exchange'
+          virtual_session: Json | null      // VirtualSessionConfig
+          work_study_exchange: Json | null  // WorkStudyExchangeConfig
+          location: Json | null             // ExchangeLocation
+          requires_scheduling: boolean
+          fulfillers: Json | null           // OfferingFulfiller[]
+          gallery: Json | null              // PortfolioItem[]
           created_at: string
           updated_at: string
         }
@@ -176,20 +212,40 @@ export interface Database {
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
+          exchange_policy?: string[]
+          tags?: string[]
+          offering_type?: string | null
+          virtual_session?: Json | null
+          work_study_exchange?: Json | null
+          location?: Json | null
+          requires_scheduling?: boolean
+          fulfillers?: Json | null
+          gallery?: Json | null              // PortfolioItem[]
           created_at?: string
           updated_at?: string
         }
         Update: {
+          vendor_id?: string
           title?: string
           description?: string
           category?: string
           price_type?: string
           price_cents?: number | null
+          currency?: string
           image_url?: string | null
           availability?: string
           consent_required?: boolean
           max_participants?: number | null
           stripe_price_id?: string | null
+          exchange_policy?: string[]
+          tags?: string[]
+          offering_type?: string | null
+          virtual_session?: Json | null
+          work_study_exchange?: Json | null
+          location?: Json | null
+          requires_scheduling?: boolean
+          fulfillers?: Json | null
+          gallery?: Json | null              // PortfolioItem[]
           updated_at?: string
         }
       }
@@ -302,6 +358,9 @@ export interface Database {
           message: string
           price_type: string
           payment_method: string | null
+          // Wave 8.2 — hybrid payment + calendar booking
+          hybrid_payment: Json | null        // HybridPaymentConfig
+          proposed_meeting_slot: Json | null  // ProposedMeetingSlot
           status: string               // 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled'
           collective_petition_id: string | null
           consent_acknowledged: boolean
@@ -319,6 +378,9 @@ export interface Database {
           message?: string
           price_type?: string
           payment_method?: string | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          proposed_meeting_slot?: Json | null
           status?: string
           collective_petition_id?: string | null
           consent_acknowledged?: boolean
@@ -329,6 +391,9 @@ export interface Database {
           status?: string
           collective_petition_id?: string | null
           consent_acknowledged?: boolean
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          proposed_meeting_slot?: Json | null
           updated_at?: string
         }
       }
@@ -426,6 +491,420 @@ export interface Database {
           shared_contact_methods?: Json
           updated_at?: string
           signed_at?: string | null
+        }
+      }
+
+      /* ═══ Exchange Agreements (Wave 6.9 multi-party) ═══ */
+      exchange_agreements: {
+        Row: {
+          id: string
+          offering_id: string | null
+          vendor_id: string | null
+          wish_id: string | null
+          requester_ces: string
+          requester_name: string
+          provider_ces: string
+          provider_name: string
+          message: string
+          requester_role: string
+          provider_role: string
+          parties: Json                      // AgreementParty[]
+          main_quest: Json                    // QuestItem
+          main_quest_directive: Json | null   // QuestItem
+          main_quests: Json | null             // QuestItem[]
+          side_quests: Json                   // QuestItem[]
+          proposed_price_cents: number | null
+          agreed_price_cents: number | null
+          payment_method: string | null
+          communication_prefs: string
+          dedication_of_profits: Json | null
+          // Wave 8.2 — hybrid payment + confirmed meeting slot
+          hybrid_payment: Json | null        // HybridPaymentConfig
+          confirmed_meeting_slot: Json | null // ProposedMeetingSlot
+          scheduled_meetings: Json            // ScheduledMeeting[]
+          status: string
+          requester_consented: boolean
+          provider_consented: boolean
+          collective_funding_requested: boolean
+          collective_funding_approved: boolean | null
+          safety_reports: Json | null          // SafetyReport[]
+          versions: Json                       // AgreementVersion[]
+          pending_update: Json | null           // AgreementVersion
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          offering_id?: string | null
+          vendor_id?: string | null
+          wish_id?: string | null
+          requester_ces: string
+          requester_name: string
+          provider_ces: string
+          provider_name: string
+          message?: string
+          requester_role?: string
+          provider_role?: string
+          parties?: Json
+          main_quest?: Json
+          main_quest_directive?: Json | null
+          main_quests?: Json | null
+          side_quests?: Json
+          proposed_price_cents?: number | null
+          agreed_price_cents?: number | null
+          payment_method?: string | null
+          communication_prefs?: string
+          dedication_of_profits?: Json | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          confirmed_meeting_slot?: Json | null
+          scheduled_meetings?: Json
+          status?: string
+          requester_consented?: boolean
+          provider_consented?: boolean
+          collective_funding_requested?: boolean
+          collective_funding_approved?: boolean | null
+          safety_reports?: Json | null
+          versions?: Json
+          pending_update?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          offering_id?: string | null
+          vendor_id?: string | null
+          wish_id?: string | null
+          requester_ces?: string
+          requester_name?: string
+          provider_ces?: string
+          provider_name?: string
+          message?: string
+          requester_role?: string
+          provider_role?: string
+          parties?: Json
+          main_quest?: Json
+          main_quest_directive?: Json | null
+          main_quests?: Json | null
+          side_quests?: Json
+          proposed_price_cents?: number | null
+          agreed_price_cents?: number | null
+          payment_method?: string | null
+          communication_prefs?: string
+          dedication_of_profits?: Json | null
+          // Wave 8.2
+          hybrid_payment?: Json | null
+          confirmed_meeting_slot?: Json | null
+          scheduled_meetings?: Json
+          status?: string
+          requester_consented?: boolean
+          provider_consented?: boolean
+          collective_funding_requested?: boolean
+          collective_funding_approved?: boolean | null
+          safety_reports?: Json | null
+          versions?: Json
+          pending_update?: Json | null
+          updated_at?: string
+        }
+      }
+
+      /* ═══ Exchange Calendars (availability + meetings) ═══ */
+      exchange_calendars: {
+        Row: {
+          ces: string                         // PK — one calendar per being
+          availability_blocks: Json           // AvailabilityBlock[]
+          scheduled_meetings: Json             // ScheduledMeeting[]
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          ces: string
+          availability_blocks?: Json
+          scheduled_meetings?: Json
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          availability_blocks?: Json
+          scheduled_meetings?: Json
+          updated_at?: string
+        }
+      }
+
+      /* ═══ Exchange Alerts (Steward Gate) ═══ */
+      exchange_alerts: {
+        Row: {
+          id: string
+          exchange_id: string
+          exchange_title: string
+          type: string
+          from_ces: string
+          from_name: string
+          to_ces: string | null
+          message: string
+          status: string
+          created_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          exchange_id: string
+          exchange_title: string
+          type: string
+          from_ces: string
+          from_name: string
+          to_ces?: string | null
+          message?: string
+          status?: string
+          created_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          exchange_id?: string
+          exchange_title?: string
+          type?: string
+          from_ces?: string
+          from_name?: string
+          to_ces?: string | null
+          message?: string
+          status?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          metadata?: Json | null
+          updated_at?: string
+        }
+      }
+
+      /* ═══ Vendor Invites ═══ */
+      vendor_invites: {
+        Row: {
+          id: string
+          vendor_id: string
+          vendor_name: string
+          invited_by_ces: string
+          invited_by_name: string
+          invitee_ces: string
+          invitee_name: string
+          role: string
+          message: string | null
+          status: string
+          created_at: string
+          responded_at: string | null
+        }
+        Insert: {
+          id?: string
+          vendor_id: string
+          vendor_name: string
+          invited_by_ces: string
+          invited_by_name: string
+          invitee_ces: string
+          invitee_name: string
+          role?: string
+          message?: string | null
+          status?: string
+          created_at?: string
+          responded_at?: string | null
+        }
+        Update: {
+          vendor_id?: string
+          vendor_name?: string
+          invited_by_ces?: string
+          invited_by_name?: string
+          invitee_ces?: string
+          invitee_name?: string
+          role?: string
+          message?: string | null
+          status?: string
+          responded_at?: string | null
+        }
+      }
+
+      /* ═══ Vendor Join Requests ═══ */
+      vendor_join_requests: {
+        Row: {
+          id: string
+          vendor_id: string
+          requester_ces: string
+          requester_name: string
+          message: string | null
+          status: string
+          requested_at: string
+          responded_at: string | null
+          responded_by_ces: string | null
+        }
+        Insert: {
+          id?: string
+          vendor_id: string
+          requester_ces: string
+          requester_name: string
+          message?: string | null
+          status?: string
+          requested_at?: string
+          responded_at?: string | null
+          responded_by_ces?: string | null
+        }
+        Update: {
+          vendor_id?: string
+          requester_ces?: string
+          requester_name?: string
+          message?: string | null
+          status?: string
+          responded_at?: string | null
+          responded_by_ces?: string | null
+        }
+      }
+
+      /* ═══ Collective Petitions ═══ */
+      collective_petitions: {
+        Row: {
+          id: string
+          exchange_request_id: string
+          requester_ces: string
+          requester_name: string
+          provider_ces: string
+          provider_name: string
+          offering_title: string
+          amount_cents: number
+          message: string
+          status: string
+          steward_notes: string | null
+          reviewed_by_ces: string | null
+          reviewed_by_name: string | null
+          created_at: string
+          reviewed_at: string | null
+          funded_at: string | null
+        }
+        Insert: {
+          id?: string
+          exchange_request_id: string
+          requester_ces: string
+          requester_name: string
+          provider_ces: string
+          provider_name: string
+          offering_title: string
+          amount_cents: number
+          message?: string
+          status?: string
+          steward_notes?: string | null
+          reviewed_by_ces?: string | null
+          reviewed_by_name?: string | null
+          created_at?: string
+          reviewed_at?: string | null
+          funded_at?: string | null
+        }
+        Update: {
+          exchange_request_id?: string
+          requester_ces?: string
+          requester_name?: string
+          provider_ces?: string
+          provider_name?: string
+          offering_title?: string
+          amount_cents?: number
+          message?: string
+          status?: string
+          steward_notes?: string | null
+          reviewed_by_ces?: string | null
+          reviewed_by_name?: string | null
+          reviewed_at?: string | null
+          funded_at?: string | null
+        }
+      }
+
+      /* ═══ Wishes / Gifts (Heartlight Exchange) ═══ */
+      wishes: {
+        Row: {
+          id: string
+          type: string                        // 'wish' | 'gift' | 'offering'
+          title: string
+          description: string
+          author_ces: string
+          author_name: string
+          scope: string
+          category: string | null
+          tags: string[]
+          resources: string[]                  // Wave 8.3
+          roles: string[]                      // Wave 8.3
+          location: string | null
+          location_data: Json | null           // Wave 8.3
+          lat: number | null
+          lng: number | null
+          price_cents: number | null
+          price_type: string | null
+          payment_method: string | null
+          exchange_policy: Json | null          // ExchangeForm[]
+          images: string[]
+          status: string
+          urgency: string                       // Wave 8.3
+          time_commitment: string | null        // Wave 8.3
+          is_continual_offering: boolean        // Wave 8.3
+          claimed_by_ces: string | null
+          claimed_by_name: string | null
+          collective_funding_requested: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          type: string
+          title: string
+          description?: string
+          author_ces: string
+          author_name: string
+          scope?: string
+          category?: string | null
+          tags?: string[]
+          resources?: string[]                  // Wave 8.3
+          roles?: string[]                      // Wave 8.3
+          location?: string | null
+          location_data?: Json | null           // Wave 8.3
+          lat?: number | null
+          lng?: number | null
+          price_cents?: number | null
+          price_type?: string | null
+          payment_method?: string | null
+          exchange_policy?: Json | null
+          images?: string[]
+          status?: string
+          urgency?: string                      // Wave 8.3
+          time_commitment?: string | null        // Wave 8.3
+          is_continual_offering?: boolean        // Wave 8.3
+          claimed_by_ces?: string | null
+          claimed_by_name?: string | null
+          collective_funding_requested?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          type?: string
+          title?: string
+          description?: string
+          author_ces?: string
+          author_name?: string
+          scope?: string
+          category?: string | null
+          tags?: string[]
+          resources?: string[]                  // Wave 8.3
+          roles?: string[]                      // Wave 8.3
+          location?: string | null
+          location_data?: Json | null           // Wave 8.3
+          lat?: number | null
+          lng?: number | null
+          price_cents?: number | null
+          price_type?: string | null
+          payment_method?: string | null
+          exchange_policy?: Json | null
+          images?: string[]
+          status?: string
+          urgency?: string                      // Wave 8.3
+          time_commitment?: string | null        // Wave 8.3
+          is_continual_offering?: boolean        // Wave 8.3
+          claimed_by_ces?: string | null
+          claimed_by_name?: string | null
+          collective_funding_requested?: boolean
+          updated_at?: string
         }
       }
     }

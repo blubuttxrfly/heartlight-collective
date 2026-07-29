@@ -1,21 +1,24 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, Eye, EyeOff, Check, X, ArrowLeft, LogOut, AlertTriangle, UserCheck, UserX, RotateCcw } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, Check, X, ArrowLeft, LogOut, AlertTriangle, UserCheck, UserX, RotateCcw, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
 import { cesEncrypt } from '../lib/ces';
-import type { CreatorRecord, SecurityLogEntry } from '../types/ces';
+import type { CreatorRecord, SecurityLogEntry, ExchangeAgreement, AgreementParty, SafetyReport, ExchangeAlert } from '../types/ces';
 
 /* ─── Steward Gate ─── */
 export default function StewardGate() {
-  const { getStewards, getPending, getApproved, getReturned, getSecurityLog, moveProfile, addSecurityLog } = useUnifiedStorage();
+  const { getStewards, getPending, getApproved, getReturned, getSecurityLog, moveProfile, addSecurityLog, getExchangeAlerts, getExchangeAgreements, markExchangeAlertReviewed, approveAgreementWithdrawal } = useUnifiedStorage();
 
   const [authorized, setAuthorized] = useState(false);
   const [ces, setCes] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<'pending' | 'approved' | 'returned' | 'security'>('pending');
+  const [tab, setTab] = useState<'pending' | 'approved' | 'returned' | 'security' | 'exchanges'>('pending');
+
+  const [exchangeAlerts, setExchangeAlerts] = useState<ExchangeAlert[]>([]);
+  const [exchangeAgreements, setExchangeAgreements] = useState<ExchangeAgreement[]>([]);
 
   // Load profiles from Supabase/localStorage
   const [pending, setPending] = useState<CreatorRecord[]>([]);
@@ -38,13 +41,15 @@ export default function StewardGate() {
         setApproved(Array.isArray(approvedRes) ? approvedRes : []);
         setReturned(Array.isArray(returnedRes) ? returnedRes : []);
         setSecurityLog(getSecurityLog());
+        setExchangeAlerts(getExchangeAlerts());
+        setExchangeAgreements(getExchangeAgreements());
       } catch (err) {
         console.error('Failed to load profiles:', err);
       }
     };
 
     loadProfiles();
-  }, [authorized, getPending, getApproved, getReturned, getSecurityLog]);
+  }, [authorized, getPending, getApproved, getReturned, getSecurityLog, getExchangeAlerts, getExchangeAgreements]);
 
   // Check if already a steward (stored in localStorage)
   useEffect(() => {

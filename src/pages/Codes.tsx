@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
+import { Gem } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const CODES = [
@@ -82,7 +82,7 @@ function CodeCard({ code, index }: { code: typeof CODES[0]; index: number }) {
           <span className="w-2 h-2 rounded-full inline-block" style={{ background: code.color }} />
           <span className="text-xs uppercase tracking-widest font-sans" style={{ color: code.color }}>{code.ray}</span>
         </div>
-        <p className="font-serif italic text-base text-white/80 leading-relaxed p-3 rounded-lg bg-white/5 border-l-[3px] mb-4"
+        <p className="font-serif italic text-base text-cream leading-relaxed p-3 rounded-lg bg-void-900/40 border-l-[3px] mb-4"
           style={{ borderColor: code.color + '60' }}
         >
           "{code.mantra}"
@@ -97,18 +97,14 @@ function CodeCard({ code, index }: { code: typeof CODES[0]; index: number }) {
 export default function Codes() {
   return (
     <div className="px-4 pb-16 max-w-5xl mx-auto">
-      <div className="mb-6 pt-2">
-        <Link to="/" className="inline-flex items-center gap-2 text-lavender/50 hover:text-gold-400 transition-colors text-sm">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Collective
-        </Link>
-      </div>
-
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-8 mb-8">
-        <h1 className="font-serif text-3xl md:text-4xl text-gold-300 mb-3">💎 The 12 Codes of ALL</h1>
+        <h1 className="font-serif text-3xl md:text-4xl text-gold-300 mb-3 flex items-center justify-center gap-3">
+          The 12 Codes of ALL
+          <Gem className="w-8 h-8" />
+        </h1>
         <p className="font-serif italic text-lg text-lavender/60 max-w-2xl mx-auto">
-          Lived values that shape every space, agreement, and expansion on Atlas Island.<br />
-          In the Heartlight Exchange, these Codes form the sacred container within which every wish, offering, and co-creation flows.
+          Lived values that shape every space, agreement, and expansion of the Heartlight Collective.
+          In the Wish & Gift Exchange, these Codes form the sacred container within which every wish, offering, and co-creation flows.
         </p>
       </motion.div>
 

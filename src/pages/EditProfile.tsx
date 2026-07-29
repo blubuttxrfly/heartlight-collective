@@ -8,9 +8,13 @@ import {
 import { FaThreads } from 'react-icons/fa6';
 import { SiSignal } from 'react-icons/si';
 import { useSession } from '../lib/session';
-import { useUnifiedStorage } from '../hooks/useUnifiedStorage';
+import { createProfileApi, updateProfileApi, fetchProfileByCes } from '../lib/profileApi';
+import { sessionToCreatorRecord } from '../pages/MigrateProfiles';
 import { ACCESSIBILITY_PRESETS, ASTROLOGY_SIGNS, CONTACT_FIELDS } from '../lib/constants';
-import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem } from '../types/ces';
+import CreatorTagSelector from '../components/CreatorTagSelector';
+import LocationSelect from '../components/LocationSelect';
+import type { CreatorRecord, ContactMethods, ContactVisibility, PortfolioItem, LocationData, PaymentMethodConfig } from '../types/ces';
+import PaymentMethodEditor from '../components/PaymentMethodEditor';
 
 const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   email: FaEnvelope,
@@ -27,7 +31,8 @@ const CONTACT_ICON_MAP: Record<string, React.ComponentType<{ className?: string 
 export default function EditProfile() {
   const navigate = useNavigate();
   const { user, signIn, signOut } = useSession();
-  const unified = useUnifiedStorage();
+  const [passphrase, setPassphrase] = useState('');
+  const [confirmPassphrase, setConfirmPassphrase] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const portfolioInputRef = useRef<HTMLInputElement>(null);
   
@@ -41,11 +46,14 @@ export default function EditProfile() {
   const [pronouns, setPronouns] = useState('');
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [sunPlacement, setSunPlacement] = useState('');
   const [moonPlacement, setMoonPlacement] = useState('');
+  const [ascendantPlacement, setAscendantPlacement] = useState('');
   const [bio, setBio] = useState('');
   const [photo, setPhoto] = useState('');
   const [wishAvailability, setWishAvailability] = useState<'accepting' | 'closed'>('accepting');
+  const [tags, setTags] = useState<string[]>([]);
   
   // Contact Methods
   const [contactMethods, setContactMethods] = useState<ContactMethods>({
@@ -65,6 +73,10 @@ export default function EditProfile() {
   
   // Guide & Guardian
   const [guideGuardianOptIn, setGuideGuardianOptIn] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+
+  // Peer-to-Peer Payment Methods
+  const [peerPaymentMethods, setPeerPaymentMethods] = useState<PaymentMethodConfig[]>([]);
 
   // Load full profile on mount
   useEffect(() => {
@@ -74,7 +86,33 @@ export default function EditProfile() {
     
     const loadProfile = async () => {
       console.log('[EditProfile] Loading profile for:', user.ces);
-      const p = await unified.findProfileByCES(user.ces);
+      // Try Redis API first, then localStorage queues, then session
+      let p: CreatorRecord | undefined;
+      try {
+        p = await fetchProfileByCes(user.ces);
+        console.log('[EditProfile] Redis profile loaded:', p?.name);
+      } catch (err: any) {
+        console.warn('[EditProfile] Redis fetch failed:', err.message);
+      }
+      if (!p) {
+        const pending = JSON.parse(localStorage.getItem('hlc_pending') || '[]');
+        const approved = JSON.parse(localStorage.getItem('hlc_approved') || '[]');
+        const returned = JSON.parse(localStorage.getItem('hlc_returned') || '[]');
+        p = [...pending, ...approved, ...returned].find((x: any) => x.cesNumber === user.ces || x.ces_number === user.ces);
+      }
+      if (!p) {
+        const sessionRaw = localStorage.getItem('hlc_session_v2') || localStorage.getItem('hlc_session');
+        if (sessionRaw) {
+          try {
+            const session = JSON.parse(sessionRaw);
+            if (session.ces === user.ces || session.cesNumber === user.ces || session.ces_number === user.ces) {
+              p = sessionToCreatorRecord(session);
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
       console.log('[EditProfile] Profile loaded:', p?.name);
       
       if (isMounted && p) {
@@ -83,10 +121,13 @@ export default function EditProfile() {
         setPronouns(p.pronouns || '');
         setTitle(p.title || '');
         setLocation(p.location || '');
+        setLocationData(p.locationData || null);
         setSunPlacement(p.sunPlacement || '');
         setMoonPlacement(p.moonPlacement || '');
+        setAscendantPlacement(p.ascendantPlacement || '');
         setBio(p.bio || '');
         setPhoto(p.photo || '');
+        setTags(p.tags || []);
         setWishAvailability(p.wishAvailability === 'closed' ? 'closed' : 'accepting');
         setContactMethods(p.contactMethods || { email: '', phone: '', instagram: '', youtube: '', threads: '', spotify: '', discord: '', telegram: '', signal: '' });
         setContactVisibility(p.contactVisibility || { email: false, phone: false, instagram: false, youtube: false, threads: false, spotify: false, discord: false, telegram: false, signal: false });
@@ -95,6 +136,8 @@ export default function EditProfile() {
         setNumerology(p.numerology || []);
         setAccessibility(p.accessibility || []);
         setGuideGuardianOptIn(p.guideGuardianStatus === 'opted_in');
+        setPeerPaymentMethods(p.peerPaymentMethods || []);
+        setIsPrivate(p.isPrivate || false);
       }
     };
     
@@ -104,7 +147,7 @@ export default function EditProfile() {
     return () => {
       isMounted = false;
     };
-  }, [user?.ces]); // Remove 'unified' from dependencies to prevent re-fetching
+  }, [user?.ces]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -200,10 +243,13 @@ export default function EditProfile() {
         pronouns: pronouns.trim().toLowerCase(),
         title: title.trim(),
         location: location.trim(),
+        locationData: locationData || undefined,
         sunPlacement: sunPlacement.trim(),
         moonPlacement: moonPlacement.trim(),
+        ascendantPlacement: ascendantPlacement.trim(),
         bio: bio.trim(),
         photo,
+        tags,
         wishAvailability,
         directoryWishStatus: wishAvailability,
         contactMethods,
@@ -216,11 +262,36 @@ export default function EditProfile() {
         guideGuardianOptedInAt: guideGuardianOptIn && profile.guideGuardianStatus !== 'opted_in' 
           ? new Date().toISOString() 
           : profile.guideGuardianOptedInAt,
+        peerPaymentMethods,
+        isPrivate,
       };
 
-      // Update in unified storage (Supabase + localStorage)
-      await unified.updateProfile(updated);
-      
+      // Build the body: include passphrase only if the user provided/confirmed one
+      const body: any = { ...updated };
+      if (passphrase) {
+        if (passphrase !== confirmPassphrase) {
+          setError('Passphrase and confirmation do not match.');
+          setLoading(false);
+          return;
+        }
+        if (passphrase.length < 6) {
+          setError('Passphrase must be at least 6 characters.');
+          setLoading(false);
+          return;
+        }
+        body.passphrase = passphrase;
+      }
+
+      const result = await updateProfileApi(updated.cesNumber, body);
+
+      if (!result.success) {
+        // Supabase failed but localStorage succeeded. Warn the user gently.
+        console.warn('[EditProfile] Save warning:', result.error);
+        setError(`Saved locally, but cloud sync needs attention: ${result.error}`);
+        setLoading(false);
+        return;
+      }
+
       // Update session
       await signIn(updated);
       
@@ -378,15 +449,12 @@ export default function EditProfile() {
             </div>
 
             <div>
-              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Earth, Solar System"
-                className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
+              <LocationSelect
+                value={locationData}
+                onChange={setLocationData}
+                placeholder="Search city, town, or place…"
+                allowRemote
+                label={undefined}
               />
             </div>
           </div>
@@ -427,6 +495,21 @@ export default function EditProfile() {
                 </select>
               </div>
             </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                Ascendant (Rising)
+              </label>
+              <select
+                value={ascendantPlacement}
+                onChange={(e) => setAscendantPlacement(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
+              >
+                <option value="">Select...</option>
+                {ASTROLOGY_SIGNS.map(sign => (
+                  <option key={sign} value={sign}>{sign}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Bio */}
@@ -444,6 +527,14 @@ export default function EditProfile() {
                 rows={4}
                 className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors resize-none"
               />
+            </div>
+
+            {/* Creator Role Tags */}
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                Your Archetypes
+              </label>
+              <CreatorTagSelector selectedTags={tags} onChange={setTags} />
             </div>
           </div>
 
@@ -490,13 +581,13 @@ export default function EditProfile() {
             
             <div>
               <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
-                Portfolio Link
+                Website / Portfolio Link
               </label>
               <input
                 type="text"
                 value={portfolioLink}
                 onChange={(e) => setPortfolioLink(e.target.value)}
-                placeholder="https://yourportfolio.com"
+                placeholder="https://yourwebsite.com"
                 className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream focus:border-gold-400/30 focus:outline-none transition-colors"
               />
             </div>
@@ -639,6 +730,58 @@ export default function EditProfile() {
                 <p className="text-xs text-lavender/50">Support other beings in their journey and hold space for the Collective</p>
               </div>
             </label>
+
+            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-lavender/10 bg-void-800/40 hover:border-gold-400/20 transition-all">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="w-5 h-5 rounded border-lavender/20 bg-void-800 accent-gold-400"
+              />
+              <div>
+                <p className="text-sm text-cream font-medium">Hide Profile From Directory 🌑</p>
+                <p className="text-xs text-lavender/50">Hide from the public Directory and individual Exchange listings. You may still appear through Vendor Shop offerings.</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Peer-to-Peer Payment Methods */}
+          <div className="space-y-4 pt-4 border-t border-lavender/10">
+            <PaymentMethodEditor methods={peerPaymentMethods} onChange={setPeerPaymentMethods} />
+          </div>
+
+          {/* Passphrase */}
+          <div className="space-y-4 pt-4 border-t border-lavender/10">
+            <h3 className="font-serif text-lg text-cream">Sacred Passphrase</h3>
+            <p className="text-xs text-lavender/50">
+              Set or update your C.E.S. passphrase. Leave blank to keep your current passphrase unchanged. This is required for cross-device sign-in.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                  Passphrase
+                </label>
+                <input
+                  type="password"
+                  value={passphrase}
+                  onChange={(e) => setPassphrase(e.target.value)}
+                  placeholder="Set a sacred passphrase"
+                  className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-lavender/40 font-sans mb-2">
+                  Confirm Passphrase
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassphrase}
+                  onChange={(e) => setConfirmPassphrase(e.target.value)}
+                  placeholder="Confirm passphrase"
+                  className="w-full px-4 py-2.5 rounded-lg bg-void-900/60 border border-lavender/10 text-cream placeholder:text-lavender/20 focus:border-gold-400/30 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Actions */}
