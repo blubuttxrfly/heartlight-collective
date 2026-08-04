@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Search, Sparkles, Heart, MapPin, Clock, ChevronRight, X, Repeat, Store, Tag, Globe, Navigation, Filter, ChevronDown, ChevronLeft, ChevronRight as ChevronRightIcon, RefreshCw, DollarSign, SlidersHorizontal, GraduationCap, HandHeart } from 'lucide-react';
 import { PiShootingStar } from 'react-icons/pi'
 import { Link, useNavigate } from 'react-router-dom'
 import { useSession } from '../../lib/session'
@@ -186,6 +186,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedRole, setSelectedRole] = useState('')
   const [selectedEntityType, setSelectedEntityType] = useState<'any' | 'wish' | 'gift' | 'offering' | 'vendor'>('any')
+  const [selectedPathway, setSelectedPathway] = useState<string>('')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedWish, setSelectedWish] = useState(null)
   const [viewScope, setViewScope] = useState<WishScope>('universal')
@@ -249,7 +250,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
   // Reset pagination when filters or search changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, selectedCategory, selectedRole, selectedEntityType, viewScope, selectedContinent, localRadius, typeFilter])
+  }, [search, selectedCategory, selectedRole, selectedEntityType, selectedPathway, viewScope, selectedContinent, localRadius, typeFilter])
 
   const filtered = useMemo(() => {
     let list = [...wishes]
@@ -289,6 +290,28 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
 
     if (selectedCategory) {
       list = list.filter(w => w.category === selectedCategory)
+    }
+
+    // Pathway filter
+    if (selectedPathway) {
+      list = list.filter(w => {
+        const policy = w.exchangePolicy || []
+        const priceType = w.priceType || ''
+        switch (selectedPathway) {
+          case 'Gift':
+            return policy.includes('gift') || priceType === 'gift'
+          case 'Trade':
+            return policy.includes('barter')
+          case 'Fixed Price':
+            return policy.includes('fixed') || priceType === 'fixed'
+          case 'Sliding Scale':
+            return policy.includes('negotiable') || priceType === 'negotiable'
+          case 'Scholarship':
+            return policy.includes('collective_funded') || priceType === 'collective_funded'
+          default:
+            return true
+        }
+      })
     }
 
     // Scope filtering: Local / Global / Universal
@@ -345,7 +368,7 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
     })
 
     return list
-  }, [wishes, search, selectedCategory, selectedRole, selectedEntityType, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
+  }, [wishes, search, selectedCategory, selectedRole, selectedEntityType, selectedPathway, viewScope, selectedContinent, localRadius, userLocation, searchLocation, typeFilter])
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1
   const paginated = useMemo(() => {
@@ -510,6 +533,36 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           </div>
         </div>
 
+        {/* 5 Exchange Pathways Strip */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {[
+            { label: 'Gift', icon: Heart, value: 'Gift', color: 'magenta' },
+            { label: 'Trade', icon: RefreshCw, value: 'Trade', color: 'gold' },
+            { label: 'Fixed', icon: DollarSign, value: 'Fixed Price', color: 'blue' },
+            { label: 'Sliding Scale', icon: SlidersHorizontal, value: 'Sliding Scale', color: 'green' },
+            { label: 'Scholarship', icon: GraduationCap, value: 'Scholarship', color: 'violet' },
+          ].map((p) => {
+            const active = selectedPathway === p.value
+            const colorMap: Record<string, string> = {
+              magenta: active ? 'bg-magenta-400/15 border-magenta-400/40 text-magenta-300' : 'border-lavender/10 text-lavender/50 hover:border-magenta-400/30 hover:text-magenta-300',
+              gold: active ? 'bg-gold-400/15 border-gold-400/40 text-gold-300' : 'border-lavender/10 text-lavender/50 hover:border-gold-400/30 hover:text-gold-300',
+              blue: active ? 'bg-blue-400/15 border-blue-400/40 text-blue-300' : 'border-lavender/10 text-lavender/50 hover:border-blue-400/30 hover:text-blue-300',
+              green: active ? 'bg-green-400/15 border-green-400/40 text-green-300' : 'border-lavender/10 text-lavender/50 hover:border-green-400/30 hover:text-green-300',
+              violet: active ? 'bg-violet-400/15 border-violet-400/40 text-violet-300' : 'border-lavender/10 text-lavender/50 hover:border-violet-400/30 hover:text-violet-300',
+            }
+            const Icon = p.icon
+            return (
+              <button
+                key={p.value}
+                onClick={() => setSelectedPathway(active ? '' : p.value)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all ${colorMap[p.color]}`}
+              >
+                <Icon className="w-3.5 h-3.5" /> {p.label}
+              </button>
+            )
+          })}
+        </div>
+
         {/* Expandable Tags / Filters panel */}
         <div className="rounded-2xl border border-lavender/10 bg-void-800/30 overflow-hidden">
           <button
@@ -645,19 +698,33 @@ export default function ExchangeDiscovery({ typeFilter }: ExchangeDiscoveryProps
           className="text-center py-16"
         >
           <Sparkles className="w-12 h-12 text-lavender/30 mx-auto mb-4" />
-          <h2 className="font-serif text-2xl text-cream mb-3">The Field is Still Dreaming</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">The Exchange Field Awaits Your Resonance</h2>
           <p className="text-lavender/60 mb-2">
-            The Heartlight Collective is young, and the exchange field is just beginning to bloom.
+            The Heartlight Collective is alive, and your presence adds to its frequency.
           </p>
           <p className="text-lavender/60 mb-6">
-            Be the first to plant a wish, offer a gift, or open a Vendor Shop.
+            Be the first to cast a wish, share a gift, or open a Vendor Shop.
           </p>
-          <Link
-            to="/exchange/wish/cast-wish?type=wish"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
-          >
-            Cast a Wish <PiShootingStar className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link
+              to="/exchange/wish/cast-wish?type=wish"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-magenta-400/10 border border-magenta-400/30 text-magenta-300 hover:bg-magenta-400/20 transition-all"
+            >
+              Cast a Wish <PiShootingStar className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/exchange/gift/share-gift?type=gift"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all"
+            >
+              Share a Gift <HandHeart className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/flow"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-400/10 border border-blue-400/30 text-blue-300 hover:bg-blue-400/20 transition-all"
+            >
+              Open a Vendor Shop <Store className="w-4 h-4" />
+            </Link>
+          </div>
         </motion.div>
       ) : (
         <>
