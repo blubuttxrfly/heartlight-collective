@@ -537,66 +537,83 @@ export function ExchangeRequestModal({
 
               {/* Mini Calendar + Draft Option Editor */}
               <div className="space-y-4">
-                {/* Mini calendar grid (AUT Time & Tools style) */}
-                <div className="rounded-lg border border-lavender/10 bg-void-800/30 p-3">
-                  <div className="flex items-center justify-between mb-2">
+                {/* Mini calendar grid — AUT Time & Tools style */}
+                <div className="rounded-xl border border-lavender/20 bg-[#3a3a3a] p-4 shadow-xl">
+                  {/* Header: month + year with arrows */}
+                  <div className="flex items-center justify-between mb-3">
                     <button
                       type="button"
                       onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded border border-lavender/10"
+                      className="text-cream/60 hover:text-cream transition-colors"
                     >
-                      ←
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 15l7-7 7 7"/></svg>
                     </button>
-                    <span className="text-sm text-cream font-medium">
-                      {miniCalMonth.toLocaleString(undefined, { month: 'short', year: 'numeric' })}
+                    <span className="text-sm font-medium text-cream">
+                      {miniCalMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
                     </span>
                     <button
                       type="button"
                       onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded border border-lavender/10"
+                      className="text-cream/60 hover:text-cream transition-colors"
                     >
-                      →
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 9l-7 7-7-7"/></svg>
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] text-lavender/40 mb-1">
+
+                  {/* Day headers */}
+                  <div className="grid grid-cols-7 text-center text-xs text-cream/50 mb-1">
                     {['S','M','T','W','T','F','S'].map((d) => <div key={d}>{d}</div>)}
                   </div>
-                  <div className="grid grid-cols-7 gap-0.5">
+
+                  {/* Day grid */}
+                  <div className="grid grid-cols-7 gap-1">
                     {(() => {
-                      const firstDay = new Date(miniCalMonth.getFullYear(), miniCalMonth.getMonth(), 1).getDay()
-                      const lastDate = new Date(miniCalMonth.getFullYear(), miniCalMonth.getMonth() + 1, 0).getDate()
+                      const year = miniCalMonth.getFullYear()
+                      const month = miniCalMonth.getMonth()
+                      const firstDay = new Date(year, month, 1).getDay()
+                      const lastDate = new Date(year, month + 1, 0).getDate()
+                      const prevLastDate = new Date(year, month, 0).getDate()
                       const today = new Date().toISOString().slice(0, 10)
-                      const days: (number | null)[] = []
-                      for (let i = 0; i < firstDay; i++) days.push(null)
-                      for (let d = 1; d <= lastDate; d++) days.push(d)
-                      return days.map((day, idx) => {
-                        if (!day) return <div key={idx} />
-                        const dateStr = `${miniCalMonth.getFullYear()}-${String(miniCalMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                        const isInPast = dateStr < today
-                        const hasAvail = providerAvailability.some((b) => {
-                          if (b.date && isSameDay(b.date, dateStr)) return true
-                          return nextOccurrenceForBlock(b) === dateStr
-                        })
-                        const isDraftDate = draftOption.date === dateStr
+
+                      const days: { day: number; inMonth: boolean; dateStr: string }[] = []
+                      // prev month padding
+                      for (let i = firstDay - 1; i >= 0; i--) {
+                        const d = prevLastDate - i
+                        days.push({ day: d, inMonth: false, dateStr: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+                      }
+                      // current month
+                      for (let d = 1; d <= lastDate; d++) {
+                        days.push({ day: d, inMonth: true, dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+                      }
+                      // next month padding to fill grid
+                      const remaining = (7 - (days.length % 7)) % 7
+                      for (let d = 1; d <= remaining; d++) {
+                        days.push({ day: d, inMonth: false, dateStr: `${year}-${String(month + 2).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
+                      }
+
+                      return days.map((item, idx) => {
+                        const { day, inMonth, dateStr } = item
+                        const isInPast = inMonth && dateStr < today
+                        const isDraftDate = draftOption.date === dateStr && inMonth
                         const isSelectedOption = proposedDates.some((p) => p.date === dateStr)
                         return (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => {
-                              if (isInPast) return
+                              if (!inMonth || isInPast) return
                               setDraftOption((prev) => ({ ...prev, date: dateStr }))
                             }}
-                            className={`aspect-square rounded-md text-[10px] flex items-center justify-center transition-all ${
+                            className={`aspect-square rounded-lg text-sm flex items-center justify-center transition-all ${
                               isDraftDate
-                                ? 'ring-2 ring-gold-400 bg-gold-400/15 text-cream font-medium'
-                                : isSelectedOption
-                                  ? 'bg-green-400/10 text-green-300 border border-green-400/30'
-                                  : isInPast
-                                    ? 'text-lavender/20 cursor-default'
-                                    : hasAvail
-                                      ? 'text-cream bg-void-700/40 hover:bg-green-400/10 hover:text-green-300'
-                                      : 'text-lavender/50 bg-void-800/20 hover:bg-void-700/40'
+                                ? 'bg-blue-300 text-void-900 font-semibold'
+                                : isSelectedOption && inMonth
+                                  ? 'text-green-300 font-medium'
+                                  : !inMonth
+                                    ? 'text-cream/20 cursor-default'
+                                    : isInPast
+                                      ? 'text-cream/20 cursor-default'
+                                      : 'text-cream hover:bg-white/10'
                             }`}
                           >
                             {day}
@@ -604,6 +621,28 @@ export function ExchangeRequestModal({
                         )
                       })
                     })()}
+                  </div>
+
+                  {/* Footer: Clear / Today */}
+                  <div className="flex justify-between mt-3 pt-2 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setDraftOption((prev) => ({ ...prev, date: '' }))}
+                      className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const today = new Date().toISOString().slice(0, 10)
+                        setDraftOption((prev) => ({ ...prev, date: today }))
+                        setMiniCalMonth(new Date())
+                      }}
+                      className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
+                    >
+                      Today
+                    </button>
                   </div>
                 </div>
 
