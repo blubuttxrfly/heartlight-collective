@@ -137,7 +137,7 @@ function profileToApiBody(profile: CreatorRecord): Record<string, unknown> {
     sun_placement: profile.sunPlacement,
     moon_placement: profile.moonPlacement,
     ascendant_placement: profile.ascendantPlacement,
-    ces_passphrase_hash: profile.passphrase,
+    passphrase: profile.passphrase,
     wish_availability: profile.wishAvailability || 'accepting',
     directory_wish_status: profile.directoryWishStatus || 'accepting',
     stewardship: profile.stewardship || 'suspended',

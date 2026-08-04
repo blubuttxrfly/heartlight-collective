@@ -517,6 +517,8 @@ export interface ExchangeRequest {
   requesterContactEmail?: string;
   requesterContactPhone?: string;
   requesterPreferredContact?: string;
+  /** Wave 11 — lightweight guest profile for exchange bookings */
+  guestProfile?: GuestProfile;
   providerCes: string;
   providerName: string;
   message: string;               // Personal message / need statement
@@ -652,6 +654,8 @@ export interface ExchangeAgreement {
   requesterContactEmail?: string;
   requesterContactPhone?: string;
   requesterPreferredContact?: string;
+  /** Wave 11 — lightweight guest profile for exchange bookings */
+  guestProfile?: GuestProfile;
   providerCes: string;
   providerName: string;
   message: string;               // initial resonance statement
@@ -889,6 +893,17 @@ export interface UnregisteredProfile {
   locationData?: LocationData;
   flowBackAgreed: boolean;
   codesAcknowledged: boolean;
+  createdAt: string;
+}
+
+/** Wave 11 — Lightweight guest profile for exchange bookings (no full C.E.S. required) */
+export interface GuestProfile {
+  id: string;                 // "guest_" + uuid
+  name: string;
+  email: string;              // Required for confirmation emails
+  phone?: string;
+  preferredContactMethod: 'email' | 'phone';
+  notes?: string;             // e.g., accessibility needs
   createdAt: string;
 }
 
