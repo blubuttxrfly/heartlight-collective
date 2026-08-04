@@ -293,7 +293,7 @@ export type ExchangeForm =
   | 'collective_funded'
   | 'peer_payment';
 
-export type OfferingType = 'product' | 'service' | 'virtual_session' | 'work_study_exchange';
+export type OfferingType = 'product' | 'service' | 'virtual_session' | 'work_study_exchange' | 'commission';
 
 export type MeetingPlatform = 'google_meet' | 'zoom' | 'jitsi' | 'teams' | 'other';
 
@@ -529,6 +529,8 @@ export interface ExchangeRequest {
   // Wave 8.2 — hybrid payment + calendar booking
   hybridPayment?: HybridPaymentConfig;
   proposedMeetingSlot?: ProposedMeetingSlot;
+  // Wave 11 — up to 3 ideal date/time options proposed by requester
+  proposedDateOptions?: { id: string; date: string; startTime?: string; endTime?: string; timeZone: string; notes?: string }[];
   status: 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
   collectivePetitionId?: string; // If collective-funded
   consentAcknowledged: boolean;

@@ -92,7 +92,7 @@ export function ExchangeRequestModal({
   const [selectedPathway, setSelectedPathway] = useState<string>('')
 
   /* ── Step 2: Scheduling ── */
-  const needsScheduling = offering.requiresScheduling || offering.offeringType === 'virtual_session' || offering.offeringType === 'work_study_exchange' || offering.offeringType === 'service'
+  const needsScheduling = offering.requiresScheduling || offering.offeringType === 'virtual_session' || offering.offeringType === 'work_study_exchange' || offering.offeringType === 'service' || offering.offeringType === 'commission'
   const providerCalendar = useMemo(() => getExchangeCalendar(vendor.ownerCes), [getExchangeCalendar, vendor.ownerCes])
   const providerAvailability = useMemo(
     () => providerCalendar?.availabilityBlocks.filter((b) => b.type === 'available') || [],
@@ -106,6 +106,25 @@ export function ExchangeRequestModal({
   const [customTimeZone, setCustomTimeZone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone)
   const [scheduleNotes, setScheduleNotes] = useState('')
   const [viewMonth, setViewMonth] = useState(new Date())
+
+  /* Wave 11 — Propose up to 3 ideal date/time options */
+  interface ProposedDateOption {
+    id: string
+    date: string
+    startTime?: string
+    endTime?: string
+    timeZone: string
+    notes?: string
+  }
+  const [proposedDates, setProposedDates] = useState<ProposedDateOption[]>([])
+  const [draftIndex, setDraftIndex] = useState<number | null>(null)
+  const [draftOption, setDraftOption] = useState<ProposedDateOption>({
+    id: '',
+    date: '',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    notes: '',
+  })
+  const [miniCalMonth, setMiniCalMonth] = useState(new Date())
 
   const selectedSlot: AvailabilityBlock | undefined = useMemo(
     () => providerAvailability.find((b) => b.id === selectedSlotId),
@@ -142,37 +161,25 @@ export function ExchangeRequestModal({
 
   const autoPaymentMethod: PaymentMethodType | undefined = enabledMethods[0]?.type
 
-  function buildProposedSlot(): ProposedMeetingSlot | undefined {
-    if (!includeSchedule) return undefined
-    let startAt: string
-    let endAt: string
-    const timeZone = selectedSlot?.timeZone || customTimeZone
-
-    if (selectedSlot) {
-      const date = nextOccurrenceForBlock(selectedSlot)
-      startAt = toISODateTime(date, selectedSlot.startTime!)
-      endAt = toISODateTime(date, selectedSlot.endTime!)
-    } else if (customDate && customStartTime && customEndTime) {
-      startAt = toISODateTime(customDate, customStartTime)
-      endAt = toISODateTime(customDate, customEndTime)
-    } else {
-      return undefined
-    }
-
-    if (!startAt || !endAt || new Date(endAt) <= new Date(startAt)) return undefined
-
+  function buildProposedSlot(index: number = 0): ProposedMeetingSlot | undefined {
+    const opt = proposedDates[index]
+    if (!opt || !opt.date) return undefined
+    const timeZone = opt.timeZone
+    const startAt = opt.startTime ? toISODateTime(opt.date, opt.startTime) : opt.date
+    const endAt = opt.endTime ? toISODateTime(opt.date, opt.endTime) : opt.date
+    if (!startAt || !endAt) return undefined
+    if (opt.startTime && opt.endTime && new Date(endAt) <= new Date(startAt)) return undefined
     return { startAt, endAt, timeZone, platform: offering.virtualSession?.platform || 'other' }
   }
 
-  function buildScheduledMeeting(): ScheduledMeeting | undefined {
-    const slot = buildProposedSlot()
+  function buildScheduledMeeting(index: number = 0): ScheduledMeeting | undefined {
+    const slot = buildProposedSlot(index)
     if (!slot) return undefined
-
+    const opt = proposedDates[index]
     const link = offering.virtualSession?.meetingLink || offering.virtualSession?.platformNote || `[${offering.virtualSession?.platform || 'platform'} link to be shared]`
     const location = offering.offeringType === 'virtual_session'
       ? link
       : offering.location?.label || offering.location?.address || 'TBD'
-
     return {
       id: newQuestId('meeting'),
       title: `${offering.title} — ${requesterName} × ${providerName}`,
@@ -184,7 +191,7 @@ export function ExchangeRequestModal({
       proposedByCes: requesterCes,
       proposedByName: requesterName,
       confirmedByCes: [requesterCes],
-      notes: scheduleNotes.trim() || undefined,
+      notes: opt?.notes?.trim() || undefined,
     }
   }
 
@@ -198,10 +205,9 @@ export function ExchangeRequestModal({
   }
 
   function validateStep2() {
-    if (needsScheduling && includeSchedule) {
-      const slot = buildProposedSlot()
-      if (!slot) {
-        setError('Please choose a date and time from the provider calendar, or propose your own.')
+    if (needsScheduling) {
+      if (proposedDates.length === 0) {
+        setError('Please add at least one ideal date/time option for the provider to review.')
         return false
       }
     }
@@ -381,7 +387,7 @@ export function ExchangeRequestModal({
     onAgreementCreated(agreement)
   }
 
-  const previewMeeting = useMemo(() => buildScheduledMeeting(), [includeSchedule, selectedSlot, customDate, customStartTime, customEndTime, customTimeZone, scheduleNotes])
+  const previewMeeting = useMemo(() => buildScheduledMeeting(0), [proposedDates])
 
   return (
     <motion.div
@@ -511,153 +517,230 @@ export function ExchangeRequestModal({
         {/* ── Step 2: Scheduling ── */}
         {step === 2 && (
           <div className="space-y-5">
-            {needsScheduling ? (
-              <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-4">
-                {/* Offering-type-aware scheduling label */}
-                <div className="flex items-start gap-3">
-                  <CalendarIcon className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-cream">
-                      {offering.offeringType === 'virtual_session' && 'Choose an ideal session time'}
-                      {offering.offeringType === 'work_study_exchange' && 'Choose an ideal start date'}
-                      {offering.offeringType === 'service' && 'Choose an ideal appointment date'}
-                      {(!offering.offeringType || offering.offeringType === 'product') && 'Choose an ideal completion or delivery date'}
-                    </p>
-                    <p className="text-xs text-lavender/40 mt-0.5">
-                      The provider will review your proposal and confirm.
-                    </p>
+            <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-4">
+              {/* Offering-type-aware scheduling label */}
+              <div className="flex items-start gap-3">
+                <CalendarIcon className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-cream">
+                    {offering.offeringType === 'virtual_session' && 'Choose ideal session times'}
+                    {offering.offeringType === 'work_study_exchange' && 'Choose ideal start dates'}
+                    {offering.offeringType === 'service' && 'Choose ideal appointment dates'}
+                    {offering.offeringType === 'commission' && 'Choose ideal completion dates'}
+                    {(!offering.offeringType || offering.offeringType === 'product') && 'Choose ideal completion or delivery dates'}
+                  </p>
+                  <p className="text-xs text-lavender/40 mt-0.5">
+                    You may propose up to 3 options for the provider to review.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mini Calendar + Draft Option Editor */}
+              <div className="space-y-4">
+                {/* Mini calendar grid (AUT Time & Tools style) */}
+                <div className="rounded-lg border border-lavender/10 bg-void-800/30 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded border border-lavender/10"
+                    >
+                      ←
+                    </button>
+                    <span className="text-sm text-cream font-medium">
+                      {miniCalMonth.toLocaleString(undefined, { month: 'short', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                      className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded border border-lavender/10"
+                    >
+                      →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-0.5 text-center text-[9px] text-lavender/40 mb-1">
+                    {['S','M','T','W','T','F','S'].map((d) => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-0.5">
+                    {(() => {
+                      const firstDay = new Date(miniCalMonth.getFullYear(), miniCalMonth.getMonth(), 1).getDay()
+                      const lastDate = new Date(miniCalMonth.getFullYear(), miniCalMonth.getMonth() + 1, 0).getDate()
+                      const today = new Date().toISOString().slice(0, 10)
+                      const days: (number | null)[] = []
+                      for (let i = 0; i < firstDay; i++) days.push(null)
+                      for (let d = 1; d <= lastDate; d++) days.push(d)
+                      return days.map((day, idx) => {
+                        if (!day) return <div key={idx} />
+                        const dateStr = `${miniCalMonth.getFullYear()}-${String(miniCalMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                        const isInPast = dateStr < today
+                        const hasAvail = providerAvailability.some((b) => {
+                          if (b.date && isSameDay(b.date, dateStr)) return true
+                          return nextOccurrenceForBlock(b) === dateStr
+                        })
+                        const isDraftDate = draftOption.date === dateStr
+                        const isSelectedOption = proposedDates.some((p) => p.date === dateStr)
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (isInPast) return
+                              setDraftOption((prev) => ({ ...prev, date: dateStr }))
+                            }}
+                            className={`aspect-square rounded-md text-[10px] flex items-center justify-center transition-all ${
+                              isDraftDate
+                                ? 'ring-2 ring-gold-400 bg-gold-400/15 text-cream font-medium'
+                                : isSelectedOption
+                                  ? 'bg-green-400/10 text-green-300 border border-green-400/30'
+                                  : isInPast
+                                    ? 'text-lavender/20 cursor-default'
+                                    : hasAvail
+                                      ? 'text-cream bg-void-700/40 hover:bg-green-400/10 hover:text-green-300'
+                                      : 'text-lavender/50 bg-void-800/20 hover:bg-void-700/40'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
 
-                {/* Compact: single date input with availability chips */}
+                {/* Draft option form */}
                 <div className="space-y-3">
-                  <input
-                    type="date"
-                    value={customDate}
-                    onChange={(e) => {
-                      setCustomDate(e.target.value)
-                      setSelectedSlotId('')
-                      setCustomStartTime('')
-                      setCustomEndTime('')
-                    }}
-                    min={new Date().toISOString().slice(0, 10)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-cream">{draftIndex != null ? `Edit option ${draftIndex + 1}` : `Add option ${proposedDates.length + 1} of 3`}</span>
+                  </div>
 
-                  {/* If the provider has availability windows for the selected date */}
-                  {selectedDate && providerAvailability.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-[10px] uppercase tracking-wider text-lavender/40">Provider availability</p>
-                      <div className="flex flex-wrap gap-2">
-                        {providerAvailability
-                          .filter((b) => {
-                            if (b.date && isSameDay(b.date, selectedDate)) return true
-                            return nextOccurrenceForBlock(b) === selectedDate
-                          })
-                          .map((block) => (
-                            <button
-                              key={block.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSlotId(selectedSlotId === block.id ? '' : block.id)
-                                setCustomDate(nextOccurrenceForBlock(block))
-                                setCustomStartTime(block.startTime || '')
-                                setCustomEndTime(block.endTime || '')
-                                setCustomTimeZone(block.timeZone || customTimeZone)
-                              }}
-                              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                                selectedSlotId === block.id
-                                  ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
-                                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-                              }`}
-                            >
-                              {block.startTime}{block.endTime ? `–${block.endTime}` : ''}
-                            </button>
-                          ))}
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-void-900/60 border border-lavender/10">
+                      <CalendarIcon className="w-4 h-4 text-gold-400 shrink-0" />
+                      <input
+                        type="date"
+                        value={draftOption.date}
+                        onChange={(e) => setDraftOption((prev) => ({ ...prev, date: e.target.value }))}
+                        min={new Date().toISOString().slice(0, 10)}
+                        className="w-full bg-transparent text-sm text-cream focus:outline-none"
+                      />
                     </div>
-                  )}
 
-                  {/* Show if provider has NO availability for selected date */}
-                  {selectedDate && providerAvailability.filter((b) => {
-                    if (b.date && isSameDay(b.date, selectedDate)) return true
-                    return nextOccurrenceForBlock(b) === selectedDate
-                  }).length === 0 && (
-                    <p className="text-xs text-lavender/40 italic">No provider availability for this date. You may still propose your ideal time below.</p>
-                  )}
+                    {(offering.offeringType === 'virtual_session' || offering.offeringType === 'service' || offering.offeringType === 'work_study_exchange') && (
+                      <>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Start</label>
+                          <input
+                            type="time"
+                            value={draftOption.startTime || ''}
+                            onChange={(e) => setDraftOption((prev) => ({ ...prev, startTime: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">End</label>
+                          <input
+                            type="time"
+                            value={draftOption.endTime || ''}
+                            onChange={(e) => setDraftOption((prev) => ({ ...prev, endTime: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-                  {/* Compact custom time (only for session types) */}
-                  {(offering.offeringType === 'virtual_session' || offering.offeringType === 'service' || offering.offeringType === 'work_study_exchange') && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Ideal start</label>
-                        <input
-                          type="time"
-                          value={customStartTime}
-                          onChange={(e) => { setCustomStartTime(e.target.value); setSelectedSlotId('') }}
-                          className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Ideal end</label>
-                        <input
-                          type="time"
-                          value={customEndTime}
-                          onChange={(e) => { setCustomEndTime(e.target.value); setSelectedSlotId('') }}
-                          className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Time zone */}
                   <input
                     type="text"
-                    value={customTimeZone}
-                    onChange={(e) => setCustomTimeZone(e.target.value)}
-                    placeholder="Time zone (e.g. America/Los_Angeles)"
+                    value={draftOption.timeZone}
+                    onChange={(e) => setDraftOption((prev) => ({ ...prev, timeZone: e.target.value }))}
+                    placeholder="Time zone"
                     className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
                   />
 
-                  {/* Notes */}
                   <input
                     type="text"
-                    value={scheduleNotes}
-                    onChange={(e) => setScheduleNotes(e.target.value)}
+                    value={draftOption.notes || ''}
+                    onChange={(e) => setDraftOption((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder="Notes or preparation requests"
                     className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
                   />
 
-                  {/* Preview */}
-                  {previewMeeting && (
-                    <div className="rounded-lg border border-lavender/10 bg-void-900/40 p-3">
-                      <p className="text-xs text-cream flex items-center gap-2">
-                        <CalendarDays className="w-3.5 h-3.5 text-lavender/40" /> Proposed
-                      </p>
-                      <p className="text-xs text-lavender/60 mt-1">{formatMeetingTime(previewMeeting)}</p>
-                      {previewMeeting.location && previewMeeting.location !== 'TBD' && (
-                        <p className="text-xs text-lavender/60 mt-1 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" /> {previewMeeting.location}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!draftOption.date) return
+                        if (draftIndex != null) {
+                          setProposedDates((prev) => prev.map((p, i) => i === draftIndex ? { ...draftOption, id: p.id } : p))
+                          setDraftIndex(null)
+                        } else {
+                          if (proposedDates.length >= 3) return
+                          setProposedDates((prev) => [...prev, { ...draftOption, id: `opt_${Date.now()}` }])
+                        }
+                        setDraftOption({ id: '', date: '', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, notes: '' })
+                      }}
+                      disabled={!draftOption.date || (draftIndex == null && proposedDates.length >= 3)}
+                      className="flex-1 py-2 rounded-lg bg-gold-400/10 border border-gold-400/30 text-gold-300 hover:bg-gold-400/20 transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {draftIndex != null ? 'Update option' : 'Add option'}
+                    </button>
+                    {draftIndex != null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraftIndex(null)
+                          setDraftOption({ id: '', date: '', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, notes: '' })
+                        }}
+                        className="px-4 py-2 rounded-lg border border-lavender/10 text-lavender/60 hover:border-lavender/30 transition-all text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Saved options list */}
+                {proposedDates.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-wider text-lavender/40">Proposed options</p>
+                    {proposedDates.map((opt, idx) => (
+                      <div key={opt.id} className="rounded-lg border border-lavender/10 bg-void-900/40 p-3 flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <p className="text-sm text-cream font-medium">
+                            Option {idx + 1}: {new Date(opt.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </p>
+                          {(opt.startTime || opt.endTime) && (
+                            <p className="text-xs text-lavender/50 mt-0.5">
+                              {opt.startTime}{opt.endTime ? `–${opt.endTime}` : ''} {opt.timeZone}
+                            </p>
+                          )}
+                          {opt.notes && <p className="text-xs text-lavender/40 mt-0.5">{opt.notes}</p>}
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDraftOption(opt)
+                              setDraftIndex(idx)
+                            }}
+                            className="text-xs text-lavender/40 hover:text-cream px-2 py-1"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProposedDates((prev) => prev.filter((_, i) => i !== idx))}
+                            className="text-xs text-red-400/50 hover:text-red-300 px-2 py-1"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-4 space-y-3">
-                <p className="text-sm text-lavender/60 text-center">
-                  This offering does not require scheduling. You may still suggest an ideal completion date if you wish.
-                </p>
-                <input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  min={new Date().toISOString().slice(0, 10)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
-                />
-              </div>
-            )}
+            </div>
 
             <div className="flex gap-3 pt-4">
               <button

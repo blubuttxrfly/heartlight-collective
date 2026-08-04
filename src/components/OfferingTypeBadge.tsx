@@ -9,6 +9,7 @@ const OFFERING_TYPE_CONFIG: Record<
   service: { label: 'Service', icon: PenTool, color: 'bg-lavender/10 text-lavender-300 border-lavender/20' },
   virtual_session: { label: 'Virtual Session', icon: Video, color: 'bg-magenta-400/10 text-magenta-300 border-magenta-400/20', symbol: '🎥' },
   work_study_exchange: { label: 'Work / Study Exchange', icon: Sprout, color: 'bg-green-400/10 text-green-300 border-green-400/20', symbol: '🌱' },
+  commission: { label: 'Commission', icon: PenTool, color: 'bg-gold-400/10 text-gold-300 border-gold-400/20' },
 };
 
 const PLATFORM_LABEL: Record<MeetingPlatform, string> = {
