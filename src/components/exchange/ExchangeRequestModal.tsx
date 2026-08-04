@@ -91,8 +91,8 @@ export function ExchangeRequestModal({
   /* ── Step 1: Exchange Methods ── */
   const [selectedPathway, setSelectedPathway] = useState<string>('')
 
-  /* ── Step 2: Calendar ── */
-  const needsScheduling = offering.requiresScheduling || offering.offeringType === 'virtual_session' || offering.offeringType === 'work_study_exchange'
+  /* ── Step 2: Scheduling ── */
+  const needsScheduling = offering.requiresScheduling || offering.offeringType === 'virtual_session' || offering.offeringType === 'work_study_exchange' || offering.offeringType === 'service'
   const providerCalendar = useMemo(() => getExchangeCalendar(vendor.ownerCes), [getExchangeCalendar, vendor.ownerCes])
   const providerAvailability = useMemo(
     () => providerCalendar?.availabilityBlocks.filter((b) => b.type === 'available') || [],
@@ -508,137 +508,89 @@ export function ExchangeRequestModal({
           </div>
         )}
 
-        {/* ── Step 2: Calendar ── */}
+        {/* ── Step 2: Scheduling ── */}
         {step === 2 && (
           <div className="space-y-5">
-            {needsScheduling && (
+            {needsScheduling ? (
               <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-4">
-                <label className="flex items-start gap-3 cursor-pointer">
+                {/* Offering-type-aware scheduling label */}
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-cream">
+                      {offering.offeringType === 'virtual_session' && 'Choose an ideal session time'}
+                      {offering.offeringType === 'work_study_exchange' && 'Choose an ideal start date'}
+                      {offering.offeringType === 'service' && 'Choose an ideal appointment date'}
+                      {(!offering.offeringType || offering.offeringType === 'product') && 'Choose an ideal completion or delivery date'}
+                    </p>
+                    <p className="text-xs text-lavender/40 mt-0.5">
+                      The provider will review your proposal and confirm.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Compact: single date input with availability chips */}
+                <div className="space-y-3">
                   <input
-                    type="checkbox"
-                    checked={includeSchedule}
-                    onChange={(e) => setIncludeSchedule(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded border-lavender/20 bg-void-800 accent-gold-400"
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => {
+                      setCustomDate(e.target.value)
+                      setSelectedSlotId('')
+                      setCustomStartTime('')
+                      setCustomEndTime('')
+                    }}
+                    min={new Date().toISOString().slice(0, 10)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
                   />
-                  <span className="text-sm text-lavender/70">
-                    <span className="flex items-center gap-1.5 text-cream">
-                      <CalendarIcon className="w-3.5 h-3.5 text-gold-400" /> Include a proposed session time
-                    </span>
-                    <span className="block text-xs text-lavender/40 mt-0.5">
-                      This offering requires scheduling. Pick from the provider's availability or propose your own.
-                    </span>
-                  </span>
-                </label>
 
-                {includeSchedule && (
-                  <>
-                    {/* Month navigator */}
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-                        className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded-lg border border-lavender/10"
-                      >
-                        ← Prev
-                      </button>
-                      <span className="text-sm text-cream font-medium">
-                        {viewMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                        className="text-xs text-lavender/60 hover:text-cream px-2 py-1 rounded-lg border border-lavender/10"
-                      >
-                        Next →
-                      </button>
-                    </div>
-
-                    {/* Calendar grid */}
-                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-lavender/40 mb-1">
-                      {DAYS.map((d) => <div key={d}>{d}</div>)}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {getMonthDays(viewMonth.getFullYear(), viewMonth.getMonth()).map((day, idx) => {
-                        if (!day) return <div key={idx} />
-                        const dateStr = `${viewMonth.getFullYear()}-${String(viewMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                        const hasAvailability = providerAvailability.some((b) => {
-                          if (b.date && isSameDay(b.date, dateStr)) return true
-                          return nextOccurrenceForBlock(b) === dateStr
-                        })
-                        const isSelected = selectedDate === dateStr
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setCustomDate(dateStr)
-                              setSelectedSlotId('')
-                            }}
-                            className={`aspect-square rounded-lg text-xs flex flex-col items-center justify-center transition-all ${
-                              isSelected
-                                ? 'ring-2 ring-gold-400 bg-gold-400/15 text-cream'
-                                : hasAvailability
-                                  ? 'border border-green-400/40 bg-green-400/10 text-green-300 hover:bg-green-400/20'
-                                  : 'border border-lavender/5 bg-void-800/40 text-lavender/40 hover:border-lavender/20'
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    {/* Slots for selected day */}
-                    {selectedDate && slotsForSelectedDate.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-[10px] uppercase tracking-wider text-lavender/40">Available windows</p>
-                        <div className="flex flex-wrap gap-2">
-                          {slotsForSelectedDate.map((block) => {
-                            const isSelected = selectedSlotId === block.id
-                            return (
-                              <button
-                                key={block.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSlotId(isSelected ? '' : block.id)
-                                  setCustomDate(nextOccurrenceForBlock(block))
-                                  setCustomStartTime(block.startTime || '')
-                                  setCustomEndTime(block.endTime || '')
-                                  setCustomTimeZone(block.timeZone)
-                                }}
-                                className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                                  isSelected
-                                    ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
-                                    : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
-                                }`}
-                              >
-                                {block.startTime}–{block.endTime} {block.timeZone}
-                              </button>
-                            )
-                          })}
-                        </div>
+                  {/* If the provider has availability windows for the selected date */}
+                  {selectedDate && providerAvailability.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] uppercase tracking-wider text-lavender/40">Provider availability</p>
+                      <div className="flex flex-wrap gap-2">
+                        {providerAvailability
+                          .filter((b) => {
+                            if (b.date && isSameDay(b.date, selectedDate)) return true
+                            return nextOccurrenceForBlock(b) === selectedDate
+                          })
+                          .map((block) => (
+                            <button
+                              key={block.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSlotId(selectedSlotId === block.id ? '' : block.id)
+                                setCustomDate(nextOccurrenceForBlock(block))
+                                setCustomStartTime(block.startTime || '')
+                                setCustomEndTime(block.endTime || '')
+                                setCustomTimeZone(block.timeZone || customTimeZone)
+                              }}
+                              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                selectedSlotId === block.id
+                                  ? 'bg-gold-400/10 border-gold-400/30 text-gold-300'
+                                  : 'border-lavender/10 text-lavender/50 hover:border-lavender/30'
+                              }`}
+                            >
+                              {block.startTime}{block.endTime ? `–${block.endTime}` : ''}
+                            </button>
+                          ))}
                       </div>
-                    )}
-
-                    <p className="text-[10px] uppercase tracking-wider text-lavender/40">Or propose a custom time</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input
-                        type="date"
-                        value={customDate}
-                        onChange={(e) => { setCustomDate(e.target.value); setSelectedSlotId('') }}
-                        className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        value={customTimeZone}
-                        onChange={(e) => setCustomTimeZone(e.target.value)}
-                        placeholder="Time zone"
-                        className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                      />
                     </div>
+                  )}
+
+                  {/* Show if provider has NO availability for selected date */}
+                  {selectedDate && providerAvailability.filter((b) => {
+                    if (b.date && isSameDay(b.date, selectedDate)) return true
+                    return nextOccurrenceForBlock(b) === selectedDate
+                  }).length === 0 && (
+                    <p className="text-xs text-lavender/40 italic">No provider availability for this date. You may still propose your ideal time below.</p>
+                  )}
+
+                  {/* Compact custom time (only for session types) */}
+                  {(offering.offeringType === 'virtual_session' || offering.offeringType === 'service' || offering.offeringType === 'work_study_exchange') && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Start</label>
+                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Ideal start</label>
                         <input
                           type="time"
                           value={customStartTime}
@@ -647,7 +599,7 @@ export function ExchangeRequestModal({
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">End</label>
+                        <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Ideal end</label>
                         <input
                           type="time"
                           value={customEndTime}
@@ -656,36 +608,55 @@ export function ExchangeRequestModal({
                         />
                       </div>
                     </div>
-                    <input
-                      type="text"
-                      value={scheduleNotes}
-                      onChange={(e) => setScheduleNotes(e.target.value)}
-                      placeholder="Notes or preparation requests"
-                      className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
-                    />
+                  )}
 
-                    {previewMeeting && (
-                      <div className="rounded-lg border border-lavender/10 bg-void-900/40 p-3">
-                        <p className="text-xs text-cream flex items-center gap-2">
-                          <CalendarDays className="w-3.5 h-3.5 text-lavender/40" /> Proposed preview
+                  {/* Time zone */}
+                  <input
+                    type="text"
+                    value={customTimeZone}
+                    onChange={(e) => setCustomTimeZone(e.target.value)}
+                    placeholder="Time zone (e.g. America/Los_Angeles)"
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+
+                  {/* Notes */}
+                  <input
+                    type="text"
+                    value={scheduleNotes}
+                    onChange={(e) => setScheduleNotes(e.target.value)}
+                    placeholder="Notes or preparation requests"
+                    className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none"
+                  />
+
+                  {/* Preview */}
+                  {previewMeeting && (
+                    <div className="rounded-lg border border-lavender/10 bg-void-900/40 p-3">
+                      <p className="text-xs text-cream flex items-center gap-2">
+                        <CalendarDays className="w-3.5 h-3.5 text-lavender/40" /> Proposed
+                      </p>
+                      <p className="text-xs text-lavender/60 mt-1">{formatMeetingTime(previewMeeting)}</p>
+                      {previewMeeting.location && previewMeeting.location !== 'TBD' && (
+                        <p className="text-xs text-lavender/60 mt-1 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {previewMeeting.location}
                         </p>
-                        <p className="text-xs text-lavender/60 mt-1">{formatMeetingTime(previewMeeting)}</p>
-                        {previewMeeting.location && previewMeeting.location !== 'TBD' && (
-                          <p className="text-xs text-lavender/60 mt-1 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {previewMeeting.location}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
-
-            {!needsScheduling && (
-              <p className="text-sm text-lavender/60 text-center">
-                This offering does not require scheduling. Proceed to share your resonance.
-              </p>
+            ) : (
+              <div className="rounded-xl border border-lavender/10 bg-void-800/30 p-4 space-y-3">
+                <p className="text-sm text-lavender/60 text-center">
+                  This offering does not require scheduling. You may still suggest an ideal completion date if you wish.
+                </p>
+                <input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 10)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                />
+              </div>
             )}
 
             <div className="flex gap-3 pt-4">
