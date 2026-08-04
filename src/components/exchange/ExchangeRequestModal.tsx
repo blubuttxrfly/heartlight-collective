@@ -284,9 +284,9 @@ export function ExchangeRequestModal({
       },
     ]
 
-    const meeting = buildScheduledMeeting()
-    const proposedSlot = buildProposedSlot()
-    const scheduledMeetings: ScheduledMeeting[] = meeting ? [meeting] : []
+    const meetings = proposedDates.map((_, idx) => buildScheduledMeeting(idx)).filter((m): m is ScheduledMeeting => m !== undefined)
+    const firstSlot = buildProposedSlot(0)
+    const scheduledMeetings: ScheduledMeeting[] = meetings
 
     const dedicationOfProfits = {
       enabled: true,
@@ -341,7 +341,7 @@ export function ExchangeRequestModal({
       agreedPriceCents: undefined,
       paymentMethod: autoPaymentMethod,
       hybridPayment: undefined,
-      confirmedMeetingSlot: proposedSlot,
+      confirmedMeetingSlot: firstSlot,
       communicationPrefs: '',
       dedicationOfProfits,
       status: 'draft',
@@ -356,9 +356,9 @@ export function ExchangeRequestModal({
     }
 
     addExchangeAgreement(agreement)
-    if (meeting) {
-      addScheduledMeeting(vendor.ownerCes, meeting)
-      addScheduledMeeting(requesterCes, { ...meeting, title: `${meeting.title} (with ${providerName})` })
+    for (const mtg of meetings) {
+      addScheduledMeeting(vendor.ownerCes, mtg)
+      addScheduledMeeting(requesterCes, { ...mtg, title: `${mtg.title} (with ${providerName})` })
     }
 
     const exchangeRequest: ExchangeRequest = {
@@ -375,7 +375,7 @@ export function ExchangeRequestModal({
       priceType: offering.priceType,
       paymentMethod: autoPaymentMethod,
       hybridPayment: undefined,
-      proposedMeetingSlot: proposedSlot,
+      proposedMeetingSlot: firstSlot,
       status: 'pending',
       collectivePetitionId: selectedPathway === 'collective_funded' ? undefined : undefined,
       consentAcknowledged: true,
@@ -535,124 +535,16 @@ export function ExchangeRequestModal({
                 </div>
               </div>
 
-              {/* Mini Calendar + Draft Option Editor */}
+              {/* Compact system-native date picker — one row per option */}
               <div className="space-y-4">
-                {/* Mini calendar grid — AUT Time & Tools style */}
-                <div className="rounded-xl border border-lavender/20 bg-[#3a3a3a] p-4 shadow-xl">
-                  {/* Header: month + year with arrows */}
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-                      className="text-cream/60 hover:text-cream transition-colors"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 15l7-7 7 7"/></svg>
-                    </button>
-                    <span className="text-sm font-medium text-cream">
-                      {miniCalMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setMiniCalMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                      className="text-cream/60 hover:text-cream transition-colors"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                  </div>
-
-                  {/* Day headers */}
-                  <div className="grid grid-cols-7 text-center text-xs text-cream/50 mb-1">
-                    {['S','M','T','W','T','F','S'].map((d) => <div key={d}>{d}</div>)}
-                  </div>
-
-                  {/* Day grid */}
-                  <div className="grid grid-cols-7 gap-1">
-                    {(() => {
-                      const year = miniCalMonth.getFullYear()
-                      const month = miniCalMonth.getMonth()
-                      const firstDay = new Date(year, month, 1).getDay()
-                      const lastDate = new Date(year, month + 1, 0).getDate()
-                      const prevLastDate = new Date(year, month, 0).getDate()
-                      const today = new Date().toISOString().slice(0, 10)
-
-                      const days: { day: number; inMonth: boolean; dateStr: string }[] = []
-                      // prev month padding
-                      for (let i = firstDay - 1; i >= 0; i--) {
-                        const d = prevLastDate - i
-                        days.push({ day: d, inMonth: false, dateStr: `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
-                      }
-                      // current month
-                      for (let d = 1; d <= lastDate; d++) {
-                        days.push({ day: d, inMonth: true, dateStr: `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
-                      }
-                      // next month padding to fill grid
-                      const remaining = (7 - (days.length % 7)) % 7
-                      for (let d = 1; d <= remaining; d++) {
-                        days.push({ day: d, inMonth: false, dateStr: `${year}-${String(month + 2).padStart(2, '0')}-${String(d).padStart(2, '0')}` })
-                      }
-
-                      return days.map((item, idx) => {
-                        const { day, inMonth, dateStr } = item
-                        const isInPast = inMonth && dateStr < today
-                        const isDraftDate = draftOption.date === dateStr && inMonth
-                        const isSelectedOption = proposedDates.some((p) => p.date === dateStr)
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              if (!inMonth || isInPast) return
-                              setDraftOption((prev) => ({ ...prev, date: dateStr }))
-                            }}
-                            className={`aspect-square rounded-lg text-sm flex items-center justify-center transition-all ${
-                              isDraftDate
-                                ? 'bg-blue-300 text-void-900 font-semibold'
-                                : isSelectedOption && inMonth
-                                  ? 'text-green-300 font-medium'
-                                  : !inMonth
-                                    ? 'text-cream/20 cursor-default'
-                                    : isInPast
-                                      ? 'text-cream/20 cursor-default'
-                                      : 'text-cream hover:bg-white/10'
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        )
-                      })
-                    })()}
-                  </div>
-
-                  {/* Footer: Clear / Today */}
-                  <div className="flex justify-between mt-3 pt-2 border-t border-white/10">
-                    <button
-                      type="button"
-                      onClick={() => setDraftOption((prev) => ({ ...prev, date: '' }))}
-                      className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
-                    >
-                      Clear
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const today = new Date().toISOString().slice(0, 10)
-                        setDraftOption((prev) => ({ ...prev, date: today }))
-                        setMiniCalMonth(new Date())
-                      }}
-                      className="text-sm text-blue-300 hover:text-blue-200 transition-colors"
-                    >
-                      Today
-                    </button>
-                  </div>
-                </div>
-
                 {/* Draft option form */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-cream">{draftIndex != null ? `Edit option ${draftIndex + 1}` : `Add option ${proposedDates.length + 1} of 3`}</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Date input with calendar icon */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-void-900/60 border border-lavender/10">
                       <CalendarIcon className="w-4 h-4 text-gold-400 shrink-0" />
                       <input
@@ -660,28 +552,30 @@ export function ExchangeRequestModal({
                         value={draftOption.date}
                         onChange={(e) => setDraftOption((prev) => ({ ...prev, date: e.target.value }))}
                         min={new Date().toISOString().slice(0, 10)}
-                        className="w-full bg-transparent text-sm text-cream focus:outline-none"
+                        className="bg-transparent text-sm text-cream focus:outline-none w-[140px] appearance-none [-webkit-appearance:none]"
+                        style={{ colorScheme: 'dark' }}
                       />
                     </div>
 
+                    {/* Time inputs for scheduled offerings */}
                     {(offering.offeringType === 'virtual_session' || offering.offeringType === 'service' || offering.offeringType === 'work_study_exchange') && (
                       <>
-                        <div>
-                          <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">Start</label>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-lavender/50">Start</label>
                           <input
                             type="time"
                             value={draftOption.startTime || ''}
                             onChange={(e) => setDraftOption((prev) => ({ ...prev, startTime: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                            className="px-2 py-1.5 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none w-[100px]"
                           />
                         </div>
-                        <div>
-                          <label className="text-[10px] uppercase tracking-wider text-lavender/40 mb-1 block">End</label>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-lavender/50">End</label>
                           <input
                             type="time"
                             value={draftOption.endTime || ''}
                             onChange={(e) => setDraftOption((prev) => ({ ...prev, endTime: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none"
+                            className="px-2 py-1.5 rounded-lg bg-void-900/60 border border-lavender/10 text-sm text-cream focus:border-gold-400/40 focus:outline-none w-[100px]"
                           />
                         </div>
                       </>
