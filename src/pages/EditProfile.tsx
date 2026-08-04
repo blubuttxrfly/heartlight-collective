@@ -268,6 +268,7 @@ export default function EditProfile() {
 
       // Build the body: include passphrase only if the user provided/confirmed one
       const body: any = { ...updated };
+      delete body.passphrase; // never send existing hash; only send if user set a new one
       if (passphrase) {
         if (passphrase !== confirmPassphrase) {
           setError('Passphrase and confirmation do not match.');
