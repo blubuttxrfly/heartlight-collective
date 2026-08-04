@@ -130,6 +130,7 @@ export function ExchangeRequestModal({
   const [message, setMessage] = useState('')
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
 
   const providerName = vendor.ownerName || findProfileByCES(vendor.ownerCes)?.name || vendor.name
@@ -224,6 +225,14 @@ export function ExchangeRequestModal({
         return false
       }
     }
+    if (offering.customQuestions) {
+      for (const q of offering.customQuestions) {
+        if (q.required && !customAnswers[q.id]?.trim()) {
+          setError(`Please answer the required question: "${q.question}"`)
+          return false
+        }
+      }
+    }
     setError('')
     return true
   }
@@ -306,6 +315,11 @@ export function ExchangeRequestModal({
       requesterName,
       isRequesterUnregistered: requesterCes === 'guest' || requesterCes.startsWith('guest_'),
       guestProfile,
+      customAnswers: offering.customQuestions
+        ? offering.customQuestions
+            .filter((q) => customAnswers[q.id]?.trim())
+            .map((q) => ({ questionId: q.id, question: q.question, answer: customAnswers[q.id] }))
+        : undefined,
       providerCes: vendor.ownerCes,
       providerName,
       message: message.trim(),
@@ -710,6 +724,30 @@ export function ExchangeRequestModal({
                 className="w-full px-4 py-3 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
               />
             </div>
+
+            {/* Custom Booking Questions (if offering has them) */}
+            {offering.customQuestions && offering.customQuestions.length > 0 && (
+              <div className="rounded-xl border border-gold-400/10 bg-gold-400/[0.03] p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-gold-400" />
+                  <span className="text-sm text-cream">Questions from {vendor.name}</span>
+                </div>
+                {offering.customQuestions.map((q) => (
+                  <div key={q.id}>
+                    <label className="block text-xs text-lavender/60 mb-1.5">
+                      {q.question} {q.required && <span className="text-magenta-400">*</span>}
+                    </label>
+                    <textarea
+                      value={customAnswers[q.id] || ''}
+                      onChange={(e) => setCustomAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      placeholder="Your response..."
+                      rows={2}
+                      className="w-full px-4 py-2.5 rounded-xl bg-void-800/50 border border-lavender/10 text-cream placeholder:text-lavender/30 focus:border-gold-400/40 focus:outline-none resize-none"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Guest Profile (if not fully registered) */}
             {(requesterCes === 'guest' || requesterCes.startsWith('guest_')) && (

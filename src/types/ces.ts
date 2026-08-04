@@ -420,6 +420,8 @@ availability: 'available' | 'limited' | 'waitlist' | 'unavailable';
   requiresScheduling?: boolean;
   // Fulfillment team for this offering
   fulfillers?: OfferingFulfiller[];
+  // Wave 11 — custom booking questions the provider asks requesters
+  customQuestions?: { id: string; question: string; required?: boolean }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -696,6 +698,8 @@ export interface ExchangeAgreement {
   collectiveFundingApproved?: boolean;
   // --- SAFETY & PRIVACY (Wave 6.9) ---
   safetyReports?: SafetyReport[];
+  // Wave 11 — custom booking question answers
+  customAnswers?: { questionId: string; question: string; answer: string }[];
   // --- LIVING DOCUMENT ---
   versions: AgreementVersion[];
   pendingUpdate?: AgreementVersion;
