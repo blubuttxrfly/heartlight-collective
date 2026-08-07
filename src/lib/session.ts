@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { CreatorRecord } from '../types/ces'
-import { fetchAtlasMe, signOutAtlas, type AtlasUser } from './atlasAuth'
+import { fetchAtlasMe, signOutAtlas, type AtlasUser, fetchMyCesProfile, type CentralProfile } from './atlasAuth'
 
 const SESSION_KEY = 'hlc_session_v2' // cache of Atlas-bound identity
 
@@ -151,7 +151,34 @@ export function useSession() {
         if (!mounted) return
         if (me.success && me.user) {
           // Atlas says we are signed in. Prefer Atlas identity over stale local cache.
-          atlasSignIn(me.user, null)
+          // Phase 3: also enrich from central C.E.S. profile store
+          const atlasUser = me.user
+          fetchMyCesProfile()
+            .then((central) => {
+              if (!mounted) return
+              if (central.success && central.profile) {
+                const cp = central.profile
+                // Merge central profile data into Heartlight identity
+                const enriched = {
+                  ces: cp.cesNumber || atlasUser.cesProfileId || '',
+                  name: cp.name || atlasUser.name || 'Atlas Being',
+                  emoji: '✦',
+                  photo: cp.photoUrl || cp.photoData || undefined,
+                  isSteward: cp.stewardship === 'active',
+                  atlasEmail: atlasUser.email,
+                  atlasUserId: atlasUser.id,
+                  cesProfileId: cp.cesNumber || atlasUser.cesProfileId,
+                  atlasSessionActive: true,
+                }
+                applyUser(enriched)
+              } else {
+                atlasSignIn(atlasUser, null)
+              }
+            })
+            .catch(() => {
+              if (!mounted) return
+              atlasSignIn(atlasUser, null)
+            })
         } else {
           // No Atlas session. Keep local cache as-is (legacy CES sign-in).
           setUser((prev) => {
@@ -167,7 +194,7 @@ export function useSession() {
         setAtlasChecked(true)
       })
     return () => { mounted = false }
-  }, [atlasSignIn])
+  }, [atlasSignIn, applyUser])
 
   /* ── Refresh (for external changes / other tabs) ── */
   const refresh = useCallback(() => {

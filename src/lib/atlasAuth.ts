@@ -99,3 +99,47 @@ export async function refreshAtlasSession(): Promise<AtlasMeResponse> {
 export async function signOutAtlas(): Promise<{ success: boolean; message?: string }> {
   return authRequest('/api/auth/sign-out', { method: 'POST' })
 }
+
+// ── C.E.S. Profile interconnection (Phase 3) ─────────────────────────
+
+export interface CentralProfile {
+  cesNumber: string
+  createdAt: string
+  name: string
+  photoUrl?: string
+  photoData?: string
+  uiTheme?: string
+  stewardship?: string
+  atlasHueA?: string
+  atlasHueB?: string
+  creatorHandle?: string
+  bio?: string
+  updatedAt: string
+}
+
+export interface CentralProfileResponse {
+  success: boolean
+  profile?: CentralProfile
+  note?: string
+}
+
+/** Fetch a C.E.S. profile by its 9-digit inverse number (public read) */
+export async function fetchCesProfile(cesNumber: string): Promise<CentralProfileResponse> {
+  return authRequest(`/api/profile/${cesNumber}`)
+}
+
+/** Fetch the signed-in user's own full C.E.S. profile */
+export async function fetchMyCesProfile(): Promise<CentralProfileResponse> {
+  return authRequest('/api/profile/me')
+}
+
+/** Update a C.E.S. profile (requires owner session) */
+export async function updateCesProfile(
+  cesNumber: string,
+  data: Partial<Omit<CentralProfile, 'cesNumber' | 'createdAt' | 'updatedAt'>>
+): Promise<CentralProfileResponse> {
+  return authRequest(`/api/profile/${cesNumber}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
