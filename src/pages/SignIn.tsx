@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, KeyRound, AlertTriangle, CheckCircle2, Mail } from 'lucide-react'
 import { useSession } from '../lib/session'
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
-import { requestMagicLink } from '../lib/atlasAuth'
+import { requestMagicLink, updateCesProfile } from '../lib/atlasAuth'
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -65,6 +65,24 @@ export default function SignIn() {
       await signIn(profile)
       unified.clearError()
       setSuccess(true)
+
+      // ── Bridge: push Heartlight profile to central store ──
+      try {
+        const name = profile.name || (profile as any).displayName || 'Atlas Being'
+        const photo = (profile as any).photo || (profile as any).photoData || (profile as any).avatarUrl
+        const stewardship = (profile as any).stewardship || 'none'
+        const uiTheme = (profile as any).uiTheme || (profile as any).theme || 'normal'
+        await updateCesProfile(profile.cesNumber, {
+          name,
+          ...(photo ? { photoData: photo } : {}),
+          stewardship: stewardship as any,
+          uiTheme: uiTheme as any,
+        })
+        console.log('[SignIn] Synced profile to central store:', profile.cesNumber)
+      } catch (err) {
+        console.warn('[SignIn] Failed to sync profile to central:', err)
+      }
+
       setTimeout(() => {
         // Respect cross-property returnTo from query params
         const urlReturnTo = new URLSearchParams(window.location.search).get('returnTo')

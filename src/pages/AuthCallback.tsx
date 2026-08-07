@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { fetchAtlasMe, bindCesToAtlasUser } from '../lib/atlasAuth'
+import { fetchAtlasMe, bindCesToAtlasUser, updateCesProfile } from '../lib/atlasAuth'
 import { useSession } from '../lib/session'
 import { useUnifiedStorage } from '../hooks/useUnifiedStorage'
 
@@ -41,6 +41,8 @@ export default function AuthCallback() {
           const profile = await unified.findProfileByCES(cesProfileId)
           if (profile) {
             atlasSignIn(me.user, profile)
+            // ── Bridge: push Heartlight profile to central store ──
+            await syncProfileToCentral(profile as any)
             redirect(returnTo)
             return
           }
@@ -59,6 +61,8 @@ export default function AuthCallback() {
             console.warn('[AuthCallback] bind-ces failed:', bind.error)
           }
           atlasSignIn(me.user, matchedByEmail)
+          // ── Bridge: push Heartlight profile to central store ──
+          await syncProfileToCentral(matchedByEmail as any)
           redirect(returnTo)
           return
         }
@@ -78,6 +82,31 @@ export default function AuthCallback() {
         window.location.assign(url)
       } else {
         navigate(url)
+      }
+    }
+
+    // Helper: push Heartlight profile data to central C.E.S. store
+    // so other Atlas Island properties (AUT, AtlasIsland.co, AIMB)
+    // can read name, photo, and stewardship without their own storage.
+    async function syncProfileToCentral(profile: Record<string, unknown>) {
+      try {
+        const ces = (profile.cesNumber as string) || (profile.ces_number as string)
+        if (!ces || ces.length !== 9) return
+
+        const name = (profile.name as string) || (profile.displayName as string) || 'Atlas Being'
+        const photo = (profile.photo as string) || (profile.photoData as string) || (profile.avatarUrl as string)
+        const stewardship = (profile.stewardship as string) || 'none'
+        const uiTheme = (profile.uiTheme as string) || (profile.theme as string) || 'normal'
+
+        await updateCesProfile(ces, {
+          name,
+          ...(photo ? { photoData: photo } : {}),
+          stewardship: stewardship as any,
+          uiTheme: uiTheme as any,
+        })
+        console.log('[AuthCallback] Synced profile to central store:', ces)
+      } catch (err) {
+        console.warn('[AuthCallback] Failed to sync profile to central:', err)
       }
     }
 
