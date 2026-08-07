@@ -66,7 +66,14 @@ export default function SignIn() {
       unified.clearError()
       setSuccess(true)
       setTimeout(() => {
-        navigate('/edit-profile')
+        // Respect cross-property returnTo from query params
+        const urlReturnTo = new URLSearchParams(window.location.search).get('returnTo')
+        const urlAutReturn = new URLSearchParams(window.location.search).get('autReturn') === '1'
+        if (urlAutReturn && urlReturnTo) {
+          window.location.assign(urlReturnTo)
+        } else {
+          navigate(urlReturnTo || '/edit-profile')
+        }
       }, 1200)
     } catch (err: any) {
       console.error('[SignIn] Exception in handleSubmit:', err);
