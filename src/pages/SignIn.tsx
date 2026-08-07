@@ -20,6 +20,11 @@ export default function SignIn() {
   const isDev = import.meta.env.DEV || localStorage.getItem('hlc_dev_atlas') === 'true';
   const [loading, setLoading] = useState(false)
 
+  /* ── Cross-property: redirect to AUT Time & Tools passkey sign-in ── */
+  const autBaseUrl = import.meta.env.VITE_AUT_BASE_URL || 'https://aut.atlasisland.co'
+  const returnTo = `${window.location.origin}/sign-in?autReturn=1`
+  const autPasskeyUrl = `${autBaseUrl}/?auth=passkey&returnTo=${encodeURIComponent(returnTo)}`
+
   const handleSubmit = async (e: React.FormEvent) => {
     console.log('[SignIn] handleSubmit triggered');
     e.preventDefault()
@@ -84,10 +89,14 @@ export default function SignIn() {
 
     setLoading(true)
     try {
-      const result = await requestMagicLink(
-        normalizedEmail,
-        `${window.location.origin}/auth/callback?returnTo=/edit-profile`
-      )
+      // Respect cross-property returnTo from query params (e.g., AUT redirect)
+      const urlReturnTo = new URLSearchParams(window.location.search).get('returnTo') || '/edit-profile'
+      const isAutReturn = new URLSearchParams(window.location.search).get('autReturn') === '1'
+      const callbackUrl = isAutReturn
+        ? `${window.location.origin}/auth/callback?autReturn=1&returnTo=${encodeURIComponent(urlReturnTo)}`
+        : `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(urlReturnTo)}`
+      
+      const result = await requestMagicLink(normalizedEmail, callbackUrl)
       if (result.success) {
         setMagicSent(true)
       } else {
@@ -263,6 +272,16 @@ export default function SignIn() {
                 ? 'Sign in with C.E.S. + Passphrase instead'
                 : 'Sign in with Email Magic Link instead'}
             </button>
+
+            {/* ── Cross-property: sign in via AUT Time & Tools passkey ── */}
+            <a
+              href={autPasskeyUrl}
+              className="w-full py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-200/70 hover:text-emerald-200 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-xs flex items-center justify-center gap-2"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              Sign in with AUT Passkey
+              <span className="text-[10px] text-emerald-200/40 hidden sm:inline">(cross-property)</span>
+            </a>
 
             {/* Dev Atlas quick-fill (CES mode only) */}
             {!magicMode && isDev && (

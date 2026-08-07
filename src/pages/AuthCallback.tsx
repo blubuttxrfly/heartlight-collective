@@ -21,10 +21,11 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const returnTo = params.get('returnTo') || '/edit-profile'
+    const autReturn = params.get('autReturn') === '1'
 
     const completeSignIn = async () => {
       try {
-        setStatus('Recognizing your resonance...')
+        setStatus(autReturn ? 'Opening the cross-property doorway...' : 'Recognizing your resonance...')
         const me = await fetchAtlasMe()
 
         if (!me.success || !me.user?.email) {
@@ -40,7 +41,7 @@ export default function AuthCallback() {
           const profile = await unified.findProfileByCES(cesProfileId)
           if (profile) {
             atlasSignIn(me.user, profile)
-            navigate(returnTo)
+            redirect(returnTo)
             return
           }
         }
@@ -58,7 +59,7 @@ export default function AuthCallback() {
             console.warn('[AuthCallback] bind-ces failed:', bind.error)
           }
           atlasSignIn(me.user, matchedByEmail)
-          navigate(returnTo)
+          redirect(returnTo)
           return
         }
 
@@ -68,6 +69,15 @@ export default function AuthCallback() {
       } catch (err: any) {
         console.error('[AuthCallback] error:', err)
         setError(err.message || 'Something went wrong during sign-in.')
+      }
+    }
+
+    // Helper: react-router navigate for internal paths, window.location for external URLs
+    function redirect(url: string) {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        window.location.assign(url)
+      } else {
+        navigate(url)
       }
     }
 
